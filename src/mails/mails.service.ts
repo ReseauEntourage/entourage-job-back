@@ -121,7 +121,11 @@ export class MailsService {
     }
   }
 
-  async sendVerificationMail(user: User, token: string, otpCode?: string) {
+  async sendVerificationMail(
+    user: User,
+    token: string,
+    otpCode: string = 'no_otp'
+  ) {
     this.logger.log(
       `Sending verification mail to user with email ${user.email}`
     );
