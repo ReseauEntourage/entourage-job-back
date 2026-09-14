@@ -29,8 +29,8 @@ export enum ZoneSuffix {
 
 export enum StaffContactGroup {
   CANDIDATE = 'candidate',
+  COACH = 'coach',
   COMPANY = 'company',
-  MAIN = 'main',
 }
 
 export type InternalStaffContact = {

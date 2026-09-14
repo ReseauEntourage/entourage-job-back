@@ -1,9 +1,11 @@
 import { SfLocalBranchName } from '../types/local-branches.types';
 import { Zone, ZoneName, ZoneSuffix } from '../types/zones.types';
 
-const awsS3Url = process.env.AWSS3_URL || '';
-const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
-const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
+// Read lazily (not at module top-level): AppModule's ConfigModule.forRoot()
+// loads the .env file, but zones.ts is transitively imported (via feature
+// modules) before that call runs, so process.env would still be empty here.
+const getImageBasePath = () =>
+  `${process.env.AWSS3_URL || ''}${process.env.AWSS3_IMAGE_DIRECTORY || ''}`;
 
 export const Zones: { [key in ZoneName]: Zone } = {
   [ZoneName.IDF]: {
@@ -13,27 +15,48 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Clothilde',
-        img: `${imageBasePath}staff-pictures/clothilde.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_PARIS,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_PARIS,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_PARIS,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/clothilde.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_CANDIDATE_EMAIL_PARIS;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_PARIS;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_ENTOURAGE_PRO_EMAIL_PARIS;
+        },
       },
-      main: {
-        name: 'Clothilde',
-        img: `${imageBasePath}staff-pictures/clothilde.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_PARIS,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_PARIS,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_PARIS,
+      coach: {
+        name: 'Adèle',
+        get img() {
+          return `${getImageBasePath()}staff-pictures/adele.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COACH_EMAIL_PARIS;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_PARIS;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COACH_ENTOURAGE_PRO_EMAIL_PARIS;
+        },
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
-        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_PARIS,
-        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_PARIS,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_PARIS,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COMPANIES_EMAIL_PARIS;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_PARIS;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_PARIS;
+        },
       },
     },
   },
@@ -44,27 +67,48 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Alice',
-        img: `${imageBasePath}staff-pictures/alice.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LYON,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LYON,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_LYON,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/alice.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_CANDIDATE_EMAIL_LYON;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_LYON;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_ENTOURAGE_PRO_EMAIL_LYON;
+        },
       },
-      main: {
-        name: 'Alice',
-        img: `${imageBasePath}staff-pictures/alice.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LYON,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LYON,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_LYON,
+      coach: {
+        name: 'Gabriella',
+        get img() {
+          return `${getImageBasePath()}staff-pictures/gabriella.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COACH_EMAIL_LYON;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_LYON;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COACH_ENTOURAGE_PRO_EMAIL_LYON;
+        },
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
-        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LYON,
-        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LYON,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_LYON,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COMPANIES_EMAIL_LYON;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LYON;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_LYON;
+        },
       },
     },
   },
@@ -75,27 +119,48 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Julien',
-        img: `${imageBasePath}staff-pictures/julien.png`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LILLE,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LILLE,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_LILLE,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/julien.png`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_CANDIDATE_EMAIL_LILLE;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_LILLE;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_ENTOURAGE_PRO_EMAIL_LILLE;
+        },
       },
-      main: {
+      coach: {
         name: 'Julien',
-        img: `${imageBasePath}staff-pictures/julien.png`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LILLE,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LILLE,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_LILLE,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/julien.png`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COACH_EMAIL_LILLE;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_LILLE;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COACH_ENTOURAGE_PRO_EMAIL_LILLE;
+        },
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
-        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LILLE,
-        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LILLE,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_LILLE,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COMPANIES_EMAIL_LILLE;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LILLE;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_LILLE;
+        },
       },
     },
   },
@@ -106,27 +171,48 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Mathilde',
-        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_RENNES,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/mathilde.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_CANDIDATE_EMAIL_RENNES;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_RENNES;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_ENTOURAGE_PRO_EMAIL_RENNES;
+        },
       },
-      main: {
+      coach: {
         name: 'Mathilde',
-        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_RENNES,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/mathilde.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COACH_EMAIL_RENNES;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_RENNES;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COACH_ENTOURAGE_PRO_EMAIL_RENNES;
+        },
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
-        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES,
-        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_RENNES,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_RENNES;
+        },
       },
     },
   },
@@ -141,27 +227,48 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Mathilde',
-        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_RENNES,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/mathilde.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_CANDIDATE_EMAIL_RENNES;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_RENNES;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_ENTOURAGE_PRO_EMAIL_RENNES;
+        },
       },
-      main: {
+      coach: {
         name: 'Mathilde',
-        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_RENNES,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/mathilde.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COACH_EMAIL_RENNES;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_RENNES;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COACH_ENTOURAGE_PRO_EMAIL_RENNES;
+        },
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
-        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES,
-        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_RENNES,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_RENNES;
+        },
       },
     },
   },
@@ -171,28 +278,51 @@ export const Zones: { [key in ZoneName]: Zone } = {
     suffix: ZoneSuffix.SUDOUEST,
     staffContact: {
       candidate: {
-        name: 'Laure',
-        img: `${imageBasePath}staff-pictures/laure.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_SUDOUEST,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_SUDOUEST,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_SUDOUEST,
+        name: 'Auguste',
+        get img() {
+          return `${getImageBasePath()}staff-pictures/auguste.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_CANDIDATE_EMAIL_SUDOUEST;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_SUDOUEST;
+        },
+        get entourageProEmail() {
+          return process.env
+            .STAFF_CONTACT_CANDIDATE_ENTOURAGE_PRO_EMAIL_SUDOUEST;
+        },
       },
-      main: {
-        name: 'Laure',
-        img: `${imageBasePath}staff-pictures/laure.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_SUDOUEST,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_SUDOUEST,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_SUDOUEST,
+      coach: {
+        name: 'Auguste',
+        get img() {
+          return `${getImageBasePath()}staff-pictures/auguste.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COACH_EMAIL_SUDOUEST;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_SUDOUEST;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COACH_ENTOURAGE_PRO_EMAIL_SUDOUEST;
+        },
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
-        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_SUDOUEST,
-        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_SUDOUEST,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_SUDOUEST,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COMPANIES_EMAIL_SUDOUEST;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_SUDOUEST;
+        },
+        get entourageProEmail() {
+          return process.env
+            .STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_SUDOUEST;
+        },
       },
     },
   },
@@ -202,29 +332,62 @@ export const Zones: { [key in ZoneName]: Zone } = {
     suffix: ZoneSuffix.HZ,
     staffContact: {
       candidate: {
-        name: 'Laure',
-        img: `${imageBasePath}staff-pictures/laure.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_HZ,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_HZ,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_HZ,
+        name: 'Marine',
+        get img() {
+          return `${getImageBasePath()}staff-pictures/marine.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_CANDIDATE_EMAIL_HZ;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_HZ;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_CANDIDATE_ENTOURAGE_PRO_EMAIL_HZ;
+        },
       },
-      main: {
+      coach: {
         name: 'Laure',
-        img: `${imageBasePath}staff-pictures/laure.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_HZ,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_HZ,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_HZ,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/laure.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COACH_EMAIL_HZ;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_HZ;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COACH_ENTOURAGE_PRO_EMAIL_HZ;
+        },
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
-        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_HZ,
-        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_HZ,
-        entourageProEmail:
-          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_HZ,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
+        get email() {
+          return process.env.STAFF_CONTACT_COMPANIES_EMAIL_HZ;
+        },
+        get slackEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_HZ;
+        },
+        get entourageProEmail() {
+          return process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_HZ;
+        },
       },
     },
   },
+};
+
+/**
+ * "HORS ZONE" (HZ) is displayed as "National" rather than its literal zone
+ * name — the enum value itself is not renamed (still stored/compared as
+ * ZoneName.HZ everywhere else).
+ */
+export const getZoneDisplayLabel = (
+  zone: ZoneName | string | null | undefined
+): string => {
+  const resolvedZone = zone || ZoneName.HZ;
+  return resolvedZone === ZoneName.HZ ? 'National' : resolvedZone;
 };
