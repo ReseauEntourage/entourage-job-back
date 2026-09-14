@@ -32,6 +32,7 @@ import { UserSocialSituationsModule } from 'src/user-social-situations/user-soci
 import { UsersModule } from 'src/users/users.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
+import { VersionModule } from 'src/version/version.module';
 import { AuthTestingModule } from './auth/auth-testing.module';
 import { BusinessSectorsTestingModule } from './business-sectors/business-sectors-testing.module';
 import { CompaniesTestingModule } from './companies/companies-testing.module';
@@ -95,6 +96,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ExternalCvsModule,
     ElearningModule,
     RecruitementAlertsModule,
+    VersionModule,
 
     // Modules de test spécifiques
     AuthTestingModule,
