@@ -1,6 +1,6 @@
 {
   "name": "entourage-pro-backend",
-  "version": "2.32.2",
+  "version": "2.33.0",
   "license": "ISC",
   "engines": {
     "node": "24.x"
@@ -17,10 +17,13 @@
     "api:dev": "nest start --watch",
     "api:dev:docker": "docker compose up",
     "api:dev:docker:build": "docker compose up --build",
+    "api:dev:local:db": "docker compose up db redis",
+    "api:dev:local": "DATABASE_URL=postgres://entourage_pro:entourage_pro@localhost:5432/entourage_pro REDIS_URL=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@localhost:6379 nest start --watch",
     "worker:start": "node dist/worker",
     "worker:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
     "worker:dev": "nest start --config nest-cli.worker.json --watch",
     "worker:dev:debug": "nest start --config nest-cli.worker.json --debug --watch",
+    "worker:dev:local": "DATABASE_URL=postgres://entourage_pro:entourage_pro@localhost:5432/entourage_pro REDIS_URL=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@localhost:6379 nest start --config nest-cli.worker.json --watch",
     "all:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
     "all:dev:docker:build": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up --build",
     "test:e2e:docker": "docker compose -f docker-compose.test.yml run --rm api-test",

@@ -30,6 +30,8 @@ export class EventsService {
    * @param limit Number of events to retrieve
    * @param offset Number of events to skip
    * @param search Search term to filter events
+   * @param userId id of the user making the request, used to resolve their Salesforce
+   * contact resiliently to email drift (see salesforce-contact-identity-resolution capability)
    * @returns List of events
    */
   async findAllEvents(
@@ -42,7 +44,8 @@ export class EventsService {
     modes?: EventMode[],
     eventTypes?: EventType[],
     departmentIds?: string[],
-    publicSensibilise?: EventPublicAudience[]
+    publicSensibilise?: EventPublicAudience[],
+    userId?: string
   ): Promise<Events> {
     const departmentNames =
       await this.departmentsService.mapDepartmentsIdsToFormattedNames(
@@ -69,7 +72,8 @@ export class EventsService {
       modes,
       eventTypes,
       localBranches,
-      publicSensibilise
+      publicSensibilise,
+      userId
     );
 
     return sfCampaigns
@@ -81,15 +85,19 @@ export class EventsService {
    * Find event by ID
    * @param userEmail email of the user making the request
    * @param eventId Salesforce Campaign ID of the event
+   * @param userId id of the user making the request, used to resolve their Salesforce
+   * contact resiliently to email drift (see salesforce-contact-identity-resolution capability)
    * @returns Event or null if not found
    */
   async findEventById(
     userEmail: string,
-    eventId: string
+    eventId: string,
+    userId?: string
   ): Promise<Event | null> {
     const sfCampaign = await this.salesforceService.findEventCampaignById(
       userEmail,
-      eventId
+      eventId,
+      userId
     );
     if (!sfCampaign) {
       return null;
@@ -101,13 +109,16 @@ export class EventsService {
    * Find event with participants by ID
    * @param userEmail email of the user making the request
    * @param eventId Salesforce Campaign ID of the event
+   * @param userId id of the user making the request, used to resolve their Salesforce
+   * contact resiliently to email drift (see salesforce-contact-identity-resolution capability)
    * @returns Event with participants or null if not found
    */
   async findEventWithMembersById(
     userEmail: string,
-    eventId: string
+    eventId: string,
+    userId?: string
   ): Promise<EventWithParticipants | null> {
-    const sfCampaign = await this.findEventById(userEmail, eventId);
+    const sfCampaign = await this.findEventById(userEmail, eventId, userId);
     if (!sfCampaign) {
       return null;
     }
@@ -150,17 +161,28 @@ export class EventsService {
    * @param userEmail email of the user making the request
    * @param eventId Salesforce Campaign ID of the event
    * @param isParticipating boolean indicating participation status
+   * @param userId id of the user making the request, used to resolve their Salesforce contact
+   * by `ID_App_Entourage_Pro__c` rather than email alone (see
+   * salesforce-contact-identity-resolution capability) - an email-only lookup can wrongly
+   * report "Contact not found" for a user whose Salesforce email has drifted even though
+   * they're correctly linked.
    */
   async updateEventParticipation(
     userEmail: string,
     eventId: string,
-    isParticipating: boolean
+    isParticipating: boolean,
+    userId: string
   ): Promise<void> {
     const sfCampaign = await this.salesforceService.findEventCampaignById(
       userEmail,
-      eventId
+      eventId,
+      userId
     );
-    const sfContact = await this.salesforceService.findContact(userEmail);
+    const sfContact = await this.salesforceService.findContact(
+      userEmail,
+      undefined,
+      userId
+    );
 
     // Error handling if campaign or contact not found
     if (!sfCampaign) {

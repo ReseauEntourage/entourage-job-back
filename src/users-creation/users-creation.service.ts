@@ -50,9 +50,13 @@ export class UsersCreationService {
       | 'workingRight'
       | 'gender'
       | 'structure'
-      | 'refererEmail'
       | 'companyRole'
-    > & { companyId?: string; isCompanyAdmin?: boolean }
+    > & {
+      companyId?: string;
+      isCompanyAdmin?: boolean;
+      /** Postgres User.id of the referrer (e.g. a REFERER/prescripteur), not their email. */
+      refererId?: string;
+    }
   ) {
     return this.externalDatabasesService.createExternalDBUser(
       createdUserId,

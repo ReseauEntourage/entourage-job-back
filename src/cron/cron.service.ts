@@ -516,4 +516,28 @@ export class CronService {
     );
     return { jobId: job.id, status: 'processing' };
   }
+
+  /**
+   * This method is called every day at 9 AM.
+   * It will create a job to send a relaunch email to candidates and coaches
+   * whose account was created exactly 1 day ago and whose email is still not
+   * verified.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  async sendUnverifiedAccountRelaunchMails() {
+    this.logger.log('Cron job started: sendUnverifiedAccountRelaunchMails');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
 }

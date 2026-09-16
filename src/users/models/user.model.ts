@@ -218,6 +218,15 @@ export class User extends HistorizedModel {
   @Column
   linkedinTokenExpiresAt: Date;
 
+  /**
+   * Local mirror of the linked Salesforce Contact Id (see salesforce-contact-identity-resolution
+   * capability) - kept in sync at runtime and by the salesforce-contact-id-backfill job, so the
+   * association can be read directly without a round-trip to Salesforce.
+   */
+  @AllowNull(true)
+  @Column
+  sfContactId: string;
+
   @CreatedAt
   createdAt: Date;
 
@@ -262,7 +271,7 @@ export class User extends HistorizedModel {
     // Check if companies association is loaded
     const hasCompanies = this.companies !== undefined;
 
-    let staffContactGroup = StaffContactGroup.MAIN; // Default to main contact
+    let staffContactGroup = StaffContactGroup.COACH; // Default to coach contact
     if (hasCompanies && this.company && this.company?.companyUser?.isAdmin) {
       staffContactGroup = StaffContactGroup.COMPANY; // Use company contact for company admins
     } else if (this.role === UserRoles.CANDIDATE) {
