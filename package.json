@@ -1,6 +1,6 @@
 {
   "name": "entourage-pro-backend",
-  "version": "2.32.2",
+  "version": "2.33.0",
   "license": "ISC",
   "engines": {
     "node": "24.x"
@@ -17,10 +17,13 @@
     "api:dev": "nest start --watch",
     "api:dev:docker": "docker compose up",
     "api:dev:docker:build": "docker compose up --build",
+    "api:dev:local:db": "docker compose up db redis",
+    "api:dev:local": "DATABASE_URL=postgres://entourage_pro:entourage_pro@localhost:5432/entourage_pro REDIS_URL=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@localhost:6379 nest start --watch",
     "worker:start": "node dist/worker",
     "worker:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
     "worker:dev": "nest start --config nest-cli.worker.json --watch",
     "worker:dev:debug": "nest start --config nest-cli.worker.json --debug --watch",
+    "worker:dev:local": "DATABASE_URL=postgres://entourage_pro:entourage_pro@localhost:5432/entourage_pro REDIS_URL=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@localhost:6379 nest start --config nest-cli.worker.json --watch",
     "all:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
     "all:dev:docker:build": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up --build",
     "test:e2e:docker": "docker compose -f docker-compose.test.yml run --rm api-test",
@@ -67,7 +70,7 @@
     "check-password-strength": "^2.0.7",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
-    "dd-trace": "^5.76.0",
+    "dd-trace": "^6.16.0",
     "deep-diff": "^1.0.2",
     "diff-match-patch": "^1.0.5",
     "dotenv": "^16.0.1",
@@ -93,7 +96,7 @@
     "sequelize": "^6.29.0",
     "sequelize-cli": "^6.4.1",
     "sequelize-typescript": "^2.1.6",
-    "sharp": "^0.32.6",
+    "sharp": "^0.35.4",
     "uuid": "^8.3.2",
     "validator": "^13.7.0",
     "voyageai": "^0.2.1"

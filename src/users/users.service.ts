@@ -5,6 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import moment from 'moment-timezone';
 import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/business-sectors/business-sectors.service';
@@ -660,8 +661,12 @@ export class UsersService {
     });
   }
 
-  // Get all users -except admins- that have connected once but not in the last 25 months and not deleted
-  async getInactiveUsersForDeletion() {
+  // Get all users -except admins- that have connected once but not in the last `monthsSinceLastConnection` months and not deleted
+  async getInactiveUsersForDeletion(monthsSinceLastConnection: number) {
+    const cutoffDate = moment()
+      .subtract(monthsSinceLastConnection, 'months')
+      .toDate();
+
     const inactiveUsers: {
       candidatUrl: string | null;
       firstName: string;
@@ -682,12 +687,12 @@ export class UsersService {
                 ( -- has already signed in --
                     "Users"."lastConnection" IS NOT NULL
                     -- isInactiveSince --
-                    AND "Users"."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '25 MONTH'
+                    AND "Users"."lastConnection" < :cutoffDate
                 )
                 OR ( -- has never signed in --
                     "Users"."lastConnection" IS NULL
                     -- createdAt is old enough --
-                    AND "Users"."createdAt" < CURRENT_TIMESTAMP - INTERVAL '25 MONTH'
+                    AND "Users"."createdAt" < :cutoffDate
                 )
             )
             -- is not deleted --
@@ -701,6 +706,7 @@ export class UsersService {
       {
         type: QueryTypes.SELECT,
         raw: true,
+        replacements: { cutoffDate },
       }
     );
     const users = inactiveUsers.map((user) => {
@@ -813,6 +819,42 @@ export class UsersService {
     });
 
     return users;
+  }
+
+  /**
+   * Active Pro users eligible for the Salesforce `ID_App_Entourage_Pro__c` backfill (see
+   * salesforce-contact-id-backfill capability). `User` is a paranoid model (`@DeletedAt`), so
+   * this `findAll` implicitly excludes soft-deleted rows (`deletedAt IS NULL`) - no explicit
+   * filter needed. `UsersDeletionService.deleteCompleteUser` always soft-deletes right after
+   * anonymizing the email, so there's no user left with an anonymized email and no `deletedAt`.
+   */
+  async getActiveUsersForSalesforceAppIdBackfill() {
+    return this.userModel.findAll({
+      attributes: ['id', 'email', 'role'],
+    });
+  }
+
+  /**
+   * Mirrors the linked Salesforce Contact Id on the User row (see
+   * salesforce-contact-identity-resolution capability). Deliberately lightweight - a plain
+   * column write, not the full `update()` (which triggers hooks, an onboarding transition
+   * check and a relations reload) - called from hot paths like every Salesforce contact lookup.
+   */
+  async updateSfContactId(userId: string, sfContactId: string): Promise<void> {
+    await this.userModel.update({ sfContactId }, { where: { id: userId } });
+  }
+
+  /**
+   * Lightweight lookup for the manual Salesforce linking job (see
+   * salesforce-manual-contact-linking capability): only the fields needed to guard against
+   * re-attributing a user already mirrored to a different Salesforce Contact.
+   */
+  async findByIdForSalesforceManualLink(
+    userId: string
+  ): Promise<Pick<User, 'id' | 'sfContactId'> | null> {
+    return this.userModel.findByPk(userId, {
+      attributes: ['id', 'sfContactId'],
+    });
   }
 
   /**

@@ -92,6 +92,11 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   findCompanyFromCompanyName: jest.fn(),
   findContactIdsByEmails: jest.fn(),
   findEventParticipationCountByContactIds: jest.fn(),
+  findContactsByEmailForBackfill: jest.fn(),
+  repairContactAppId: jest.fn(),
+  completeContactNetworkAndCasquette: jest.fn(),
+  findContactById: jest.fn(),
+  linkContactManually: jest.fn(),
 } as const;
 
 export const MailjetMock: ProviderMock<MailjetService> = {

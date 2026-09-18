@@ -435,6 +435,7 @@ export interface ContactProps {
   phone?: string;
   position?: string;
   refererId?: string;
+  reseaux?: string[];
   resources?: CandidateResource;
   studiesLevel?: StudiesLevel;
   workingExperience?: WorkingExperience;
@@ -461,7 +462,9 @@ export interface SalesforceContact {
   Plus_haut_niveau_de_formation_attein__c: string;
   Raison_social_Entreprise__c?: string | null;
   RecordTypeId: ContactRecordType;
-  Reseaux__c: 'LinkedOut';
+  // 'LinkedOut' on creation; a semicolon-joined multi-picklist value once other networks
+  // (e.g. from Entourage Local) need to be preserved on an update.
+  Reseaux__c: string;
   Situation_d_h_bergement__c: string;
   Source__c: 'Lead entrant';
   Title: string;
@@ -713,7 +716,8 @@ export interface UserProps {
   nationality?: Nationality;
   phone: string;
   position?: string;
-  refererEmail?: string;
+  /** Postgres User.id of the referrer (e.g. a REFERER/prescripteur), not their email. */
+  refererId?: string;
   resources?: CandidateResource;
   role: RegistrableUserRole;
   structure?: string;

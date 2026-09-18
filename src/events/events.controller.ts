@@ -23,6 +23,7 @@ export class EventsController {
   @Get()
   async findAll(
     @UserPayload('email') userEmail: string,
+    @UserPayload('id') userId: string,
     @Query(new ValidationPipe({ transform: true, whitelist: true }))
     query: FindAllEventsQueryDto
   ) {
@@ -48,7 +49,8 @@ export class EventsController {
       modes,
       eventTypes,
       departmentIds,
-      publicSensibilise
+      publicSensibilise,
+      userId
     );
 
     return events;
@@ -57,11 +59,13 @@ export class EventsController {
   @Get(':eventId')
   async findById(
     @UserPayload('email') userEmail: string,
+    @UserPayload('id') userId: string,
     @Param('eventId') eventId: string
   ) {
     const event = await this.eventsService.findEventWithMembersById(
       userEmail,
-      eventId
+      eventId,
+      userId
     );
     if (!event) {
       throw new NotFoundException('Event not found');
@@ -72,10 +76,15 @@ export class EventsController {
   @Get(':eventId/participants')
   async findParticipantsByEventId(
     @UserPayload('email') userEmail: string,
+    @UserPayload('id') userId: string,
     @Param('eventId') eventId: string
   ) {
     const eventWithParticipants =
-      await this.eventsService.findEventWithMembersById(userEmail, eventId);
+      await this.eventsService.findEventWithMembersById(
+        userEmail,
+        eventId,
+        userId
+      );
     if (!eventWithParticipants) {
       throw new NotFoundException('Event not found');
     }
@@ -85,6 +94,7 @@ export class EventsController {
   @Put(':eventId/participation')
   async toggleParticipation(
     @UserPayload('email') userEmail: string,
+    @UserPayload('id') userId: string,
     @Param('eventId') eventId: string,
     @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
     eventParticipationDto: EventParticipationDto
@@ -92,7 +102,8 @@ export class EventsController {
     return this.eventsService.updateEventParticipation(
       userEmail,
       eventId,
-      eventParticipationDto.participate
+      eventParticipationDto.participate,
+      userId
     );
   }
 }

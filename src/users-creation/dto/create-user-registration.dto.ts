@@ -110,11 +110,6 @@ export class CreateUserRegistrationDto extends PickType(User, [
   structure?: string;
 
   @ApiProperty()
-  @IsString()
-  @IsOptional()
-  refererEmail?: string;
-
-  @ApiProperty()
   @IsBoolean()
   @IsOptional()
   optInNewsletter?: boolean;
