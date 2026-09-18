@@ -99,6 +99,39 @@ describe('CronTasksProcessor.manualLinkSalesforceContact', () => {
     );
   });
 
+  it('keeps processing later pairs and still sends the end-of-batch report when the immediate Slack alert itself fails', async () => {
+    const linkContactManually = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('Salesforce API unavailable'))
+      .mockResolvedValueOnce('linked');
+    const { processor, cronTasksSlackReporterService, slackService } =
+      buildProcessor(linkContactManually);
+    slackService.sendTechnicalMonitoringMessage.mockRejectedValue(
+      new Error('Slack is down')
+    );
+
+    await processor.manualLinkSalesforceContact({
+      links: [
+        { userId: 'user-1', sfContactId: 'contact-1' },
+        { userId: 'user-2', sfContactId: 'contact-2' },
+      ],
+    });
+
+    expect(linkContactManually).toHaveBeenCalledTimes(2);
+    expect(
+      cronTasksSlackReporterService.sendCronTaskResultToSlack
+    ).toHaveBeenCalledWith(
+      false,
+      expect.stringContaining('Rattachement manuel Salesforce'),
+      { total: 2, success: 1, failure: 1 },
+      [expect.objectContaining({ itemId: 'user-1 / contact-1' })],
+      undefined,
+      undefined,
+      [{ label: 'Paires refusées', items: [] }],
+      [{ label: 'Already linked', value: 0 }]
+    );
+  });
+
   it('applies the first of two contradictory pairs and rejects the second, since pairs are processed sequentially', async () => {
     // Emulates the real linkContactManually guard-rail with an in-memory link map, to prove
     // that sequential (not parallel) processing is what makes the guard-rail catch a

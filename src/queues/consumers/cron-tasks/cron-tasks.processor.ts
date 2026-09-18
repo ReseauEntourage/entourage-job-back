@@ -2241,14 +2241,23 @@ export class CronTasksProcessor extends WorkerHost {
         );
         // Distinct from the end-of-batch report below: a genuine failure (API/unhandled error)
         // shouldn't be lost in the usual volume of expected rejections (typo, already linked).
-        await this.slackService.sendTechnicalMonitoringMessage(
-          false,
-          '🚨 Erreur inattendue pendant le rattachement manuel Salesforce',
-          [
-            { title: 'Utilisateur', content: userId },
-            { title: 'Contact Salesforce', content: sfContactId },
-          ]
-        );
+        // Best-effort: a Slack outage here must not stop the loop before later pairs are
+        // processed and before the end-of-batch report is sent.
+        try {
+          await this.slackService.sendTechnicalMonitoringMessage(
+            false,
+            '🚨 Erreur inattendue pendant le rattachement manuel Salesforce',
+            [
+              { title: 'Utilisateur', content: userId },
+              { title: 'Contact Salesforce', content: sfContactId },
+            ]
+          );
+        } catch (slackError) {
+          this.logger.warn(
+            'Failed to send immediate Slack alert for manual Salesforce link failure',
+            slackError
+          );
+        }
       } finally {
         await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY_MS));
       }
