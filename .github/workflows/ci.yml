@@ -66,8 +66,8 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: postgresql://entourage_pro:entourage_pro@localhost:5432/entourage_pro
       JWT_SECRET: test_jwt_secret
-      SLACK_BOT_TOKEN: xoxb-test-token
-      SLACK_SIGNING_SECRET: test_signing_secret
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
       OPENAI_API_KEY: ''
       SHORTIO_DOMAIN: test.short.io
       SHORTIO_API_KEY: test_api_key
