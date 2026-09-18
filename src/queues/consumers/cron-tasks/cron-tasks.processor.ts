@@ -21,7 +21,11 @@ import {
   collectSettledResults,
   SettledFailure,
 } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
-import { Jobs, Queues } from 'src/queues/queues.types';
+import {
+  Jobs,
+  ManualLinkSalesforceContactJob,
+  Queues,
+} from 'src/queues/queues.types';
 import { RecruitementAlertsService } from 'src/recruitement-alerts/recruitement-alerts.service';
 import { tracer } from 'src/tracer';
 import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
@@ -128,6 +132,10 @@ export class CronTasksProcessor extends WorkerHost {
         return this.sendUnverifiedAccountRelaunchMails();
       case Jobs.BACKFILL_SALESFORCE_APP_ID:
         return this.backfillSalesforceAppId();
+      case Jobs.MANUAL_LINK_SALESFORCE_CONTACT:
+        return this.manualLinkSalesforceContact(
+          job.data as ManualLinkSalesforceContactJob
+        );
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -2182,6 +2190,94 @@ export class CronTasksProcessor extends WorkerHost {
       `${networkOrCasquetteCompletions} contacts ` +
       `completed with a missing network/casquette, ${manualReviewCases.length} for manual review, ` +
       `${unexpectedFailures.length} unexpected failures (${users.length} users processed)`
+    );
+  }
+
+  /**
+   * Applies a batch of `(userId, sfContactId)` pairs identified manually by a human in the
+   * Salesforce UI (see salesforce-manual-contact-linking capability) - for the accounts the
+   * `backfill_salesforce_app_id` job couldn't resolve automatically (shared email, no contact
+   * found by email). Never creates a Contact, never resolves a pair on its own - only applies
+   * pairs given explicitly in the payload, sequentially (not in parallel) so a duplicate or
+   * contradictory pair within the same batch is caught by the guard-rail rather than racing.
+   * Triggered manually via
+   * `queuesService.addToCronTasksQueue(Jobs.MANUAL_LINK_SALESFORCE_CONTACT, { links: [...] })`.
+   */
+  async manualLinkSalesforceContact(
+    data: ManualLinkSalesforceContactJob
+  ): Promise<string> {
+    const THROTTLE_DELAY_MS = 300;
+    const { links } = data;
+
+    let linked = 0;
+    let alreadyLinked = 0;
+    const rejectedPairs: string[] = [];
+    const unexpectedFailures: SettledFailure[] = [];
+
+    for (const { userId, sfContactId } of links) {
+      const pairLabel = `${userId} / ${sfContactId}`;
+      try {
+        const status = await this.salesforceService.linkContactManually(
+          userId,
+          sfContactId
+        );
+
+        switch (status) {
+          case 'linked':
+            linked += 1;
+            break;
+          case 'already_linked':
+            alreadyLinked += 1;
+            break;
+          default:
+            rejectedPairs.push(`${pairLabel} - ${status}`);
+            break;
+        }
+      } catch (error) {
+        unexpectedFailures.push({ itemId: pairLabel, reason: error });
+        this.logger.error(
+          `Unexpected error linking Salesforce contact ${sfContactId} to user ${userId}`,
+          error
+        );
+        // Distinct from the end-of-batch report below: a genuine failure (API/unhandled error)
+        // shouldn't be lost in the usual volume of expected rejections (typo, already linked).
+        await this.slackService.sendTechnicalMonitoringMessage(
+          false,
+          '🚨 Erreur inattendue pendant le rattachement manuel Salesforce',
+          [
+            { title: 'Utilisateur', content: userId },
+            { title: 'Contact Salesforce', content: sfContactId },
+          ]
+        );
+      } finally {
+        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY_MS));
+      }
+    }
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      unexpectedFailures.length === 0,
+      '🔗 Rattachement manuel Salesforce (paires userId/sfContactId)',
+      {
+        total: links.length,
+        success: linked + alreadyLinked,
+        failure: unexpectedFailures.length,
+      },
+      unexpectedFailures,
+      undefined,
+      undefined,
+      [
+        {
+          label: 'Paires refusées',
+          items: rejectedPairs,
+        },
+      ],
+      [{ label: 'Already linked', value: alreadyLinked }]
+    );
+
+    return (
+      `Manual Salesforce link: ${linked} linked, ${alreadyLinked} already linked, ` +
+      `${rejectedPairs.length} rejected, ${unexpectedFailures.length} unexpected failures ` +
+      `(${links.length} pairs processed)`
     );
   }
 }

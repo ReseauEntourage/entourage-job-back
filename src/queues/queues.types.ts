@@ -77,6 +77,7 @@ export const Jobs = {
   SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS:
     'send_unverified_account_relaunch_mails',
   BACKFILL_SALESFORCE_APP_ID: 'backfill_salesforce_app_id',
+  MANUAL_LINK_SALESFORCE_CONTACT: 'manual_link_salesforce_contact',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -134,6 +135,7 @@ type JobsData = {
   [Jobs.PREPARE_CHECKIN_RELANCE_MAILS]: PrepareCheckinRelanceMailsJob;
   [Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS]: SendUnverifiedAccountRelaunchMailsJob;
   [Jobs.BACKFILL_SALESFORCE_APP_ID]: BackfillSalesforceAppIdJob;
+  [Jobs.MANUAL_LINK_SALESFORCE_CONTACT]: ManualLinkSalesforceContactJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -262,6 +264,15 @@ export type PrepareCheckinInvitationMailsJob = Record<string, never>;
 export type PrepareCheckinRelanceMailsJob = Record<string, never>;
 export type SendUnverifiedAccountRelaunchMailsJob = Record<string, never>;
 export type BackfillSalesforceAppIdJob = Record<string, never>;
+
+export interface ManualLinkSalesforceContactPair {
+  sfContactId: string;
+  userId: string;
+}
+
+export interface ManualLinkSalesforceContactJob {
+  links: ManualLinkSalesforceContactPair[];
+}
 
 export type PrepareUnansweredConversationsMailsJob = Record<string, never>;
 

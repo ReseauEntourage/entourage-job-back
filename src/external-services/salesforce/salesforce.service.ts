@@ -571,6 +571,96 @@ export class SalesforceService {
   }
 
   /**
+   * Looks up a single Contact by its Salesforce Id, reading only `ID_App_Entourage_Pro__c` -
+   * used by `linkContactManually` to check for an existing link before writing.
+   */
+  async findContactById(
+    contactId: string
+  ): Promise<{ Id: string; ID_App_Entourage_Pro__c?: string } | null> {
+    await this.checkIfConnected();
+    const {
+      records,
+    }: { records: { Id: string; ID_App_Entourage_Pro__c?: string }[] } =
+      await this.salesforce.query(
+        `SELECT Id, ID_App_Entourage_Pro__c
+         FROM ${ObjectNames.CONTACT}
+         WHERE Id = '${escapeQuery(contactId)}' LIMIT 1`
+      );
+    return records[0] ?? null;
+  }
+
+  /**
+   * Applies a single `(userId, sfContactId)` pair identified manually by a human (see
+   * salesforce-manual-contact-linking capability), for the accounts the
+   * `salesforce-contact-id-backfill` job could not resolve automatically. Unlike
+   * `repairContactAppId` (only ever called after the backfill has itself classified a pair as
+   * unambiguous), this method carries its own guard-rail since the pair may contain a typo:
+   * it never reattributes a Contact or a User already linked to someone/something else.
+   */
+  async linkContactManually(
+    userId: string,
+    sfContactId: string
+  ): Promise<
+    | 'linked'
+    | 'already_linked'
+    | 'contact_not_found'
+    | 'user_not_found'
+    | 'contact_already_linked_to_another_user'
+    | 'user_already_linked_to_another_contact'
+  > {
+    const contact = await this.findContactById(sfContactId);
+    if (!contact) {
+      return 'contact_not_found';
+    }
+
+    const user =
+      await this.usersService.findByIdForSalesforceManualLink(userId);
+    if (!user) {
+      return 'user_not_found';
+    }
+
+    if (
+      contact.ID_App_Entourage_Pro__c &&
+      contact.ID_App_Entourage_Pro__c !== userId
+    ) {
+      await this.sendBestEffortSlackAlert(
+        '⚠️ Rattachement manuel refusé : Contact Salesforce déjà lié à un autre utilisateur',
+        [
+          { title: 'Utilisateur fourni', content: userId },
+          { title: 'Contact Salesforce', content: sfContactId },
+          {
+            title: 'Contact déjà lié à',
+            content: contact.ID_App_Entourage_Pro__c,
+          },
+        ]
+      );
+      return 'contact_already_linked_to_another_user';
+    }
+
+    if (user.sfContactId && user.sfContactId !== sfContactId) {
+      await this.sendBestEffortSlackAlert(
+        '⚠️ Rattachement manuel refusé : utilisateur déjà lié à un autre Contact Salesforce',
+        [
+          { title: 'Utilisateur', content: userId },
+          { title: 'Contact Salesforce fourni', content: sfContactId },
+          { title: 'Contact déjà lié à', content: user.sfContactId },
+        ]
+      );
+      return 'user_already_linked_to_another_contact';
+    }
+
+    if (
+      contact.ID_App_Entourage_Pro__c === userId &&
+      user.sfContactId === sfContactId
+    ) {
+      return 'already_linked';
+    }
+
+    await this.repairContactAppId(sfContactId, userId);
+    return 'linked';
+  }
+
+  /**
    * Adds the `LinkedOut` network and/or the role's casquette to a Contact already identified
    * without ambiguity by the backfill job (safe_correction or already_linked), without ever
    * removing an existing value from either multi-picklist field. Used only by the
