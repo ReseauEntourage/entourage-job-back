@@ -63,3 +63,25 @@ jest.mock('openai', () => {
 
   return { __esModule: true, default: MockOpenAI };
 });
+
+// E2E tests must never send real Slack messages: mock the @slack/bolt client
+// itself, so SlackService still runs its normal logic (block generation, etc.)
+// without ever calling the real Slack API or needing a valid
+// SLACK_BOT_TOKEN/SLACK_SIGNING_SECRET.
+jest.mock('@slack/bolt', () => {
+  return {
+    App: jest.fn().mockImplementation(() => ({
+      client: {
+        chat: {
+          postMessage: jest.fn().mockResolvedValue({ ok: true, ts: 'mock-ts' }),
+        },
+        users: {
+          lookupByEmail: jest.fn().mockResolvedValue({
+            ok: true,
+            user: { id: 'mock-slack-user-id' },
+          }),
+        },
+      },
+    })),
+  };
+});

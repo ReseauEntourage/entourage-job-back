@@ -672,8 +672,8 @@ Promise-based HTTP client for Node.js and browsers.
 
 |                  |                                                                                 |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Version**      | `^5.76.0`                                                                       |
-| **Release date** | April 2025                                                                      |
+| **Version**      | `^6.16.0`                                                                       |
+| **Release date** | September 2026                                                                  |
 | **Changelog**    | [CHANGELOG.md](https://github.com/DataDog/dd-trace-js/blob/master/CHANGELOG.md) |
 
 Datadog APM tracer for Node.js — auto-instruments HTTP, database, Redis, and queue calls.

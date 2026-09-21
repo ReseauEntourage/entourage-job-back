@@ -845,6 +845,19 @@ export class UsersService {
   }
 
   /**
+   * Lightweight lookup for the manual Salesforce linking job (see
+   * salesforce-manual-contact-linking capability): only the fields needed to guard against
+   * re-attributing a user already mirrored to a different Salesforce Contact.
+   */
+  async findByIdForSalesforceManualLink(
+    userId: string
+  ): Promise<Pick<User, 'id' | 'sfContactId'> | null> {
+    return this.userModel.findByPk(userId, {
+      attributes: ['id', 'sfContactId'],
+    });
+  }
+
+  /**
    * Sends the unverified account relaunch mail (J+1) to a single user: builds
    * a `ctaUrl` combining a fresh email verification token and a fresh
    * autologin token, recomputes `nbRecommendation` from the criteria already
