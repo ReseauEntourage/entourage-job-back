@@ -392,6 +392,13 @@ export class MessagingService {
     };
   }
 
+  /**
+   * Counts the conversations holding at least one message the user has not read yet.
+   * Only messages that are actually shown to them as incoming count: service messages
+   * and their own messages are ignored, so this stays aligned with the unread rule the
+   * frontend applies when it builds the "Non lues" tab. Without that alignment the
+   * navigation badge would keep announcing conversations the user cannot find.
+   */
   async getUnseenConversationsCount(userId: string) {
     const unseenConversations = await this.conversationParticipantModel.findAll(
       {
@@ -399,7 +406,7 @@ export class MessagingService {
           [Op.or]: [
             {
               seenAt: {
-                [Op.lt]: Sequelize.col('conversation.messages.createdAt'),
+                [Op.lte]: Sequelize.col('conversation.messages.createdAt'),
               },
             },
             {
@@ -417,6 +424,13 @@ export class MessagingService {
                 model: Message,
                 as: 'messages',
                 attributes: ['createdAt'],
+                // Restricting the join here is what makes a conversation count only
+                // when an unread message of someone else is left in it.
+                where: {
+                  type: MessageType.USER,
+                  authorId: { [Op.ne]: userId },
+                },
+                required: true,
               },
               {
                 model: User,

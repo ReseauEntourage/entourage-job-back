@@ -1811,5 +1811,73 @@ describe('MESSAGING', () => {
           ?.archivedAt
       ).not.toBeNull();
     });
+
+    it('should not count a conversation as unseen because of a service message', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Premier message',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      // The coach reads the conversation, so both sides start from a clean
+      // "seen" baseline.
+      await request(server)
+        .post(`/messaging/conversations/${conversation.id}/seen`)
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+
+      await messagingService.createServiceMessage(
+        conversation.id,
+        'Message de service'
+      );
+
+      // A service message is never shown as an incoming message, so it must not
+      // make the conversation unread for either participant.
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCandidate.user.id
+        )
+      ).toBe(0);
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCoach.user.id
+        )
+      ).toBe(0);
+    });
+
+    it('should not count a conversation as unseen for the author of its last message', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Message sans réponse',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCandidate.user.id
+        )
+      ).toBe(0);
+      // The recipient, on the other hand, does have something to read.
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCoach.user.id
+        )
+      ).toBe(1);
+    });
   });
 });
