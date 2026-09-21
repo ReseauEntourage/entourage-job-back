@@ -787,6 +787,13 @@ export class UsersService {
   /**
    * Get candidates and coaches created exactly 1 calendar day ago whose email
    * is still not verified, for the unverified account relaunch email.
+   *
+   * Refered candidates (`refererId` set) are excluded: they follow a distinct
+   * activation path, where `/finaliser-compte-oriente` is the only page on which
+   * they pick a password. This mail's `ctaUrl` combines an email verification
+   * token with an autologin token, so it would verify their email and log them
+   * in on an account whose password they never chose — short-circuiting their
+   * referral flow and leaving their referer unnotified.
    */
   async getUsersWithUnverifiedEmailOneDayAfterCreation() {
     const daysSinceCreation = 1;
@@ -806,6 +813,7 @@ export class UsersService {
           [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH],
         },
         isEmailVerified: false,
+        refererId: null,
         createdAt: {
           [Op.gte]: new Date(
             new Date().setHours(0, 0, 0, 0) - daysSinceCreation * DAY_IN_MS
