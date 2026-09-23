@@ -1467,6 +1467,104 @@ describe('MESSAGING', () => {
 
       expect(response.status).toBe(400);
     });
+
+    describe('Slack referents tagging', () => {
+      const CANDIDATE_REFERENT_SLACK_EMAIL = 'candidate-referent@slack.test';
+      const COACH_REFERENT_SLACK_EMAIL = 'coach-referent@slack.test';
+      const originalEnv = { ...process.env };
+
+      const reportAs = (token: string, conversationId: string) =>
+        request(server)
+          .post(`/messaging/conversations/${conversationId}/report`)
+          .set('authorization', `Bearer ${token}`)
+          .send({
+            reason: 'FRAUD',
+            comment: 'Offre frauduleuse',
+          });
+
+      const getTaggedReferents = (): string | undefined => {
+        const [slackMsgConfig] = (SlackMocks.generateSlackBlockMsg as jest.Mock)
+          .mock.calls[0];
+        return slackMsgConfig.context.find(
+          (item: { title: string }) => item.title === '👮 Référent(s)'
+        )?.content;
+      };
+
+      beforeEach(() => {
+        jest.clearAllMocks();
+        (SlackMocks.getUserIdByEmail as jest.Mock).mockImplementation(
+          async (email: string) => `U-${email}`
+        );
+        process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_PARIS =
+          CANDIDATE_REFERENT_SLACK_EMAIL;
+        process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_PARIS =
+          COACH_REFERENT_SLACK_EMAIL;
+      });
+
+      afterEach(() => {
+        (SlackMocks.getUserIdByEmail as jest.Mock).mockReset();
+        process.env = { ...originalEnv };
+      });
+
+      it('should tag the referents of every participant, reporter included', async () => {
+        const conversation = await conversationFactory.create();
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [loggedInCandidate.user.id, loggedInCoach.user.id]
+        );
+
+        const response = await reportAs(
+          loggedInCandidate.token,
+          conversation.id
+        );
+
+        expect(response.status).toBe(201);
+        expect(getTaggedReferents()?.split(', ').sort()).toEqual(
+          [
+            `<@U-${CANDIDATE_REFERENT_SLACK_EMAIL}>`,
+            `<@U-${COACH_REFERENT_SLACK_EMAIL}>`,
+          ].sort()
+        );
+      });
+
+      it('should tag the referent of a participant whose account was deleted', async () => {
+        const conversation = await conversationFactory.create();
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [loggedInCandidate.user.id, loggedInCoach.user.id]
+        );
+        await userFactory.delete(loggedInCoach.user.id);
+
+        const response = await reportAs(
+          loggedInCandidate.token,
+          conversation.id
+        );
+
+        expect(response.status).toBe(201);
+        expect(getTaggedReferents()).toContain(
+          `<@U-${COACH_REFERENT_SLACK_EMAIL}>`
+        );
+      });
+
+      it('should tag a referent shared by several participants only once', async () => {
+        const conversation = await conversationFactory.create();
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [loggedInCandidate.user.id, loggedInOtherCandidate.user.id]
+        );
+
+        const response = await reportAs(
+          loggedInCandidate.token,
+          conversation.id
+        );
+
+        expect(response.status).toBe(201);
+        expect(getTaggedReferents()).toBe(
+          `<@U-${CANDIDATE_REFERENT_SLACK_EMAIL}>`
+        );
+        expect(SlackMocks.getUserIdByEmail).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 
   describe('getMirrorRoleConversationCount', () => {
