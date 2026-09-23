@@ -1909,5 +1909,106 @@ describe('MESSAGING', () => {
           ?.archivedAt
       ).not.toBeNull();
     });
+
+    it('should not count a conversation as unseen because of a service message', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Premier message',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      // The coach reads the conversation, so both sides start from a clean
+      // "seen" baseline.
+      await request(server)
+        .post(`/messaging/conversations/${conversation.id}/seen`)
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+
+      await messagingService.createServiceMessage(
+        conversation.id,
+        'Message de service'
+      );
+
+      // A service message is never shown as an incoming message, so it must not
+      // make the conversation unread for either participant.
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCandidate.user.id
+        )
+      ).toBe(0);
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCoach.user.id
+        )
+      ).toBe(0);
+    });
+
+    it('should not count a conversation as unseen for the author of its last message', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      // Written straight through the model rather than the endpoint: posting
+      // would call setConversationHasSeen and push the author's seenAt past
+      // their own message, which would hide whether the author is filtered out
+      // at all. Here the author's seenAt stays null, so only the filter on the
+      // message author can keep this conversation out of their count.
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCandidate.user.id,
+        { content: 'Message sans réponse' }
+      );
+
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCandidate.user.id
+        )
+      ).toBe(0);
+      // The recipient, on the other hand, does have something to read.
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCoach.user.id
+        )
+      ).toBe(1);
+    });
+
+    it('should count a conversation as unseen when seenAt equals the message date', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      const message = await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCoach.user.id,
+        { content: 'Message reçu' }
+      );
+
+      // Exactly equal, not merely close: the frontend treats a message dated at
+      // the very instant of seenAt as unread (isSameOrAfter), so the server has
+      // to agree on that boundary rather than only on what is strictly newer.
+      const participant = await messagingHelper.findConversationParticipant(
+        conversation.id,
+        loggedInCandidate.user.id
+      );
+      participant.seenAt = message.createdAt;
+      await participant.save();
+
+      expect(
+        await messagingService.getUnseenConversationsCount(
+          loggedInCandidate.user.id
+        )
+      ).toBe(1);
+    });
   });
 });
