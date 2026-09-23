@@ -157,13 +157,17 @@ export class UsersService {
     });
   }
 
-  async findByIdsWithRelations(ids: string[]) {
+  async findByIdsWithRelations(
+    ids: string[],
+    options: { paranoid?: boolean } = {}
+  ) {
     return this.userModel.findAll({
       where: {
         id: {
           [Op.in]: ids,
         },
       },
+      paranoid: options.paranoid ?? true,
       attributes: [...UserAttributes],
       include: UserIncludes(),
       order: getUserCandidatOrder(),

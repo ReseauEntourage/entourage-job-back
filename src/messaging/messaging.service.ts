@@ -578,23 +578,30 @@ export class MessagingService {
     const conversation = await this.findConversation(conversationId);
     const reporterUser =
       await this.usersService.findOneWithRelations(reporterUserId);
-    const reportedParticipantIds = conversation.participants
-      .filter((participant) => participant.id !== reporterUserId)
-      .map((participant) => participant.id);
-    const reportedUsers = await Promise.all(
-      reportedParticipantIds.map((id) =>
-        this.usersService.findOneWithRelations(id)
-      )
+    // Tag the referents of every participant (reporter included), and include
+    // soft-deleted accounts: their zone and role still resolve a staff contact.
+    const participants = await this.usersService.findByIdsWithRelations(
+      conversation.participants.map((participant) => participant.id),
+      { paranoid: false }
     );
-    const referentSlackUserIds = (
-      await Promise.all(
-        reportedUsers
-          .map((user) => user?.staffContact?.slackEmail)
+    const referentSlackEmails = [
+      ...new Set(
+        participants
+          .map((participant) => participant.staffContact?.slackEmail)
           .filter(Boolean)
-          .filter((email, index, self) => self.indexOf(email) === index)
-          .map((email) => this.slackService.getUserIdByEmail(email))
-      )
-    ).filter(Boolean);
+      ),
+    ];
+    const referentSlackUserIds = [
+      ...new Set(
+        (
+          await Promise.all(
+            referentSlackEmails.map((email) =>
+              this.slackService.getUserIdByEmail(email)
+            )
+          )
+        ).filter(Boolean)
+      ),
+    ];
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
