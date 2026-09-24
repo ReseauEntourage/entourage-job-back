@@ -38,6 +38,23 @@ export function validatePassword(password: string, hash: string, salt: string) {
   return passwordHash === hash;
 }
 
+/**
+ * Whether a refered candidate has finalized their account, shared by
+ * `finalize-refered-user` and `send-finalize-refered-user` so they never disagree.
+ *
+ * Both conditions are required, and this must not be reduced to
+ * `isEmailVerified`: an account can have a verified email without ever having
+ * picked a password (e.g. verified through the J+1 relaunch mail's autologin
+ * link, before refered candidates were excluded from it), and such an account
+ * must still be allowed to finalize.
+ */
+export function isReferedCandidateAccountFinalized(user: {
+  isEmailVerified: boolean;
+  password?: string | null;
+}) {
+  return user.isEmailVerified && !!user.password;
+}
+
 export function encryptOtp(otp: string) {
   const salt = randomBytes(16).toString('hex');
   const hash = createHash('sha256')
