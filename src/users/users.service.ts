@@ -788,7 +788,7 @@ export class UsersService {
    * Get candidates and coaches created exactly 1 calendar day ago whose email
    * is still not verified, for the unverified account relaunch email.
    *
-   * Refered candidates (`refererId` set) are excluded: they follow a distinct
+   * Referred candidates (`refererId` set) are excluded: they follow a distinct
    * activation path, where `/finaliser-compte-oriente` is the only page on which
    * they pick a password. This mail's `ctaUrl` combines an email verification
    * token with an autologin token, so it would verify their email and log them
