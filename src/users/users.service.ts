@@ -768,6 +768,7 @@ export class UsersService {
         role: {
           [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH],
         },
+        isEmailVerified: true,
         createdAt: {
           [Op.gte]: new Date(
             new Date().setHours(0, 0, 0, 0) -
@@ -777,7 +778,6 @@ export class UsersService {
             new Date().setHours(0, 0, 0, 0) -
               (daysSinceCreation - 1) * 24 * 60 * 60 * 1000
           ),
-          isEmailVerified: true,
         },
         onboardingStatus: {
           [Op.ne]: OnboardingStatus.COMPLETED,
