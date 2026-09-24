@@ -115,7 +115,7 @@ instance, as long as it stays a throwaway test database:
    passes via GitHub secrets.
 5. `NODE_ENV=dev-test pnpm db:migrate`
 6. Run Jest directly, bypassing `docker-entrypoint.test.sh` entirely:
-   `NODE_ENV=dev-test pnpm jest --config ./tests/jest-e2e.json --runInBand --forceExit [-t "<name>" | --testPathPattern=<dir>]`
+   `NODE_ENV=dev-test pnpm jest --config ./tests/jest-e2e.json --runInBand --forceExit [-t "<name>" | --testPathPatterns=<dir>]` (Jest 30 renamed `--testPathPattern`, which now errors out)
 
 The full e2e suite takes several minutes — run it in the background (long timeout)
 rather than blocking on a short foreground command.
