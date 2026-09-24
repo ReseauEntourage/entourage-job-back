@@ -17,7 +17,10 @@ import { passwordStrength } from 'check-password-strength';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
-import { encryptPassword } from './auth.utils';
+import {
+  encryptPassword,
+  isReferedCandidateAccountFinalized,
+} from './auth.utils';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
 
 @ApiTags('Auth')
@@ -279,7 +282,7 @@ export class AuthController {
     if (!user) {
       throw new NotFoundException();
     }
-    if (user.isEmailVerified && user.password) {
+    if (isReferedCandidateAccountFinalized(user)) {
       throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
     }
     if (expirationDate.getTime() < currentDate.getTime()) {
@@ -306,5 +309,47 @@ export class AuthController {
     );
 
     return updatedUser.email;
+  }
+
+  /**
+   * Sends a refered candidate a new activation link, typically once the one
+   * triggered by their referer has expired. The previously issued token is the
+   * only authorization factor: its signature is checked, its expiration is
+   * ignored, and no email address is accepted — so this can neither send mails
+   * to arbitrary addresses nor reveal which addresses have an account. The
+   * referer is not notified here; they are when the candidate finalizes.
+   */
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Public()
+  @Post('send-finalize-refered-user')
+  async sendFinalizeReferedUser(@Body('token') token?: string): Promise<void> {
+    if (!token) {
+      throw new BadRequestException();
+    }
+
+    const decodedToken = this.authService.decodeJWT(token, true);
+    const userId = decodedToken ? decodedToken.sub : undefined;
+    if (!userId) {
+      throw new BadRequestException('INVALID_TOKEN');
+    }
+
+    const candidate = await this.authService.findOneUserComplete(userId);
+    if (!candidate || !candidate.refererId) {
+      throw new BadRequestException('INVALID_TOKEN');
+    }
+    if (isReferedCandidateAccountFinalized(candidate)) {
+      throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
+    }
+
+    // Loaded as a root user so that `referer.organization` is included.
+    const referer = await this.authService.findOneUserById(candidate.refererId);
+    if (!referer) {
+      throw new NotFoundException();
+    }
+
+    await this.authService.sendReferedCandidateFinalizeAccountMail(
+      candidate,
+      referer
+    );
   }
 }

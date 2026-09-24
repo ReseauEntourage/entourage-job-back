@@ -335,9 +335,6 @@ export class UsersCreationController {
     }
     const referer = await this.usersCreationService.findOneUser(refererId);
 
-    const userRandomPassword = generateFakePassword();
-    const { hash, salt } = encryptPassword(userRandomPassword);
-
     const zone = getZoneNameFromDepartment(createUserReferingDto.department);
 
     const userToCreate: Partial<User> = {
@@ -350,8 +347,9 @@ export class UsersCreationController {
       gender: createUserReferingDto.gender,
       phone: createUserReferingDto.phone,
       zone,
-      password: hash,
-      salt,
+      // No password until the candidate picks one on `/finaliser-compte-oriente`.
+      password: null,
+      salt: null,
     };
 
     try {

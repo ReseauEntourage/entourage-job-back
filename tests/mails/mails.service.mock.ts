@@ -41,4 +41,27 @@ export class MailsServiceMock {
     // Mock implementation that doesn't actually send an email
     return Promise.resolve({ id: 'mock-mail-id' });
   }
+
+  async sendVerificationMail(
+    _user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
+    _token: string,
+    _otpCode?: string
+  ) {
+    // Mock implementation that doesn't actually send an email
+    return Promise.resolve({ id: 'mock-mail-id' });
+  }
+
+  async sendReferedCandidateFinalizeAccountMail(
+    _referer: User,
+    _candidate: User,
+    _token: string
+  ) {
+    // Mock implementation that doesn't actually send an email
+    return Promise.resolve({ id: 'mock-mail-id' });
+  }
+
+  async sendRefererCandidateHasVerifiedAccountMail(_candidate: User) {
+    // Mock implementation that doesn't actually send an email
+    return Promise.resolve({ id: 'mock-mail-id' });
+  }
 }

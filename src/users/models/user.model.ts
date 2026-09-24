@@ -120,13 +120,15 @@ export class User extends HistorizedModel {
   @Column
   role: UserRole;
 
+  // Null until the user has chosen a password (e.g. a refered candidate who has
+  // not finalized their account yet).
   @ApiProperty()
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
   password: string; // hash
 
   @ApiProperty()
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
   salt: string;
 
