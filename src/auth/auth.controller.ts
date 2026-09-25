@@ -298,7 +298,12 @@ export class AuthController {
       throw new NotFoundException();
     }
 
-    await this.authService.sendWelcomeMail(updatedUser);
+    // Same rule as `verify-email` and `verify-otp`: the welcome mail goes out
+    // on the first email verification. An account whose email was already
+    // verified (by OTP, or the J+1 relaunch link) has already received it.
+    if (!user.isEmailVerified) {
+      await this.authService.sendWelcomeMail(updatedUser);
+    }
     // Any account without a password can be finalized, not only refered ones.
     if (updatedUser.refererId) {
       await this.authService.sendRefererCandidateHasVerifiedAccountMail(

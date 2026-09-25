@@ -208,11 +208,15 @@ describe('Refered candidate account activation', () => {
         'sendRefererCandidateHasVerifiedAccountMail'
       );
 
+      const welcomeSpy = jest.spyOn(mailsService, 'sendWelcomeMail');
+
       const response = await request(server)
         .post(`${route}/finalize-account`)
         .send({ token: validToken(candidate.id), password: newPassword });
       expect(response.status).toBe(201);
       expect(refererSpy).toHaveBeenCalledTimes(1);
+      // Already sent when the email was verified.
+      expect(welcomeSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -373,6 +377,32 @@ describe('Refered candidate account activation', () => {
 
       const updated = await usersService.findOneComplete(candidate.id);
       expect(updated.password).not.toBeNull();
+    });
+
+    it('Should send the welcome mail only once, if the email was verified by OTP before finalizing', async () => {
+      const { candidate } = await createReferedCandidate();
+      const { hash, salt } = encryptOtp('123456');
+      await usersService.update(candidate.id, {
+        otpCode: hash,
+        otpSalt: salt,
+        otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        // Never logged in: `verify-otp` sends the welcome mail on this first
+        // verification.
+        lastConnection: null,
+      });
+      const welcomeSpy = jest.spyOn(mailsService, 'sendWelcomeMail');
+
+      const otp = await request(server)
+        .post(`${route}/verify-otp`)
+        .send({ email: candidate.email, code: '123456' });
+      expect(otp.status).toBe(201);
+
+      const response = await request(server)
+        .post(`${route}/finalize-account`)
+        .set('authorization', `Bearer ${otp.body.token}`)
+        .send({ password: newPassword });
+      expect(response.status).toBe(201);
+      expect(welcomeSpy).toHaveBeenCalledTimes(1);
     });
 
     it('Should return 400 INVALID_TOKEN, if neither a token nor a session is present', async () => {
