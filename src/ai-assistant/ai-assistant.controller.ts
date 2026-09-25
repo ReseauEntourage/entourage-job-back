@@ -16,11 +16,14 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 import { UserPayload } from 'src/auth/guards';
+import { Timeout } from 'src/common/decorators/timeout.decorator';
 import { UserInConversation } from 'src/messaging/guards/user-in-conversation';
 import { AiAssistantService } from './ai-assistant.service';
 import { AiStreamDto } from './dto/ai-stream.dto';
 import { AiStreamPipe } from './dto/ai-stream.pipe';
 import { AiAssistantMessage } from './models/ai-assistant-message.model';
+
+export const AI_ASSISTANT_STREAM_TIMEOUT_MS = 120000;
 
 @ApiTags('AI Assistant')
 @ApiBearerAuth()
@@ -46,6 +49,9 @@ export class AiAssistantController {
   @UseGuards(UserInConversation)
   @Post('conversations/:conversationId/stream')
   @Sse()
+  // The global TimeoutInterceptor errors after 30s without emission, which
+  // would cut the stream if the model pauses (slow first token, provider hiccup).
+  @Timeout(AI_ASSISTANT_STREAM_TIMEOUT_MS)
   streamResponse(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string,
