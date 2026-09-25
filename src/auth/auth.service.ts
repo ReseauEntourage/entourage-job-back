@@ -21,6 +21,7 @@ import { UserRole } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
 import {
+  ACCOUNT_ACTIVATION_TOKEN_PURPOSE,
   encryptOtp,
   encryptPassword,
   validateOtp,
@@ -234,11 +235,21 @@ export class AuthService {
     candidate: User,
     referer: User
   ) {
-    const token = await this.generateVerificationToken(candidate);
+    const token = this.generateAccountActivationToken(candidate);
     return this.mailsService.sendReferedCandidateFinalizeAccountMail(
       referer,
       candidate,
       token
+    );
+  }
+
+  generateAccountActivationToken(user: User) {
+    return this.jwtService.sign(
+      { sub: user.id, purpose: ACCOUNT_ACTIVATION_TOKEN_PURPOSE },
+      {
+        secret: process.env.JWT_SECRET,
+        expiresIn: '7d',
+      }
     );
   }
 

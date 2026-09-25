@@ -14,8 +14,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string }) {
+  async validate(payload: { sub: string; purpose?: string }) {
     const { sub } = payload;
+
+    // A purpose-scoped token (e.g. an account activation link) is never a
+    // session, whoever it was issued for.
+    if (payload.purpose) {
+      throw new UnauthorizedException();
+    }
 
     const user = await this.usersService.findOneForJwtPayload(sub);
 

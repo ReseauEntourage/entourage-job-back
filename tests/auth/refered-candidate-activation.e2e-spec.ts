@@ -459,6 +459,63 @@ describe('Refered candidate account activation', () => {
     });
   });
 
+  describe('/finalize-account - Activation token vs session token', () => {
+    it('Should return 400 INVALID_TOKEN and leave the account untouched, if a session JWT of an unverified account with a password is sent as token', async () => {
+      const candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
+      await usersService.update(candidate.id, { isEmailVerified: false });
+      const { password: previousHash } = await usersService.findOneComplete(
+        candidate.id
+      );
+      // POST /auth/login issues a session JWT even for an unverified account.
+      const sessionToken = await getAutologinSession(candidate.id);
+
+      const response = await request(server)
+        .post(`${route}/finalize-account`)
+        .send({ token: sessionToken, password: newPassword });
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('INVALID_TOKEN');
+
+      const unchanged = await usersService.findOneComplete(candidate.id);
+      expect(unchanged.isEmailVerified).toBe(false);
+      expect(unchanged.password).toBe(previousHash);
+    });
+
+    it('Should finalize an unverified account with a password, if the token is a real activation token', async () => {
+      const { candidate } = await createReferedCandidate({ password: 'kept' });
+      const finalizeSpy = jest.spyOn(
+        mailsService,
+        'sendReferedCandidateFinalizeAccountMail'
+      );
+      const resend = await request(server)
+        .post(`${route}/send-finalize-refered-user`)
+        .send({ token: expiredToken(candidate.id) });
+      expect(resend.status).toBe(201);
+      const [, , activationToken] = finalizeSpy.mock.calls[0] as [
+        User,
+        User,
+        string,
+      ];
+
+      const response = await request(server)
+        .post(`${route}/finalize-account`)
+        .send({ token: activationToken, password: newPassword });
+      expect(response.status).toBe(201);
+    });
+
+    it('Should refuse an activation token used as a session token', async () => {
+      const candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
+      const activationToken = jwtService.sign(
+        { sub: candidate.id, purpose: 'account-activation' },
+        { secret: process.env.JWT_SECRET, expiresIn: 3600 }
+      );
+
+      const response = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${activationToken}`);
+      expect(response.status).toBe(401);
+    });
+  });
+
   describe('/send-finalize-refered-user - Request a new activation link', () => {
     it('Should resend the referral activation mail with a new token, if expired token', async () => {
       const { candidate, referer, organization } =

@@ -39,6 +39,14 @@ export function validatePassword(password: string, hash: string, salt: string) {
 }
 
 /**
+ * `purpose` claim of the activation token sent to set a first password.
+ * Session JWTs carry no `purpose`: `JwtStrategy` refuses any token that has
+ * one, and `finalize-account` requires this one for an account that already
+ * has a password, so that neither kind of token can stand in for the other.
+ */
+export const ACCOUNT_ACTIVATION_TOKEN_PURPOSE = 'account-activation';
+
+/**
  * Whether an account has been finalized, shared by `finalize-account` and
  * `send-finalize-refered-user` so they never disagree.
  *

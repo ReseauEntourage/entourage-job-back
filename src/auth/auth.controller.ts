@@ -17,7 +17,11 @@ import { passwordStrength } from 'check-password-strength';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
-import { encryptPassword, isAccountFinalized } from './auth.utils';
+import {
+  ACCOUNT_ACTIVATION_TOKEN_PURPOSE,
+  encryptPassword,
+  isAccountFinalized,
+} from './auth.utils';
 import {
   AllowWithoutPassword,
   LocalAuthGuard,
@@ -331,6 +335,17 @@ export class AuthController {
     }
     if (isAccountFinalized(user)) {
       throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
+    }
+    // Session JWTs are signed with the same secret: only a real activation
+    // token may set the password of an account that already has one (e.g.
+    // an unverified account created with someone else's email address).
+    // Links sent before the `purpose` claim existed only target accounts
+    // without a password, for which the token proves no more than a session.
+    if (
+      decodedToken.purpose !== ACCOUNT_ACTIVATION_TOKEN_PURPOSE &&
+      user.password
+    ) {
+      throw new BadRequestException('INVALID_TOKEN');
     }
     if (expirationDate.getTime() < currentDate.getTime()) {
       throw new BadRequestException('TOKEN_EXPIRED');
