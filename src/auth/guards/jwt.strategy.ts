@@ -14,27 +14,41 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string }) {
+  async validate(payload: { sub: string; purpose?: string }) {
     const { sub } = payload;
 
+    // A purpose-scoped token (e.g. an account activation link) is never a
+    // session, whoever it was issued for.
+    if (payload.purpose) {
+      throw new UnauthorizedException();
+    }
+
     const user = await this.usersService.findOneForJwtPayload(sub);
+
+    const hasPassword = !!user?.password;
 
     /*
           verify if 
             - user exists
             - if user has been deleted
-            - email is verified
+            - email is verified, for accounts that have a password
         */
-    if (user && !user.isEmailVerified) {
+    // An account without a password (e.g. a refered candidate who has not
+    // finalized their account yet) is let through even with an unverified
+    // email: `JwtAuthGuard` then restricts its session to the routes marked
+    // with `@AllowWithoutPassword()` until it sets one on `finalize-account`.
+    if (user && !user.isEmailVerified && hasPassword) {
       throw new UnauthorizedException('UNVERIFIED_EMAIL');
     }
     if (!user || !!user.deletedAt) {
       throw new UnauthorizedException();
     }
+    // Built field by field so that the password hash never reaches `request.user`.
     return {
       id: user.id,
       email: user.email,
       role: user.role, // used for permission guards
+      hasPassword,
     };
   }
 }
