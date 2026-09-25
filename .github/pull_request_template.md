@@ -1,8 +1,6 @@
-| | |
-|:--|:--|
-| 🗒️ **Ticket Jira** | [EN-XXXX](https://entourage-asso.atlassian.net/browse/EN-XXXX) |
-| 📐 **Specs** | ReseauEntourage/entourage-specs#XXX · change `<nom-du-change>` |
-| 🚧 **PR Front** | ReseauEntourage/entourage-job-front#XXX |
+🗒️ **Ticket Jira :** [EN-XXXX](https://entourage-asso.atlassian.net/browse/EN-XXXX)
+📐 **Specs :** ReseauEntourage/entourage-specs#XXX · change `<nom-du-change>`
+🚧 **PR Front :** ReseauEntourage/entourage-job-front#XXX
 
 <!--
 Remplacer XXX par les numéros de PR : GitHub transforme `owner/repo#123` en lien et affiche le titre et l'état de la PR au survol.
