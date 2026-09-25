@@ -3,24 +3,24 @@
 🚧 **PR Front :** ReseauEntourage/entourage-job-front#XXX
 
 <!--
-Remplacer XXX par les numéros de PR : GitHub transforme `owner/repo#123` en lien et affiche le titre et l'état de la PR au survol.
-📐 Specs : la PR entourage-specs porte le pourquoi et le comment (proposal.md, design.md, specs, tasks.md) ; c'est là que se relit la conception.
-  On lie la PR plutôt que le dossier du change, qui est déplacé sous changes/archive/ à l'archivage.
-  Pas de change OpenSpec (hotfix, montée de version…) : écrire « aucun » et dire pourquoi dans « En bref ».
-🚧 PR Front : supprimer la ligne si la PR ne touche que ce repo.
+Replace XXX with the PR numbers: GitHub turns `owner/repo#123` into a link and shows the PR title and state on hover.
+📐 Specs: the entourage-specs PR carries the why and the how (proposal.md, design.md, specs, tasks.md); design is reviewed there.
+  Link the PR rather than the change folder, which moves under changes/archive/ when the change is archived.
+  No OpenSpec change (hotfix, version bump…): write « aucun » and explain why in « En bref ».
+🚧 PR Front: delete the line if this PR only touches this repo.
 -->
 
 ## 💬 En bref
 
-<!-- 1 à 3 lignes : ce que change cette PR côté back. Ne pas recopier la conception, elle est dans la PR specs. -->
+<!-- 1 to 3 lines: what this PR changes on the back side. Do not copy the design, it lives in the specs PR. -->
 
 ## 🔍 Points d'attention
 
-<!-- Ce qui mérite l'œil du reviewer : écart avec design.md, choix d'implémentation non évident, zone fragile. « RAS » sinon. -->
+<!-- What deserves the reviewer's attention: deviation from design.md, non-obvious implementation choice, fragile area. « RAS » otherwise. -->
 
 ## 🚀 Déploiement
 
-<!-- Cocher ce qui s'applique. -->
+<!-- Tick what applies. -->
 
 - [ ] Migration Sequelize (`src/db/migrations/`) — avec un `down` fonctionnel
 - [ ] Nouvelle variable d'environnement — ajoutée à `.env.dist`, à créer sur Heroku (staging et prod) avant le déploiement
