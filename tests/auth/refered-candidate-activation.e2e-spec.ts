@@ -156,6 +156,28 @@ describe('Refered candidate account activation', () => {
       expect(login.status).toBe(201);
     });
 
+    it('Should return 400 and leave the account untouched, if the password is too weak', async () => {
+      const { candidate } = await createReferedCandidate();
+      const sessionToken = await getAutologinSession(candidate.id);
+
+      for (const weak of ['a', 'abcdefgh']) {
+        const byToken = await request(server)
+          .post(`${route}/finalize-account`)
+          .send({ token: validToken(candidate.id), password: weak });
+        expect(byToken.status).toBe(400);
+
+        const bySession = await request(server)
+          .post(`${route}/finalize-account`)
+          .set('authorization', `Bearer ${sessionToken}`)
+          .send({ password: weak });
+        expect(bySession.status).toBe(400);
+      }
+
+      const unchanged = await usersService.findOneComplete(candidate.id);
+      expect(unchanged.isEmailVerified).toBe(false);
+      expect(unchanged.password).toBeNull();
+    });
+
     it('Should return 400 TOKEN_EXPIRED and leave the account untouched, if expired token', async () => {
       const { candidate } = await createReferedCandidate();
 

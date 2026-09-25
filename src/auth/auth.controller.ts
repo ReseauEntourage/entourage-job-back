@@ -276,7 +276,8 @@ export class AuthController {
     @Body('password') password?: string,
     @UserPayload('id') sessionUserId?: string
   ): Promise<string> {
-    if (!password) {
+    // Same strength policy as password reset and password change.
+    if (!password || passwordStrength(password).id < 2) {
       throw new BadRequestException();
     }
 
