@@ -226,7 +226,7 @@ export class AuthService {
 
   /**
    * Issues a new activation token and sends the refered candidate the mail
-   * pointing at `/finaliser-compte-oriente`. `referer` must be loaded as a root
+   * pointing at `/finaliser-compte`. `referer` must be loaded as a root
    * user: the mail reads `referer.organization`, which the nested
    * `candidate.referer` relation does not include.
    */

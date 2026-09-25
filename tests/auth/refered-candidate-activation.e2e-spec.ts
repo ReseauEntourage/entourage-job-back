@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import request from 'supertest';
+import { encryptOtp } from 'src/auth/auth.utils';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
@@ -14,6 +15,7 @@ import { MailsServiceMock } from 'tests/mails/mails.service.mock';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
+import { AuthHelper } from './auth.helper';
 
 describe('Refered candidate account activation', () => {
   let app: INestApplication;
@@ -27,6 +29,7 @@ describe('Refered candidate account activation', () => {
   let jwtService: JwtService;
   let mailsService: MailsServiceMock;
   let throttlerStorage: ThrottlerStorageService;
+  let authHelper: AuthHelper;
 
   const route = '/auth';
   const newPassword = 'Candidat123!';
@@ -88,6 +91,7 @@ describe('Refered candidate account activation', () => {
     mailsService = moduleFixture.get<MailsServiceMock>(MailsService);
     throttlerStorage =
       moduleFixture.get<ThrottlerStorageService>(ThrottlerStorage);
+    authHelper = moduleFixture.get<AuthHelper>(AuthHelper);
   });
 
   afterAll(async () => {
@@ -126,7 +130,7 @@ describe('Refered candidate account activation', () => {
     });
   });
 
-  describe('/finalize-refered-user - Finalize account', () => {
+  describe('/finalize-account - Finalize account', () => {
     it('Should verify the email, set the password and notify the referer, if valid token', async () => {
       const { candidate } = await createReferedCandidate();
       const welcomeSpy = jest.spyOn(mailsService, 'sendWelcomeMail');
@@ -136,7 +140,7 @@ describe('Refered candidate account activation', () => {
       );
 
       const response = await request(server)
-        .post(`${route}/finalize-refered-user`)
+        .post(`${route}/finalize-account`)
         .send({ token: validToken(candidate.id), password: newPassword });
       expect(response.status).toBe(201);
 
@@ -156,7 +160,7 @@ describe('Refered candidate account activation', () => {
       const { candidate } = await createReferedCandidate();
 
       const response = await request(server)
-        .post(`${route}/finalize-refered-user`)
+        .post(`${route}/finalize-account`)
         .send({ token: expiredToken(candidate.id), password: newPassword });
       expect(response.status).toBe(400);
       expect(response.body.message).toBe('TOKEN_EXPIRED');
@@ -170,7 +174,7 @@ describe('Refered candidate account activation', () => {
       const { candidate } = await createReferedCandidate();
 
       const response = await request(server)
-        .post(`${route}/finalize-refered-user`)
+        .post(`${route}/finalize-account`)
         .send({
           token: wronglySignedToken(candidate.id),
           password: newPassword,
@@ -186,13 +190,13 @@ describe('Refered candidate account activation', () => {
       });
 
       const response = await request(server)
-        .post(`${route}/finalize-refered-user`)
+        .post(`${route}/finalize-account`)
         .send({ token: validToken(candidate.id), password: newPassword });
       expect(response.status).toBe(400);
       expect(response.body.message).toBe('EMAIL_ALREADY_VERIFIED');
     });
 
-    // Guards `isReferedCandidateAccountFinalized` against being reduced to
+    // Guards `isAccountFinalized` against being reduced to
     // `isEmailVerified`: such accounts exist (verified through the J+1
     // relaunch mail's autologin link) and must still be able to finalize.
     it('Should accept finalization, if the email is verified but no password was ever chosen', async () => {
@@ -205,10 +209,201 @@ describe('Refered candidate account activation', () => {
       );
 
       const response = await request(server)
-        .post(`${route}/finalize-refered-user`)
+        .post(`${route}/finalize-account`)
         .send({ token: validToken(candidate.id), password: newPassword });
       expect(response.status).toBe(201);
       expect(refererSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // Session obtained through an autologin link, the entry point of a refered
+  // candidate who clicks on the notification of a message sent by an admin.
+  const getAutologinSession = async (userId: string) => {
+    const autologinToken = await authHelper.getAutologinToken(userId);
+    const response = await request(server)
+      .post(`${route}/autologin`)
+      .send({ token: autologinToken });
+    expect(response.status).toBe(201);
+    return response.body.token as string;
+  };
+
+  describe('Restricted session - account without a password', () => {
+    it('Should accept the session despite the unverified email, but only on the identity route', async () => {
+      const { candidate } = await createReferedCandidate();
+      const sessionToken = await getAutologinSession(candidate.id);
+
+      const identity = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${sessionToken}`);
+      expect(identity.status).toBe(200);
+      expect(identity.body.hasPassword).toBe(false);
+      expect(identity.body.password).toBeUndefined();
+
+      const profile = await request(server)
+        .get('/current/profile')
+        .set('authorization', `Bearer ${sessionToken}`);
+      expect(profile.status).toBe(403);
+      expect(profile.body.message).toBe('PASSWORD_SETUP_REQUIRED');
+    });
+
+    it('Should let the session log out', async () => {
+      const { candidate } = await createReferedCandidate();
+      const sessionToken = await getAutologinSession(candidate.id);
+
+      const response = await request(server)
+        .post(`${route}/logout`)
+        .set('authorization', `Bearer ${sessionToken}`);
+      expect(response.status).toBe(302);
+    });
+
+    it('Should restrict the session the same way after a verify-otp', async () => {
+      const { candidate } = await createReferedCandidate();
+      const { hash, salt } = encryptOtp('123456');
+      await usersService.update(candidate.id, {
+        otpCode: hash,
+        otpSalt: salt,
+        otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      });
+
+      const otp = await request(server)
+        .post(`${route}/verify-otp`)
+        .send({ email: candidate.email, code: '123456' });
+      expect(otp.status).toBe(201);
+
+      const profile = await request(server)
+        .get('/current/profile')
+        .set('authorization', `Bearer ${otp.body.token}`);
+      expect(profile.status).toBe(403);
+      expect(profile.body.message).toBe('PASSWORD_SETUP_REQUIRED');
+    });
+
+    it('Should still reject with 401 UNVERIFIED_EMAIL an unverified account that has a password', async () => {
+      const candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
+      await usersService.update(candidate.id, { isEmailVerified: false });
+      const sessionToken = await getAutologinSession(candidate.id);
+
+      const identity = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${sessionToken}`);
+      expect(identity.status).toBe(401);
+      expect(identity.body.message).toBe('UNVERIFIED_EMAIL');
+    });
+
+    it('Should not restrict an account that has a password', async () => {
+      const candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
+      const sessionToken = await getAutologinSession(candidate.id);
+
+      const identity = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${sessionToken}`);
+      expect(identity.status).toBe(200);
+      expect(identity.body.hasPassword).toBe(true);
+      expect(identity.body.password).toBeUndefined();
+
+      const profile = await request(server)
+        .get('/current/profile')
+        .set('authorization', `Bearer ${sessionToken}`);
+      expect(profile.status).toBe(200);
+    });
+  });
+
+  describe('/finalize-account - Finalize account from a session', () => {
+    it('Should finalize the account and lift the restriction, if the session has no password', async () => {
+      const { candidate } = await createReferedCandidate();
+      const welcomeSpy = jest.spyOn(mailsService, 'sendWelcomeMail');
+      const refererSpy = jest.spyOn(
+        mailsService,
+        'sendRefererCandidateHasVerifiedAccountMail'
+      );
+      const sessionToken = await getAutologinSession(candidate.id);
+
+      const response = await request(server)
+        .post(`${route}/finalize-account`)
+        .set('authorization', `Bearer ${sessionToken}`)
+        .send({ password: newPassword });
+      expect(response.status).toBe(201);
+
+      const updated = await usersService.findOneComplete(candidate.id);
+      expect(updated.isEmailVerified).toBe(true);
+      expect(updated.password).not.toBeNull();
+      expect(welcomeSpy).toHaveBeenCalledTimes(1);
+      expect(refererSpy).toHaveBeenCalledTimes(1);
+
+      // The same session now has full access.
+      const profile = await request(server)
+        .get('/current/profile')
+        .set('authorization', `Bearer ${sessionToken}`);
+      expect(profile.status).toBe(200);
+
+      const login = await request(server)
+        .post(`${route}/login`)
+        .send({ email: candidate.email, password: newPassword });
+      expect(login.status).toBe(201);
+    });
+
+    it('Should return 400 EMAIL_ALREADY_VERIFIED and keep the password, if the session account already has one', async () => {
+      const candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
+      const { password: previousHash } = await usersService.findOneComplete(
+        candidate.id
+      );
+      const sessionToken = await getAutologinSession(candidate.id);
+
+      const response = await request(server)
+        .post(`${route}/finalize-account`)
+        .set('authorization', `Bearer ${sessionToken}`)
+        .send({ password: newPassword });
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('EMAIL_ALREADY_VERIFIED');
+
+      const unchanged = await usersService.findOneComplete(candidate.id);
+      expect(unchanged.password).toBe(previousHash);
+    });
+
+    it('Should finalize the account of the token, if both a token and a session of another account are present', async () => {
+      const { candidate } = await createReferedCandidate();
+      const other = await userFactory.create({ role: UserRoles.CANDIDATE });
+      const sessionToken = await getAutologinSession(other.id);
+
+      const response = await request(server)
+        .post(`${route}/finalize-account`)
+        .set('authorization', `Bearer ${sessionToken}`)
+        .send({ token: validToken(candidate.id), password: newPassword });
+      expect(response.status).toBe(201);
+      expect(response.text).toBe(candidate.email);
+
+      const updated = await usersService.findOneComplete(candidate.id);
+      expect(updated.password).not.toBeNull();
+    });
+
+    it('Should return 400 INVALID_TOKEN, if neither a token nor a session is present', async () => {
+      const response = await request(server)
+        .post(`${route}/finalize-account`)
+        .send({ password: newPassword });
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('INVALID_TOKEN');
+    });
+
+    it('Should finalize an account without a referer, without notifying any referer', async () => {
+      const user = await userFactory.create({ role: UserRoles.CANDIDATE });
+      await usersService.update(user.id, {
+        isEmailVerified: false,
+        password: null,
+        salt: null,
+      });
+      const welcomeSpy = jest.spyOn(mailsService, 'sendWelcomeMail');
+      const refererSpy = jest.spyOn(
+        mailsService,
+        'sendRefererCandidateHasVerifiedAccountMail'
+      );
+      const sessionToken = await getAutologinSession(user.id);
+
+      const response = await request(server)
+        .post(`${route}/finalize-account`)
+        .set('authorization', `Bearer ${sessionToken}`)
+        .send({ password: newPassword });
+      expect(response.status).toBe(201);
+      expect(welcomeSpy).toHaveBeenCalledTimes(1);
+      expect(refererSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -246,7 +441,7 @@ describe('Refered candidate account activation', () => {
 
       // The new link actually finalizes the account.
       const finalize = await request(server)
-        .post(`${route}/finalize-refered-user`)
+        .post(`${route}/finalize-account`)
         .send({ token: sentToken, password: newPassword });
       expect(finalize.status).toBe(201);
     });

@@ -1,7 +1,7 @@
 import { Controller, Get, ParseUUIDPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { UserPayload } from 'src/auth/guards';
+import { AllowWithoutPassword, UserPayload } from 'src/auth/guards';
 import { User } from 'src/users/models';
 import { CurrentUserService } from './current-user.service';
 
@@ -12,6 +12,9 @@ import { CurrentUserService } from './current-user.service';
 export class CurrentUserController {
   constructor(private readonly currentUserService: CurrentUserService) {}
 
+  // Reachable without a password: the front reads `hasPassword` here to send
+  // such an account to `/finaliser-compte`.
+  @AllowWithoutPassword()
   @Get()
   async getIdentity(@UserPayload('id', new ParseUUIDPipe()) id: string) {
     return this.currentUserService.getIdentity(id);

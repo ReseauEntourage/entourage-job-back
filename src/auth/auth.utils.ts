@@ -39,8 +39,8 @@ export function validatePassword(password: string, hash: string, salt: string) {
 }
 
 /**
- * Whether a refered candidate has finalized their account, shared by
- * `finalize-refered-user` and `send-finalize-refered-user` so they never disagree.
+ * Whether an account has been finalized, shared by `finalize-account` and
+ * `send-finalize-refered-user` so they never disagree.
  *
  * Both conditions are required, and this must not be reduced to
  * `isEmailVerified`: an account can have a verified email without ever having
@@ -48,7 +48,7 @@ export function validatePassword(password: string, hash: string, salt: string) {
  * link, before refered candidates were excluded from it), and such an account
  * must still be allowed to finalize.
  */
-export function isReferedCandidateAccountFinalized(user: {
+export function isAccountFinalized(user: {
   isEmailVerified: boolean;
   password?: string | null;
 }) {
