@@ -6,6 +6,13 @@ import {
 import { Injectable } from '@nestjs/common';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 
+export interface GenerateTextOptions {
+  feature?: string;
+  maxTokens?: number;
+  operation?: string;
+  timeoutMs?: number;
+}
+
 @Injectable()
 export class AnthropicService {
   private readonly client: Anthropic;
@@ -34,23 +41,39 @@ export class AnthropicService {
     });
   }
 
+  /**
+   * Single non-streamed Haiku call. Defaults match the messaging assistant's
+   * escalation classifier. When `timeoutMs` is set, the SDK's automatic
+   * retries are disabled so the call never exceeds that budget.
+   */
   async generateText(
     systemPrompt: string,
     userMessage: string,
-    maxTokens = 5
+    options: GenerateTextOptions = {}
   ): Promise<string> {
+    const {
+      maxTokens = 5,
+      timeoutMs,
+      operation = 'classify',
+      feature = 'ai_assistant',
+    } = options;
     const model = 'claude-haiku-4-5-20251001';
-    const response = await this.client.messages.create({
-      model,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
-    });
+    const response = await this.client.messages.create(
+      {
+        model,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+      },
+      timeoutMs !== undefined
+        ? { timeout: timeoutMs, maxRetries: 0 }
+        : undefined
+    );
     this.llmMetrics.recordAnthropicUsage(
       model,
       response.usage,
-      'classify',
-      'ai_assistant'
+      operation,
+      feature
     );
     const block = response.content[0];
     return block.type === 'text' ? block.text : '';

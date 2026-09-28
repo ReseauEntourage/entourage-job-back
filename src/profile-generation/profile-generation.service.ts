@@ -1,3 +1,4 @@
+import { APIConnectionTimeoutError } from '@anthropic-ai/sdk';
 import {
   forwardRef,
   Inject,
@@ -9,6 +10,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { QueuesService } from '../queues/producers/queues.service';
 import { Experience } from 'src/experiences/models';
 import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
+import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import {
   CvSchemaType,
   SCHEMA_VERSION,
@@ -18,8 +20,18 @@ import { Interest } from 'src/interests/models';
 import { LanguagesService } from 'src/languages/languages.service';
 
 import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
+import { tracer } from 'src/tracer';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
+import { UsersService } from 'src/users/users.service';
+import { PRESENTATION_GENERATION_CONFIG } from './presentation-generation.config';
+import {
+  buildPresentationPromptInput,
+  buildPresentationSystemPromptFor,
+  buildPresentationUserMessage,
+  hasParcours,
+  postProcessPresentation,
+} from './presentation-generation.utils';
 
 @Injectable()
 export class ProfileGenerationService {
@@ -32,8 +44,75 @@ export class ProfileGenerationService {
     private queuesService: QueuesService,
     @Inject(forwardRef(() => UserProfilesService))
     private userProfileService: UserProfilesService,
-    private languagesService: LanguagesService
+    @Inject(forwardRef(() => UsersService))
+    private usersService: UsersService,
+    private languagesService: LanguagesService,
+    private anthropicService: AnthropicService
   ) {}
+
+  /**
+   * Generates a presentation proposal for the user from their saved profile.
+   * Never writes to the profile: the caller decides whether to use the text.
+   * Any failure (timeout, model error, empty output) resolves to `null`.
+   */
+  async generatePresentation(
+    userId: string
+  ): Promise<{ description: string | null }> {
+    const [user, userProfile] = await Promise.all([
+      this.usersService.findOneWithCompanyOnly(userId),
+      this.userProfileService.findOneByUserId(userId, true),
+    ]);
+    if (!user || !userProfile) {
+      return { description: null };
+    }
+
+    const input = buildPresentationPromptInput(user, userProfile);
+    const tags = {
+      feature: PRESENTATION_GENERATION_CONFIG.feature,
+      role: input.role,
+      hasParcours: String(hasParcours(input)),
+      gender: String(input.gender),
+    };
+
+    return tracer.llmobs.trace(
+      { kind: 'workflow', name: 'presentation-generation' },
+      async () => {
+        let outcome = 'error';
+        try {
+          const raw = await this.anthropicService.generateText(
+            buildPresentationSystemPromptFor(input),
+            buildPresentationUserMessage(input),
+            {
+              maxTokens: PRESENTATION_GENERATION_CONFIG.maxTokens,
+              timeoutMs: PRESENTATION_GENERATION_CONFIG.timeoutMs,
+              operation: PRESENTATION_GENERATION_CONFIG.operation,
+              feature: PRESENTATION_GENERATION_CONFIG.feature,
+            }
+          );
+          const result = postProcessPresentation(raw);
+          outcome = result.outcome;
+          if (!result.description) {
+            this.logger.warn(
+              `[PresentationGeneration] Empty generation (userId=${userId})`
+            );
+          }
+          return { description: result.description };
+        } catch (error) {
+          outcome =
+            error instanceof APIConnectionTimeoutError ? 'timeout' : 'error';
+          this.logger.error(
+            `[PresentationGeneration] ${outcome} (userId=${userId}): ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            error instanceof Error ? error.stack : undefined
+          );
+          return { description: null };
+        } finally {
+          tracer.llmobs.annotate({ tags: { ...tags, outcome } });
+        }
+      }
+    );
+  }
 
   /**
    * Ajoute une tâche de génération de profil à la file d'attente
