@@ -138,7 +138,16 @@ export class UserProfileExperiencesService {
           through: { attributes: ['order'], as: 'experienceSkills' },
         },
       ],
-      order: [['startDate', 'DESC']],
+      order: [
+        [
+          sequelize.fn(
+            'COALESCE',
+            sequelize.col('Experience.startDate'),
+            sequelize.col('Experience.endDate')
+          ),
+          'DESC NULLS LAST',
+        ],
+      ],
     });
   }
 }
