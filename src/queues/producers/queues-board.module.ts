@@ -9,12 +9,15 @@ import { QueuesModule } from './queues.module';
 @Module({
   imports: [
     QueuesModule,
-    BullBoardModule.forRoot({
-      route: '/queues',
-      adapter: ExpressAdapter,
-      middleware: basicAuth({
-        challenge: true,
-        users: { admin: process.env.QUEUES_ADMIN_PASSWORD },
+    // forRootAsync : process.env est lu à l'instanciation, une fois le .env chargé par ConfigModule
+    BullBoardModule.forRootAsync({
+      useFactory: () => ({
+        route: '/queues',
+        adapter: ExpressAdapter,
+        middleware: basicAuth({
+          challenge: true,
+          users: { admin: process.env.QUEUES_ADMIN_PASSWORD },
+        }),
       }),
     }),
     BullBoardModule.forFeature({

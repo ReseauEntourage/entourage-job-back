@@ -119,4 +119,6 @@ export const SlackMocks: ProviderMock<SlackService> = {
   sendAdminNewRefererNotification: jest.fn(),
   sendAdminNewReferingNotification: jest.fn(),
   sendCheckinContactRequestAlert: jest.fn(),
+  onModuleInit: jest.fn(),
+  warnOnMissingChannelConfig: jest.fn(),
 } as const;

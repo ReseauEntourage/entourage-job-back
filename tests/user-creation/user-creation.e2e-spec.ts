@@ -15,6 +15,7 @@ import { Department } from 'src/locations/locations.types';
 import { Nudge } from 'src/nudge/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { UsersService } from 'src/users/users.service';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
@@ -36,6 +37,7 @@ describe('UserCreation', () => {
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
+  let usersService: UsersService;
   let organizationFactory: OrganizationFactory;
   let businessSectorsHelper: BusinessSectorHelper;
   let nudgesHelper: NudgesHelper;
@@ -65,6 +67,7 @@ describe('UserCreation', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    usersService = moduleFixture.get<UsersService>(UsersService);
     businessSectorsHelper =
       moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
     nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
@@ -1068,6 +1071,40 @@ describe('UserCreation', () => {
           }),
         })
       );
+    });
+
+    it('Should create the refered candidate without any password', async () => {
+      const user = await userFactory.create(
+        { role: UserRoles.CANDIDATE },
+        {},
+        false
+      );
+
+      const response: APIResponse<
+        UsersCreationController['createUserRefering']
+      > = await request(server)
+        .post(`${route}/refering`)
+        .set('authorization', `Bearer ${loggedInReferer.token}`)
+        .send({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone,
+          gender: user.gender,
+          department: 'Paris (75)' as Department,
+          nudges: [{ id: nudgeCv.id }],
+          sectorOccupations: [{ businessSectorId: businessSector1.id }],
+          workingRight: CandidateYesNoNSPP.YES,
+          materialInsecurity: CandidateYesNo.YES,
+          networkInsecurity: CandidateYesNo.NO,
+          birthDate: '1996-24-04',
+        });
+      expect(response.status).toBe(201);
+
+      const createdUser = await usersService.findOneComplete(response.body.id);
+      expect(createdUser.isEmailVerified).toBe(false);
+      expect(createdUser.password).toBeNull();
+      expect(createdUser.salt).toBeNull();
     });
 
     it('Should return 200 and a created candidate if valid candidate data with minimum data', async () => {

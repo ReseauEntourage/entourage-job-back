@@ -392,6 +392,13 @@ export class MessagingService {
     };
   }
 
+  /**
+   * Counts the conversations holding at least one message the user has not read yet.
+   * Only messages that are actually shown to them as incoming count: service messages
+   * and their own messages are ignored, so this stays aligned with the unread rule the
+   * frontend applies when it builds the "Non lues" tab. Without that alignment the
+   * navigation badge would keep announcing conversations the user cannot find.
+   */
   async getUnseenConversationsCount(userId: string) {
     const unseenConversations = await this.conversationParticipantModel.findAll(
       {
@@ -399,7 +406,7 @@ export class MessagingService {
           [Op.or]: [
             {
               seenAt: {
-                [Op.lt]: Sequelize.col('conversation.messages.createdAt'),
+                [Op.lte]: Sequelize.col('conversation.messages.createdAt'),
               },
             },
             {
@@ -417,6 +424,13 @@ export class MessagingService {
                 model: Message,
                 as: 'messages',
                 attributes: ['createdAt'],
+                // Restricting the join here is what makes a conversation count only
+                // when an unread message of someone else is left in it.
+                where: {
+                  type: MessageType.USER,
+                  authorId: { [Op.ne]: userId },
+                },
+                required: true,
               },
               {
                 model: User,
@@ -578,23 +592,30 @@ export class MessagingService {
     const conversation = await this.findConversation(conversationId);
     const reporterUser =
       await this.usersService.findOneWithRelations(reporterUserId);
-    const reportedParticipantIds = conversation.participants
-      .filter((participant) => participant.id !== reporterUserId)
-      .map((participant) => participant.id);
-    const reportedUsers = await Promise.all(
-      reportedParticipantIds.map((id) =>
-        this.usersService.findOneWithRelations(id)
-      )
+    // Tag the referents of every participant (reporter included), and include
+    // soft-deleted accounts: their zone and role still resolve a staff contact.
+    const participants = await this.usersService.findByIdsWithRelations(
+      conversation.participants.map((participant) => participant.id),
+      { paranoid: false }
     );
-    const referentSlackUserIds = (
-      await Promise.all(
-        reportedUsers
-          .map((user) => user?.staffContact?.slackEmail)
+    const referentSlackEmails = [
+      ...new Set(
+        participants
+          .map((participant) => participant.staffContact?.slackEmail)
           .filter(Boolean)
-          .filter((email, index, self) => self.indexOf(email) === index)
-          .map((email) => this.slackService.getUserIdByEmail(email))
-      )
-    ).filter(Boolean);
+      ),
+    ];
+    const referentSlackUserIds = [
+      ...new Set(
+        (
+          await Promise.all(
+            referentSlackEmails.map((email) =>
+              this.slackService.getUserIdByEmail(email)
+            )
+          )
+        ).filter(Boolean)
+      ),
+    ];
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
