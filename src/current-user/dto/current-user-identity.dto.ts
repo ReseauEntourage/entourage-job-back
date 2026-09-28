@@ -22,11 +22,13 @@ type CurrentUserIdentityUserKeys =
 export type CurrentUserIdentityDto = Pick<User, CurrentUserIdentityUserKeys> & {
   betaFeatures: Record<FeatureKey, boolean>;
   hasLinkedinLinked: boolean;
+  hasPassword: boolean;
 };
 
-// linkedinAccessToken is fetched but not exposed in the DTO — only hasLinkedinLinked is returned
+// linkedinAccessToken and password are fetched but not exposed in the DTO — only
+// hasLinkedinLinked and hasPassword are returned
 export const CurrentUserIdentityAttributes: (
-  CurrentUserIdentityUserKeys | 'linkedinAccessToken'
+  CurrentUserIdentityUserKeys | 'linkedinAccessToken' | 'password'
 )[] = [
   'id',
   'firstName',
@@ -45,6 +47,7 @@ export const CurrentUserIdentityAttributes: (
   'onboardingWebinarSkippedAt',
   'elearningCompletedAt',
   'linkedinAccessToken',
+  'password',
 ];
 
 export const generateCurrentUserIdentityDto = (
@@ -70,4 +73,5 @@ export const generateCurrentUserIdentityDto = (
     (user.featureFlags ?? []).map((f) => [f.featureKey, f.enabled])
   ) as Record<FeatureKey, boolean>,
   hasLinkedinLinked: !!user.linkedinAccessToken,
+  hasPassword: !!user.password,
 });

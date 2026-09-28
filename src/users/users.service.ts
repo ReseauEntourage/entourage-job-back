@@ -174,9 +174,18 @@ export class UsersService {
     });
   }
 
+  // `password` is only fetched so that `JwtStrategy` can tell whether the
+  // account has one: the hash never ends up in the request payload.
   async findOneForJwtPayload(id: string): Promise<User> {
     return this.userModel.findByPk(id, {
-      attributes: ['id', 'email', 'role', 'isEmailVerified', 'deletedAt'],
+      attributes: [
+        'id',
+        'email',
+        'role',
+        'isEmailVerified',
+        'deletedAt',
+        'password',
+      ],
     });
   }
 
@@ -793,7 +802,7 @@ export class UsersService {
    * is still not verified, for the unverified account relaunch email.
    *
    * Referred candidates (`refererId` set) are excluded: they follow a distinct
-   * activation path, where `/finaliser-compte-oriente` is the only page on which
+   * activation path, where `/finaliser-compte` is the only page on which
    * they pick a password. This mail's `ctaUrl` combines an email verification
    * token with an autologin token, so it would verify their email and log them
    * in on an account whose password they never chose — short-circuiting their

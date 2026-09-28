@@ -18,10 +18,16 @@ import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
 import {
+  ACCOUNT_ACTIVATION_TOKEN_PURPOSE,
   encryptPassword,
-  isReferedCandidateAccountFinalized,
+  isAccountFinalized,
 } from './auth.utils';
-import { LocalAuthGuard, Public, UserPayload } from './guards';
+import {
+  AllowWithoutPassword,
+  LocalAuthGuard,
+  Public,
+  UserPayload,
+} from './guards';
 
 @ApiTags('Auth')
 @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -56,6 +62,7 @@ export class AuthController {
     return loggedInUser;
   }
 
+  @AllowWithoutPassword()
   @Redirect(`${process.env.FRONT_URL}`, 302)
   @Post('logout')
   async logout() {
@@ -258,17 +265,61 @@ export class AuthController {
     return this.authService.consumeAutologinToken(token);
   }
 
+  /**
+   * The single way to set the first password of an account that has none.
+   * Identity is proven either by the activation token sent by email, or by
+   * the (restricted) session of an account without a password, e.g. after an
+   * autologin link. The token wins when both are present, so that an
+   * activation link behaves the same whoever is logged in on the browser.
+   */
   @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Public()
-  @Post('finalize-refered-user')
-  async finalizeReferedUser(
+  @Post('finalize-account')
+  async finalizeAccount(
     @Body('token') token?: string,
-    @Body('password') password?: string
+    @Body('password') password?: string,
+    @UserPayload('id') sessionUserId?: string
   ): Promise<string> {
-    if (!token || !password) {
+    // Same strength policy as password reset and password change.
+    if (!password || passwordStrength(password).id < 2) {
       throw new BadRequestException();
     }
 
+    const user = token
+      ? await this.findUserFromActivationToken(token)
+      : await this.findUserFromSession(sessionUserId);
+
+    const { hash, salt } = encryptPassword(password);
+
+    const updatedUser = await this.authService.updateUser(user.id, {
+      isEmailVerified: true,
+      password: hash,
+      salt,
+      hashReset: null,
+      saltReset: null,
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    // Same rule as `verify-email` and `verify-otp`: the welcome mail goes out
+    // on the first email verification. An account whose email was already
+    // verified (by OTP, or the J+1 relaunch link) has already received it.
+    if (!user.isEmailVerified) {
+      await this.authService.sendWelcomeMail(updatedUser);
+    }
+    // Any account without a password can be finalized, not only refered ones.
+    if (updatedUser.refererId) {
+      await this.authService.sendRefererCandidateHasVerifiedAccountMail(
+        updatedUser
+      );
+    }
+
+    return updatedUser.email;
+  }
+
+  private async findUserFromActivationToken(token: string): Promise<User> {
     const decodedToken = this.authService.decodeJWT(token, true);
     const { sub: userId, exp } = decodedToken;
 
@@ -282,33 +333,41 @@ export class AuthController {
     if (!user) {
       throw new NotFoundException();
     }
-    if (isReferedCandidateAccountFinalized(user)) {
+    if (isAccountFinalized(user)) {
       throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
+    }
+    // Session JWTs are signed with the same secret: only a real activation
+    // token may set the password of an account that already has one (e.g.
+    // an unverified account created with someone else's email address).
+    // Links sent before the `purpose` claim existed only target accounts
+    // without a password, for which the token proves no more than a session.
+    if (
+      decodedToken.purpose !== ACCOUNT_ACTIVATION_TOKEN_PURPOSE &&
+      user.password
+    ) {
+      throw new BadRequestException('INVALID_TOKEN');
     }
     if (expirationDate.getTime() < currentDate.getTime()) {
       throw new BadRequestException('TOKEN_EXPIRED');
     }
+    return user;
+  }
 
-    const { hash, salt } = encryptPassword(password);
-
-    const updatedUser = await this.authService.updateUser(userId, {
-      isEmailVerified: true,
-      password: hash,
-      salt,
-      hashReset: null,
-      saltReset: null,
-    });
-
-    if (!updatedUser) {
+  private async findUserFromSession(sessionUserId?: string): Promise<User> {
+    if (!sessionUserId) {
+      throw new BadRequestException('INVALID_TOKEN');
+    }
+    const user = await this.authService.findOneUserComplete(sessionUserId);
+    if (!user) {
       throw new NotFoundException();
     }
-
-    await this.authService.sendWelcomeMail(updatedUser);
-    await this.authService.sendRefererCandidateHasVerifiedAccountMail(
-      updatedUser
-    );
-
-    return updatedUser.email;
+    // Same rule as the token path: a session on an account that already has
+    // a password implies a verified email, so it is always refused here and
+    // this route never stands in for `changePwd`.
+    if (isAccountFinalized(user)) {
+      throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
+    }
+    return user;
   }
 
   /**
@@ -337,7 +396,7 @@ export class AuthController {
     if (!candidate || !candidate.refererId) {
       throw new BadRequestException('INVALID_TOKEN');
     }
-    if (isReferedCandidateAccountFinalized(candidate)) {
+    if (isAccountFinalized(candidate)) {
       throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
     }
 

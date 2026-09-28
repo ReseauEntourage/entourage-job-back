@@ -347,7 +347,7 @@ export class UsersCreationController {
       gender: createUserReferingDto.gender,
       phone: createUserReferingDto.phone,
       zone,
-      // No password until the candidate picks one on `/finaliser-compte-oriente`.
+      // No password until the candidate picks one on `/finaliser-compte`.
       password: null,
       salt: null,
     };
