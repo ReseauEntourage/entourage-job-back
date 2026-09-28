@@ -43,7 +43,7 @@ export const cvSchema = {
             type: 'string',
             pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
             description:
-              "Date de fin de l'expérience au format ISO YYYY-MM-DD. Si seule l'année est connue, utiliser le 1er janvier (YYYY-01-01) ; si seuls le mois et l'année sont connus, utiliser le 1er du mois (YYYY-MM-01). Ne jamais inventer de date : ne pas remplir si elle n'apparaît pas dans le CV. Ne laisser vide que si l'expérience est explicitement en cours (ex. « depuis », « présent », « en cours »). Si le CV ne mentionne qu'une seule date (ex. année d'obtention d'un diplôme), la renseigner ici et laisser la date de début vide.",
+              "Date de fin de l'expérience au format ISO YYYY-MM-DD. Si seule l'année est connue, utiliser le 1er janvier (YYYY-01-01) ; si seuls le mois et l'année sont connus, utiliser le 1er du mois (YYYY-MM-01). Ne jamais inventer de date : ne pas remplir si elle n'apparaît pas dans le CV. Ne pas remplir si le CV ne donne pas de date de fin, notamment si l'expérience est en cours (ex. « depuis », « présent », « en cours ») ; ne jamais en déduire ni en estimer une. Si le CV ne mentionne qu'une seule date (ex. année d'obtention d'un diplôme), la renseigner ici et laisser la date de début vide.",
           },
           order: { type: 'number' },
           skills: {
@@ -81,7 +81,7 @@ export const cvSchema = {
             type: 'string',
             pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
             description:
-              "Date de fin de la formation au format ISO YYYY-MM-DD. Si seule l'année est connue, utiliser le 1er janvier (YYYY-01-01) ; si seuls le mois et l'année sont connus, utiliser le 1er du mois (YYYY-MM-01). Ne jamais inventer de date : ne pas remplir si elle n'apparaît pas dans le CV. Ne laisser vide que si la formation est explicitement en cours (ex. « depuis », « présent », « en cours »). Si le CV ne mentionne qu'une seule date (ex. année d'obtention d'un diplôme), la renseigner ici et laisser la date de début vide.",
+              "Date de fin de la formation au format ISO YYYY-MM-DD. Si seule l'année est connue, utiliser le 1er janvier (YYYY-01-01) ; si seuls le mois et l'année sont connus, utiliser le 1er du mois (YYYY-MM-01). Ne jamais inventer de date : ne pas remplir si elle n'apparaît pas dans le CV. Ne pas remplir si le CV ne donne pas de date de fin, notamment si la formation est en cours (ex. « depuis », « présent », « en cours ») ; ne jamais en déduire ni en estimer une. Si le CV ne mentionne qu'une seule date (ex. année d'obtention d'un diplôme), la renseigner ici et laisser la date de début vide.",
           },
           skills: {
             type: 'array',

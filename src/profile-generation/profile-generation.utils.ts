@@ -1,9 +1,9 @@
 const CV_DATE_REGEX = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/;
 
 /**
- * Convertit une date extraite d'un CV en Date (UTC), sans jamais inventer de valeur.
- * Formats acceptés : YYYY (→ 1er janvier), YYYY-MM (→ 1er du mois), YYYY-MM-DD.
- * Toute autre valeur (absente, vide, non interprétable, date impossible) → null.
+ * Converts a date extracted from a CV into a UTC Date, never inventing a value.
+ * Accepted formats: YYYY (→ January 1st), YYYY-MM (→ 1st of the month), YYYY-MM-DD.
+ * Any other value (missing, empty, unparsable, impossible date) → null.
  */
 export function parseCvDate(value: unknown): Date | null {
   if (typeof value !== 'string') {
@@ -32,8 +32,8 @@ export function parseCvDate(value: unknown): Date | null {
 }
 
 /**
- * Convertit les dates de début et de fin d'une expérience ou d'une formation
- * extraite d'un CV. Si le début est postérieur à la fin, seule la fin est conservée.
+ * Converts the start and end dates of an experience or formation extracted
+ * from a CV. When the start date is after the end date, only the end date is kept.
  */
 export function normalizeCvDateRange({
   startDate,
