@@ -6,7 +6,9 @@ import request from 'supertest';
 import { BusinessSector } from 'src/business-sectors/models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { SCHEMA_VERSION } from 'src/external-services/openai/openai.schemas';
 import { Nudge } from 'src/nudge/models';
+import type { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UserSocialSituationsService } from 'src/user-social-situations/user-social-situations.service';
@@ -35,6 +37,7 @@ describe('ProfileGeneration - presentation', () => {
   let userProfilesService: UserProfilesService;
   let userSocialSituationsService: UserSocialSituationsService;
   let throttlerStorage: ThrottlerStorageService;
+  let profileGenerationService: ProfileGenerationService;
 
   let businessSector: BusinessSector;
   let nudgeTips: Nudge;
@@ -84,6 +87,13 @@ describe('ProfileGeneration - presentation', () => {
       );
     throttlerStorage =
       moduleFixture.get<ThrottlerStorageService>(ThrottlerStorage);
+    // Loaded once the testing module is built: a static import changes the
+    // module load order and breaks a circular dependency between services.
+    const profileGenerationModule =
+      await import('src/profile-generation/profile-generation.service');
+    profileGenerationService = moduleFixture.get<ProfileGenerationService>(
+      profileGenerationModule.ProfileGenerationService
+    );
   });
 
   afterAll(async () => {
@@ -390,6 +400,46 @@ describe('ProfileGeneration - presentation', () => {
       const response = await post(second);
 
       expect(response.status).toBe(200);
+    });
+  });
+
+  describe('CV import - description', () => {
+    it('cuts a CV summary longer than 500 characters at the last full sentence', async () => {
+      const sentence = 'Je travaille dans la logistique depuis longtemps. ';
+      const candidate = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+
+      await profileGenerationService.populateUserProfileFromCVData(
+        candidate.user.id,
+        {
+          description: sentence.repeat(14).trim(),
+          schemaVersion: SCHEMA_VERSION,
+        }
+      );
+
+      const { description } = await userProfilesService.findOneByUserId(
+        candidate.user.id
+      );
+      expect(description.length).toBeLessThanOrEqual(500);
+      expect(description).toBe(sentence.repeat(10).trim());
+    });
+
+    it('keeps a CV summary within 500 characters as is', async () => {
+      const summary = "J'ai travaillé dix ans dans la logistique.";
+      const candidate = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+
+      await profileGenerationService.populateUserProfileFromCVData(
+        candidate.user.id,
+        { description: summary, schemaVersion: SCHEMA_VERSION }
+      );
+
+      const { description } = await userProfilesService.findOneByUserId(
+        candidate.user.id
+      );
+      expect(description).toBe(summary);
     });
   });
 });

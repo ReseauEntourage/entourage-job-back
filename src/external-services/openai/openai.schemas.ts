@@ -7,6 +7,7 @@ export const cvSchema = {
   properties: {
     description: {
       type: 'string',
+      // Not enforced by the model: the service also cuts the text on import.
       maxLength: 500,
       description:
         'Résumé du CV à la première personne, mettant en avant les compétences clés, l expérience et la formation de la personne',

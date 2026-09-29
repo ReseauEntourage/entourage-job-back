@@ -276,7 +276,12 @@ export class ProfileGenerationService {
       userProfileDto.userId = userId;
 
       if (cvData.description) {
-        userProfileDto.description = cvData.description;
+        // The schema maxLength is not enforced by the model: cut the text so
+        // it fits the presentation field.
+        const { description } = postProcessPresentation(cvData.description);
+        if (description) {
+          userProfileDto.description = description;
+        }
       }
       if (cvData.skills) {
         userProfileDto.skills = cvData.skills.map((skill) => ({
