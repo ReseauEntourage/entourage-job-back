@@ -2,6 +2,8 @@ import { createHash } from 'crypto';
 import {
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Param,
   UseGuards,
@@ -10,6 +12,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import axios from 'axios';
 import { JwtAuthGuard, UserPayload } from 'src/auth/guards';
 import { ExternalCvsService } from 'src/external-cvs/external-cvs.service';
@@ -107,5 +110,30 @@ export class ProfileGenerationController {
   ) {
     await this.profileGenerationService.cancelProfileGeneration(jobId, userId);
     return { status: 'cancelled' };
+  }
+
+  /**
+   * Proposes an AI-written presentation for the current user, built from
+   * their saved profile only. Nothing is written to the profile.
+   */
+  @ApiBearerAuth()
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60000,
+      // Per user rather than per IP: people onboarding together from the same
+      // place (an association, an office) would otherwise share the limit.
+      getTracker: (req: { ip?: string; user?: { id?: string } }) =>
+        req.user?.id ?? req.ip ?? '',
+    },
+  })
+  // 200, not Nest's default 201: nothing is created, and a failure is a
+  // normal `{ description: null }` answer.
+  @HttpCode(HttpStatus.OK)
+  @Post('presentation')
+  async generatePresentation(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  ): Promise<{ description: string | null }> {
+    return this.profileGenerationService.generatePresentation(userId);
   }
 }
