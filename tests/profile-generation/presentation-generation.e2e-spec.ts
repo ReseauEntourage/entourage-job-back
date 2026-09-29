@@ -147,7 +147,7 @@ describe('ProfileGeneration - presentation', () => {
 
       const response = await post(candidate);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toEqual({
         description:
           "J'ai travaillé dans la logistique. N'hésitez pas à m'écrire.",
@@ -186,7 +186,7 @@ describe('ProfileGeneration - presentation', () => {
 
       const response = await post(candidate);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body.description).toBeTruthy();
       expect(generateText).toHaveBeenCalledTimes(1);
       const saved = await userProfilesService.findOneByUserId(
@@ -300,7 +300,7 @@ describe('ProfileGeneration - presentation', () => {
 
         const response = await post(user);
 
-        expect(response.status).toBe(201);
+        expect(response.status).toBe(200);
         const { systemPrompt, userMessage } = lastCall();
         expect(systemPrompt).toContain('coach bénévole');
         expect(userMessage).toContain('Rôle : coach bénévole');
@@ -316,7 +316,7 @@ describe('ProfileGeneration - presentation', () => {
 
       const response = await post(candidate);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body.description.length).toBeLessThanOrEqual(500);
       expect(response.body.description.endsWith('.')).toBe(true);
       expect(response.body.description).toBe(sentence.repeat(10).trim());
@@ -330,9 +330,24 @@ describe('ProfileGeneration - presentation', () => {
 
       const response = await post(candidate);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toEqual({ description: null });
     });
+
+    it.each(['', '   ', '« »'])(
+      'returns null when the model output is empty after cleaning (%p)',
+      async (output) => {
+        generateText.mockResolvedValue(output);
+        const candidate = await usersHelper.createLoggedInUser({
+          role: UserRoles.CANDIDATE,
+        });
+
+        const response = await post(candidate);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ description: null });
+      }
+    );
 
     it('returns null when the model fails', async () => {
       generateText.mockRejectedValue(new Error('Anthropic unavailable'));
@@ -342,7 +357,7 @@ describe('ProfileGeneration - presentation', () => {
 
       const response = await post(candidate);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toEqual({ description: null });
     });
 
@@ -353,7 +368,7 @@ describe('ProfileGeneration - presentation', () => {
 
       for (let i = 0; i < 5; i += 1) {
         const response = await post(candidate);
-        expect(response.status).toBe(201);
+        expect(response.status).toBe(200);
       }
       const response = await post(candidate);
 
@@ -374,7 +389,7 @@ describe('ProfileGeneration - presentation', () => {
       }
       const response = await post(second);
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
     });
   });
 });

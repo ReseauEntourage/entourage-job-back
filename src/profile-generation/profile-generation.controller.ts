@@ -2,6 +2,8 @@ import { createHash } from 'crypto';
 import {
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Param,
   UseGuards,
@@ -125,6 +127,9 @@ export class ProfileGenerationController {
         req.user?.id ?? req.ip ?? '',
     },
   })
+  // 200, not Nest's default 201: nothing is created, and a failure is a
+  // normal `{ description: null }` answer.
+  @HttpCode(HttpStatus.OK)
   @Post('presentation')
   async generatePresentation(
     @UserPayload('id', new ParseUUIDPipe()) userId: string
