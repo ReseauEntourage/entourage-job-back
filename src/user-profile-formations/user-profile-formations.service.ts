@@ -135,7 +135,16 @@ export class UserProfileFormationsService {
           through: { attributes: ['order'], as: 'formationSkills' },
         },
       ],
-      order: [['startDate', 'DESC']],
+      order: [
+        [
+          sequelize.fn(
+            'COALESCE',
+            sequelize.col('Formation.startDate'),
+            sequelize.col('Formation.endDate')
+          ),
+          'DESC NULLS LAST',
+        ],
+      ],
     });
   }
 }

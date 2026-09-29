@@ -21,6 +21,7 @@ import { UserRole } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
 import {
+  ACCOUNT_ACTIVATION_TOKEN_PURPOSE,
   encryptOtp,
   encryptPassword,
   validateOtp,
@@ -57,6 +58,13 @@ export class AuthService {
     if (user) {
       const { password: userPassword, salt: userSalt } =
         await this.usersService.findOneComplete(user.id);
+
+      // An account without a password (e.g. a refered candidate who has not
+      // finalized their account) can never sign in by password. Checked before
+      // hashing: pbkdf2 throws on a null salt, which would surface as a 500.
+      if (!userPassword || !userSalt) {
+        return null;
+      }
 
       if (validatePassword(password, userPassword, userSalt)) {
         return user;
@@ -214,6 +222,34 @@ export class AuthService {
   async sendRefererCandidateHasVerifiedAccountMail(candidate: User) {
     return this.mailsService.sendRefererCandidateHasVerifiedAccountMail(
       candidate
+    );
+  }
+
+  /**
+   * Issues a new activation token and sends the refered candidate the mail
+   * pointing at `/finaliser-compte`. `referer` must be loaded as a root
+   * user: the mail reads `referer.organization`, which the nested
+   * `candidate.referer` relation does not include.
+   */
+  async sendReferedCandidateFinalizeAccountMail(
+    candidate: User,
+    referer: User
+  ) {
+    const token = this.generateAccountActivationToken(candidate);
+    return this.mailsService.sendReferedCandidateFinalizeAccountMail(
+      referer,
+      candidate,
+      token
+    );
+  }
+
+  generateAccountActivationToken(user: User) {
+    return this.jwtService.sign(
+      { sub: user.id, purpose: ACCOUNT_ACTIVATION_TOKEN_PURPOSE },
+      {
+        secret: process.env.JWT_SECRET,
+        expiresIn: '7d',
+      }
     );
   }
 

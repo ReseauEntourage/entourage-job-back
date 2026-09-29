@@ -281,6 +281,13 @@ export class AiAssistantService {
       'ai_assistant'
     );
 
+    if (finalMessage.stop_reason === 'max_tokens') {
+      this.logger.warn(
+        `AI assistant response truncated by max_tokens (conversation ${conversationId}, ${finalMessage.usage.output_tokens} output tokens)`
+      );
+      subscriber.next({ data: { type: 'truncated' } });
+    }
+
     const suggestionRegex = /\[SUGGESTION\]([\s\S]*?)\[\/SUGGESTION\]/g;
     const suggestions: string[] = [];
     let match: RegExpExecArray | null;

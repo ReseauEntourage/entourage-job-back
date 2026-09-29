@@ -76,7 +76,7 @@ services:
   ## ENTOURAGE PRO BACKEND CACHE
   redis:
     container_name: redis
-    image: redis:6.2-alpine
+    image: valkey/valkey:9.1.2-alpine
     restart: always
     ports:
       - '6379:6379'

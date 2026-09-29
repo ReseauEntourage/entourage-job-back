@@ -81,11 +81,9 @@ export class UsersCreationService {
   }
 
   async sendFinalizeAccountReferedUser(candidate: User, referer: User) {
-    const token = await this.authService.generateVerificationToken(candidate);
-    return this.mailsService.sendReferedCandidateFinalizeAccountMail(
-      referer,
+    return this.authService.sendReferedCandidateFinalizeAccountMail(
       candidate,
-      token
+      referer
     );
   }
 

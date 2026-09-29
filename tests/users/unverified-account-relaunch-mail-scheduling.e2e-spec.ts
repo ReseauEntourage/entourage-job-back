@@ -121,4 +121,35 @@ describe('UsersService.getUsersWithUnverifiedEmailOneDayAfterCreation', () => {
 
     expect(result.map((u) => u.id)).not.toContain(referer.id);
   });
+
+  it('excludes an unverified referred candidate created exactly 1 day ago', async () => {
+    const referer = await userFactory.create({ role: UserRoles.REFERER });
+    const referredCandidate = await userFactory.create({
+      role: UserRoles.CANDIDATE,
+      refererId: referer.id,
+      createdAt: createdDaysAgo(1),
+    });
+    await usersService.update(referredCandidate.id, {
+      isEmailVerified: false,
+    });
+
+    const result =
+      await usersService.getUsersWithUnverifiedEmailOneDayAfterCreation();
+
+    expect(result.map((u) => u.id)).not.toContain(referredCandidate.id);
+  });
+
+  it('still includes an unverified candidate who was not referred', async () => {
+    const candidate = await userFactory.create({
+      role: UserRoles.CANDIDATE,
+      refererId: null,
+      createdAt: createdDaysAgo(1),
+    });
+    await usersService.update(candidate.id, { isEmailVerified: false });
+
+    const result =
+      await usersService.getUsersWithUnverifiedEmailOneDayAfterCreation();
+
+    expect(result.map((u) => u.id)).toContain(candidate.id);
+  });
 });

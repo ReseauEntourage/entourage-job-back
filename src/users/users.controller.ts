@@ -161,6 +161,11 @@ export class UsersController {
       user.id
     );
 
+    // No current password to check against: pbkdf2 would throw on a null salt.
+    if (!password || !oldSalt) {
+      throw new UnauthorizedException();
+    }
+
     const validated = validatePassword(oldPassword, password, oldSalt);
 
     if (!validated) {

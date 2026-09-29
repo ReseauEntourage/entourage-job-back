@@ -17,7 +17,9 @@ export interface GenerateTextOptions {
 export class AnthropicService {
   private readonly client: Anthropic;
 
-  private readonly MAX_TOKENS = 1024;
+  // Output cap for the AI assistant stream. Long structured answers (several
+  // markdown sections) used to hit the former 1024 cap mid-sentence (EN-9593).
+  private readonly STREAM_MAX_TOKENS = 4096;
 
   constructor(private readonly llmMetrics: LlmMetricsService) {
     this.client = new Anthropic({
@@ -35,7 +37,7 @@ export class AnthropicService {
   createStream(systemBlocks: TextBlockParam[], messages: MessageParam[]) {
     return this.client.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: this.MAX_TOKENS,
+      max_tokens: this.STREAM_MAX_TOKENS,
       system: systemBlocks,
       messages,
     });

@@ -1,5 +1,12 @@
 import { buildCronTasksProcessor } from 'tests/queues/build-cron-tasks-processor.helper';
 
+// This suite stubs `usersService` wholesale, so it covers the processor's
+// batching, reporting and failure isolation only — never who is eligible.
+// Eligibility (role, `isEmailVerified`, `refererId`, creation window) belongs to
+// `UsersService.getUsersWithUnverifiedEmailOneDayAfterCreation` and is covered in
+// `tests/users/unverified-account-relaunch-mail-scheduling.e2e-spec.ts`. The
+// processor mails whoever that query returns, by design: do not add an
+// eligibility assertion here, it would pass against a stub rather than the query.
 describe('CronTasksProcessor.sendUnverifiedAccountRelaunchMails', () => {
   const buildProcessor = (
     users: { id: string }[],

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { App, Block, KnownBlock } from '@slack/bolt';
 import {
   CHECKIN_EMPLOYMENT_TYPE_LABELS,
@@ -13,6 +13,7 @@ import { ConversationCheckin } from 'src/checkin/models/conversation-checkin.mod
 import { User } from 'src/users/models';
 import {
   SlackBlockConfig,
+  slackChannelEnvVars,
   slackChannels,
   SlackMessageResponse,
   SlackMsgAction,
@@ -23,7 +24,7 @@ import {
 } from './slack.types';
 
 @Injectable()
-export class SlackService {
+export class SlackService implements OnModuleInit {
   private app: App;
   private logger = new Logger(SlackService.name);
 
@@ -32,6 +33,30 @@ export class SlackService {
       token: process.env.SLACK_BOT_TOKEN,
       signingSecret: process.env.SLACK_SIGNING_SECRET,
     });
+  }
+
+  onModuleInit() {
+    this.warnOnMissingChannelConfig();
+  }
+
+  /**
+   * In production (prod and preprod), warn when a channel env var is missing:
+   * its notifications would silently go to the dev channel instead.
+   */
+  warnOnMissingChannelConfig(): void {
+    if (process.env.NODE_ENV !== 'production') {
+      return;
+    }
+    const missingEnvVars = Object.values(slackChannelEnvVars).filter(
+      (envVar) => !process.env[envVar]
+    );
+    if (missingEnvVars.length > 0) {
+      this.logger.warn(
+        `Missing Slack channel configuration: ${missingEnvVars.join(
+          ', '
+        )} - notifications will be sent to the dev channels`
+      );
+    }
   }
 
   /**

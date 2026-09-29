@@ -447,7 +447,7 @@ export class MailsService {
         refererFirstName: referer.firstName,
         refererLastName: referer.lastName,
         organizationName: referer.organization.name,
-        finalizeAccountUrl: `${process.env.FRONT_URL}/finaliser-compte-oriente?token=${token}`,
+        finalizeAccountUrl: `${process.env.FRONT_URL}/finaliser-compte?token=${token}`,
         zone: getZoneDisplayLabel(candidate.zone),
         staffContact: candidate.staffContact,
       },

@@ -32,6 +32,7 @@ import {
   hasParcours,
   postProcessPresentation,
 } from './presentation-generation.utils';
+import { normalizeCvDateRange } from './profile-generation.utils';
 
 @Injectable()
 export class ProfileGenerationService {
@@ -288,22 +289,7 @@ export class ProfileGenerationService {
 
       if (cvData.experiences) {
         const experiences = cvData.experiences.map((experience) => {
-          let startDate = new Date();
-          let endDate = new Date();
-
-          try {
-            startDate = new Date(experience.startDate);
-            if (isNaN(startDate.getTime())) {
-              startDate = new Date();
-            }
-          } catch {}
-
-          try {
-            endDate = new Date(experience.endDate);
-            if (isNaN(endDate.getTime())) {
-              endDate = new Date();
-            }
-          } catch {}
+          const { startDate, endDate } = normalizeCvDateRange(experience);
 
           return {
             title: experience.title,
@@ -319,22 +305,8 @@ export class ProfileGenerationService {
 
       if (cvData.formations) {
         const formations = cvData.formations.map((formation) => {
-          let startDate = new Date();
-          let endDate = new Date();
+          const { startDate, endDate } = normalizeCvDateRange(formation);
 
-          try {
-            startDate = new Date(formation.startDate);
-            if (isNaN(startDate.getTime())) {
-              startDate = new Date();
-            }
-          } catch {}
-
-          try {
-            endDate = new Date(formation.endDate);
-            if (isNaN(endDate.getTime())) {
-              endDate = new Date();
-            }
-          } catch {}
           return {
             title: formation.title,
             description: formation.description,
