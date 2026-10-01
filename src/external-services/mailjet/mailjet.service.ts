@@ -7,6 +7,7 @@ import { User } from 'src/users/models';
 import { Genders, UserRoles } from 'src/users/users.types';
 import { ZoneName } from 'src/utils/types/zones.types';
 
+import { MailjetRelayClient, MailjetRelayResult } from './mailjet-relay.client';
 import {
   ContactStatuses,
   CustomContactParams,
@@ -26,8 +27,11 @@ export class MailjetService {
 
   private mailjetTransactional: Client | null = null;
   private mailjetNewsletter: Client | null = null;
-  private mailjetTransactionalProxy: Client | null = null;
-  private mailjetNewsletterProxy: Client | null = null;
+  /**
+   * Set when MAILJET_RELAY_URL is defined: every Mailjet request then goes
+   * through the relay lambda instead of calling Mailjet directly.
+   */
+  private relayClient: MailjetRelayClient | null = null;
 
   constructor(@InjectModel(User) private userModel: typeof User) {
     if (!process.env.MAILJET_PUB || !process.env.MAILJET_SEC) {
@@ -49,71 +53,24 @@ export class MailjetService {
       process.env.MAILJET_NEWSLETTER_SEC
     );
 
-    const proxyOptions = this.buildProxyOptions();
-    if (proxyOptions) {
-      this.mailjetTransactionalProxy = Mailjet.apiConnect(
-        process.env.MAILJET_PUB,
-        process.env.MAILJET_SEC,
-        { options: proxyOptions }
+    const relayUrl = process.env.MAILJET_RELAY_URL;
+    if (relayUrl) {
+      if (!process.env.MAILJET_RELAY_SECRET) {
+        throw new Error(
+          'MAILJET_RELAY_SECRET is not set (required when MAILJET_RELAY_URL is set)'
+        );
+      }
+      this.relayClient = new MailjetRelayClient(
+        relayUrl,
+        process.env.MAILJET_RELAY_SECRET
       );
-      this.mailjetNewsletterProxy = Mailjet.apiConnect(
-        process.env.MAILJET_NEWSLETTER_PUB,
-        process.env.MAILJET_NEWSLETTER_SEC,
-        { options: proxyOptions }
-      );
+      this.logger.log('Mailjet requests are sent through the relay');
     }
-  }
-
-  private buildProxyOptions(): Record<string, unknown> | null {
-    const fixieUrl = process.env.FIXIE_URL;
-    if (!fixieUrl) return null;
-
-    let url: URL;
-    try {
-      url = new URL(fixieUrl);
-    } catch {
-      this.logger.error(
-        'FIXIE_URL is set but could not be parsed as a valid URL — proxy disabled'
-      );
-      return null;
-    }
-
-    const port = parseInt(url.port, 10);
-    if (isNaN(port)) {
-      this.logger.error(
-        `FIXIE_URL has no valid port — proxy disabled (host: ${url.hostname})`
-      );
-      return null;
-    }
-
-    this.logger.log(`Mailjet proxy enabled via ${url.hostname}:${port}`);
-    return {
-      proxy: {
-        protocol: url.protocol.replace(':', ''),
-        host: url.hostname,
-        port,
-        ...(url.username && {
-          auth: {
-            username: decodeURIComponent(url.username),
-            password: decodeURIComponent(url.password),
-          },
-        }),
-      },
-    };
   }
 
   /** Extracts a stack trace for `Logger#error`'s trace param, when available. */
   private errorStack(error: unknown): string | undefined {
     return error instanceof Error ? error.stack : undefined;
-  }
-
-  private isConnectionError(error: unknown): boolean {
-    return (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as { code: string }).code === 'ECONNRESET'
-    );
   }
 
   /**
@@ -135,9 +92,11 @@ export class MailjetService {
       ErrorRelatedTo?: string[];
       message?: string;
       response?: { data?: unknown };
+      source?: string;
       statusCode?: number;
     };
     return {
+      source: err.source ?? null,
       statusCode: err.statusCode ?? null,
       message: err.message ?? null,
       errorCode: err.ErrorCode ?? null,
@@ -184,6 +143,50 @@ export class MailjetService {
     }));
   }
 
+  /**
+   * Says where a failure comes from, so that a relay rejection (e.g. a wrong
+   * relay secret) is never mistaken for a Mailjet rejection (e.g. invalid
+   * API keys). Errors thrown by node-mailjet carry no `source`.
+   */
+  private describeFailureOrigin(error: unknown): string {
+    const source = (error as { source?: string } | null)?.source;
+    switch (source) {
+      case 'mailjet':
+        return 'Mailjet rejected the request';
+      case 'relay':
+        return 'the Mailjet relay rejected the request';
+      case 'network':
+        return 'the Mailjet relay could not be reached';
+      default:
+        return 'direct call to Mailjet failed';
+    }
+  }
+
+  /** Sends a transactional body through the relay when configured, directly otherwise. */
+  private postSend(body: SendEmailV3_1.Body) {
+    if (this.relayClient) {
+      return this.relayClient.send(body);
+    }
+    return this.mailjetTransactional
+      .post('send', MailjetOptions.MAILS)
+      .request(body);
+  }
+
+  /** Adds or updates a contact in a list through the relay when configured, directly otherwise. */
+  private postContact(
+    listId: number,
+    body: Record<string, unknown>
+  ): Promise<MailjetRelayResult | { response: { status: number } }> {
+    if (this.relayClient) {
+      return this.relayClient.manageContact(listId, body);
+    }
+    return this.mailjetNewsletter
+      .post('contactslist', MailjetOptions.CONTACTS)
+      .id(listId)
+      .action('managecontact')
+      .request(body);
+  }
+
   async sendMail(params: CustomMailParams | CustomMailParams[]) {
     const mailjetParams: SendEmailV3_1.Body = { Messages: [] };
     if (Array.isArray(params)) {
@@ -195,36 +198,17 @@ export class MailjetService {
     }
 
     try {
-      return await this.mailjetTransactional
-        .post('send', MailjetOptions.MAILS)
-        .request(mailjetParams);
+      return await this.postSend(mailjetParams);
     } catch (error) {
-      if (this.isConnectionError(error) && this.mailjetTransactionalProxy) {
-        this.logger.warn('sendMail: ECONNRESET, retrying via Fixie proxy');
-        try {
-          return await this.mailjetTransactionalProxy
-            .post('send', MailjetOptions.MAILS)
-            .request(mailjetParams);
-        } catch (proxyError) {
-          this.logger.error(
-            `sendMail: proxy retry failed — request: ${JSON.stringify(
-              this.describeMailjetRequest(mailjetParams)
-            )} — error: ${JSON.stringify(
-              this.describeMailjetError(proxyError)
-            )}`,
-            this.errorStack(proxyError)
-          );
-          throw proxyError;
-        }
-      } else {
-        this.logger.error(
-          `sendMail failed — request: ${JSON.stringify(
-            this.describeMailjetRequest(mailjetParams)
-          )} — error: ${JSON.stringify(this.describeMailjetError(error))}`,
-          this.errorStack(error)
-        );
-        throw error;
-      }
+      this.logger.error(
+        `sendMail failed (${this.describeFailureOrigin(
+          error
+        )}) — request: ${JSON.stringify(
+          this.describeMailjetRequest(mailjetParams)
+        )} — error: ${JSON.stringify(this.describeMailjetError(error))}`,
+        this.errorStack(error)
+      );
+      throw error;
     }
   }
 
@@ -267,34 +251,20 @@ export class MailjetService {
       `Creating Mailjet contact for email ${params.email} in list ${listId}}`
     );
     try {
-      const res = await this.mailjetNewsletter
-        .post('contactslist', MailjetOptions.CONTACTS)
-        .id(listId)
-        .action('managecontact')
-        .request(body);
+      const res = await this.postContact(listId, body);
       this.logger.log(
         `Mailjet contact created in ${listId} for email ${params.email} — status ${res.response.status}`
       );
     } catch (error) {
-      if (this.isConnectionError(error) && this.mailjetNewsletterProxy) {
-        this.logger.warn('createContact: ECONNRESET, retrying via Fixie proxy');
-        try {
-          await this.mailjetNewsletterProxy
-            .post('contactslist', MailjetOptions.CONTACTS)
-            .id(listId)
-            .action('managecontact')
-            .request(body);
-        } catch (proxyError) {
-          this.logger.error(proxyError);
-          throw proxyError;
-        }
-      } else {
-        this.logger.error(
-          `Failed to create Mailjet contact for email ${params.email}`,
-          error
-        );
-        throw error;
-      }
+      this.logger.error(
+        `Failed to create Mailjet contact for email ${
+          params.email
+        } (${this.describeFailureOrigin(error)}) — error: ${JSON.stringify(
+          this.describeMailjetError(error)
+        )}`,
+        this.errorStack(error)
+      );
+      throw error;
     }
   }
 
@@ -353,40 +323,17 @@ export class MailjetService {
       },
     };
 
-    const makeRequest = (client: Client) =>
-      client
-        .post('contactslist', MailjetOptions.CONTACTS)
-        .id(listId)
-        .action('managecontact')
-        .request(body);
-
     try {
-      await makeRequest(this.mailjetNewsletter);
+      await this.postContact(listId, body);
       this.logger.log(`Contact ${userId} successfully created in Mailjet`);
     } catch (error) {
-      if (this.isConnectionError(error) && this.mailjetNewsletterProxy) {
-        this.logger.warn(
-          `createContactForUser ${userId}: ECONNRESET, retrying via Fixie proxy`
-        );
-        try {
-          await makeRequest(this.mailjetNewsletterProxy);
-          this.logger.log(
-            `Contact ${userId} successfully created in Mailjet via proxy`
-          );
-        } catch (proxyError) {
-          this.logger.error(
-            `createContactForUser ${userId}: proxy retry failed`,
-            proxyError
-          );
-          throw proxyError;
-        }
-      } else {
-        this.logger.error(
-          `Failed to create contact ${userId} in Mailjet`,
+      this.logger.error(
+        `Failed to create contact ${userId} in Mailjet (${this.describeFailureOrigin(
           error
-        );
-        throw error;
-      }
+        )}) — error: ${JSON.stringify(this.describeMailjetError(error))}`,
+        this.errorStack(error)
+      );
+      throw error;
     }
   }
 
