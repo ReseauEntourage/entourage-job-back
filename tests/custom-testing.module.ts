@@ -17,10 +17,12 @@ import { ContractsModule } from 'src/contracts/contracts.module';
 import { CurrentUserModule } from 'src/current-user/current-user.module';
 import { ElearningModule } from 'src/elearning/elearning.module';
 import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
+import { HelpGroupsModule } from 'src/help-groups/help-groups.module';
 import { LanguagesModule } from 'src/languages/languages.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { PassionsModule } from 'src/passions/passions.module';
+import { PostsModule } from 'src/posts/posts.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import { ReadDocumentsModule } from 'src/read-documents/read-documents.module';
 import { RecruitementAlertsModule } from 'src/recruitement-alerts/recruitement-alerts.module';
@@ -41,6 +43,7 @@ import { ContractsTestingModule } from './contracts/contracts-testing.module';
 import { DatabaseHelper } from './database.helper';
 import { ElearningTestingModule } from './elearning/elearning-testing.module';
 import { ExternalCvsTestingModule } from './external-cvs/external-cvs-testing.module';
+import { HelpGroupsTestingModule } from './help-groups/help-groups-testing.module';
 import { LanguagesTestingModule } from './languages/languages-testing.module';
 import { MessagingTestingModule } from './messaging/messaging-testing.module';
 import { NudgesTestingModule } from './nudges/nudges-testing.module';
@@ -88,6 +91,8 @@ import { UsersTestingModule } from './users/users-testing.module';
     ContactsModule,
     OrganizationsModule,
     MessagingModule,
+    PostsModule,
+    HelpGroupsModule,
     CheckinModule,
     ReadDocumentsModule,
     UsersCreationModule,
@@ -113,6 +118,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     UserProfilesTestingModule,
     ContactsTestingModule,
     MessagingTestingModule,
+    HelpGroupsTestingModule,
     QueuesTestingModule,
     CompaniesTestingModule,
     ElearningTestingModule,

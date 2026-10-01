@@ -30,6 +30,7 @@ import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { HelpGroupsModule } from './help-groups/help-groups.module';
 import { LocationsModule } from './locations/locations.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
@@ -37,6 +38,7 @@ import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PassionsModule } from './passions/passions.module';
 import { PingModule } from './ping/ping.module';
+import { PostsModule } from './posts/posts.module';
 import { ProfileGenerationModule } from './profile-generation/profile-generation.module';
 import { PublicCVsModule } from './public-cv/public-cvs.module';
 import { QueuesBoardModule } from './queues/producers/queues-board.module';
@@ -146,6 +148,8 @@ export function getSequelizeOptions(
     OrganizationsModule,
     ReadDocumentsModule,
     MessagingModule,
+    PostsModule,
+    HelpGroupsModule,
     AiAssistantModule,
     UserProfileSharesModule,
     UserSocialSituationsModule,
