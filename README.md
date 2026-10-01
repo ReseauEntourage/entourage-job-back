@@ -255,7 +255,7 @@ Toutes les variables sont listées dans [.env.dist](.env.dist), à copier en `.e
 | **Infra** | `DATABASE_URL`, `REDIS_URL` / `REDIS_TLS_URL`, `JWT_SECRET` |
 | **Worker** | `DEBUG_JOBS`, `JOBS_BACKOFF_DELAY`, `QUEUES_ADMIN_PASSWORD` |
 | **Stockage AWS** | `AWSS3_*`, `CDN_ID`, `CV_PDF_GENERATION_AWS_URL` |
-| **Mail (Mailjet)** | `MAILJET_*`, `FIXIE_URL`, et les `STAFF_CONTACT_*` par territoire |
+| **Mail (Mailjet)** | `MAILJET_*` (dont `MAILJET_RELAY_URL` et `MAILJET_RELAY_SECRET` : relais Lambda optionnel, appel direct à Mailjet s'il est absent), et les `STAFF_CONTACT_*` par territoire |
 | **SMS / temps réel** | `VONAGE_API_*`, `PUSHER_*` |
 | **IA** | `OPENAI_API_KEY`, `OPENAI_MAX_COMPLETION_TOKENS`, `ANTHROPIC_API_KEY`, `VOYAGEAI_API_KEY` |
 | **CRM** | `ENABLE_SF`, `SALESFORCE_*`, `SF_*` |
