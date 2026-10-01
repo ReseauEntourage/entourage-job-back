@@ -149,7 +149,7 @@ graph TB
 
     subgraph ExtSvc["Services externes"]
         SF["Salesforce CRM\n(OAuth2 / jsforce)"]
-        MJ["Mailjet\n(emails transactionnels)"]
+        MJ["Mailjet\n(emails transactionnels)\nvia la Lambda relais si MAILJET_RELAY_URL"]
         MC["Mailchimp\n(newsletter)"]
         OAI["OpenAI\n(vision + chat — extraction CV)"]
         VAI["VoyageAI\n(embeddings texte)"]
@@ -244,7 +244,7 @@ graph TB
 | **OpenAI**         | Extraction de CV par vision (PDF → données structurées) | API Key (env)                       | `ProfileGeneratorProcessor`, `ReadDocumentsModule`               |
 | **VoyageAI**       | Génération d'embeddings texte pour le matching          | API Key (env)                       | `EmbeddingQueueProcessor`, `EmbeddingsModule`                    |
 | **Salesforce**     | CRM — synchronisation utilisateurs et entreprises       | OAuth2 / jsforce (env)              | `WorkQueueProcessor`, `SalesforceModule`                         |
-| **Mailjet**        | Envoi d'emails transactionnels par template             | API Key + Secret (env)              | `WorkQueueProcessor`, `MailsModule`                              |
+| **Mailjet**        | Envoi d'emails transactionnels par template (via la Lambda relais `mailjet-relay-pro` si `MAILJET_RELAY_URL` est défini, appel direct sinon) | API Key + Secret (env) ; `MAILJET_RELAY_SECRET` pour le relais | `WorkQueueProcessor`, `MailsModule`                              |
 | **Mailchimp**      | Gestion des abonnements newsletter                      | API Key (env)                       | `WorkQueueProcessor`, `MailsModule`                              |
 | **Pusher**         | Notifications push temps réel vers le frontend          | App ID + Key + Secret (env)         | `ProfileGeneratorProcessor`, modules temps réel                  |
 | **Slack**          | Alertes internes de monitoring cron                     | Webhook / Bot Token (env)           | `CronTasksSlackReporterService`                                  |

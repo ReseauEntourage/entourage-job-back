@@ -13,7 +13,7 @@ The PRO product backend. NestJS 9 + Sequelize 6 (PostgreSQL) + BullMQ (Redis) + 
                                        └────────► Redis     ◄────────┘
                                        └────────► AWS S3 + CloudFront (CV PDFs, images)
                                        └────────► Salesforce  (jsforce, OAuth client-credentials)
-                                       └────────► Mailjet     (transactional + Mailchimp newsletter)
+                                       └────────► Mailjet     (transactional + Mailchimp newsletter; via the mailjet-relay-pro lambda when MAILJET_RELAY_URL is set)
                                        └────────► Slack       (@slack/bolt — scheduled queue reports)
                                        └────────► Pusher      (server SDK — fan-out)
                                        └────────► Anthropic Claude / OpenAI / VoyageAI (LLMs + embeddings)
@@ -105,7 +105,7 @@ mainWorker: pnpm worker:start
 `JWT_SECRET`,
 `DATABASE_URL`, `REDIS_URL`,
 `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `VOYAGEAI_API_KEY`,
-`MAILJET_PUB`, `MAILJET_SEC`, `MAILJET_NEWSLETTER_PUB`, `MAILJET_NEWSLETTER_SEC`, `MAILJET_NEWSLETTER_LIST_ID`, `MAILJET_FROM_EMAIL`, `MAILJET_FROM_NAME`, `MAILJET_SUPPORT_EMAIL`, `MAILJET_CONTACT_EMAIL`, `FIXIE_URL`,
+`MAILJET_PUB`, `MAILJET_SEC`, `MAILJET_NEWSLETTER_PUB`, `MAILJET_NEWSLETTER_SEC`, `MAILJET_NEWSLETTER_LIST_ID`, `MAILJET_FROM_EMAIL`, `MAILJET_FROM_NAME`, `MAILJET_SUPPORT_EMAIL`, `MAILJET_CONTACT_EMAIL`, `MAILJET_RELAY_URL`, `MAILJET_RELAY_SECRET`,
 `AWSS3_ID`, `AWSS3_SECRET`, `AWSS3_BUCKET_NAME`, `AWSS3_IMAGE_DIRECTORY`, `AWSS3_FILE_DIRECTORY`, `AWSS3_URL`, `CV_PDF_GENERATION_AWS_URL`, `CDN_ID`,
 `ENABLE_SF`, `SALESFORCE_LOGIN_URL`, `SALESFORCE_CLIENT_ID`, `SALESFORCE_CLIENT_SECRET`, `SF_INFOCO_CAMPAIGN_ID`, `SF_ORGANIZATION_ID`, `SF_WEBINAIRE_COACH_CAMPAIGN_ID`,
 `PUSHER_APP_ID`, `PUSHER_API_KEY`, `PUSHER_API_SECRET`,
