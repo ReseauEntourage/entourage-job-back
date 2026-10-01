@@ -36,7 +36,7 @@ graph LR
     end
 
     subgraph Externes["Services externes"]
-        Salesforce ~~~ Mailjet ~~~ Mailchimp ~~~ Pusher ~~~ Slack
+        Salesforce ~~~ Mailjet ~~~ Pusher ~~~ Slack
     end
 
     DB[(PostgreSQL)]
@@ -149,8 +149,7 @@ graph TB
 
     subgraph ExtSvc["Services externes"]
         SF["Salesforce CRM\n(OAuth2 / jsforce)"]
-        MJ["Mailjet\n(emails transactionnels)"]
-        MC["Mailchimp\n(newsletter)"]
+        MJ["Mailjet\n(emails transactionnels + newsletter)\nvia la Lambda relais si MAILJET_RELAY_URL"]
         OAI["OpenAI\n(vision + chat — extraction CV)"]
         VAI["VoyageAI\n(embeddings texte)"]
         PUSHER["Pusher\n(push temps réel)"]
@@ -167,7 +166,7 @@ graph TB
     API -->|"invalidation cache"| CF
     API -->|"SF contact créé"| SF
     API -->|"envoi email"| MJ
-    API -->|"abonnement newsletter"| MC
+    API -->|"abonnement newsletter"| MJ
     API -->|"push événement"| PUSHER
 
     %% Worker → Infra
@@ -177,7 +176,7 @@ graph TB
     %% Worker → Services externes
     WPROC -->|"envoi email"| MJ
     WPROC -->|"sync CRM"| SF
-    WPROC -->|"abonnement newsletter"| MC
+    WPROC -->|"abonnement newsletter"| MJ
     PPROC -->|"extraction CV"| OAI
     PPROC -->|"téléchargement PDF"| S3
     PPROC -->|"notification fin traitement"| PUSHER
@@ -195,7 +194,7 @@ graph TB
 | Queue                | Job                                                    | Processeur                  | Description                                                                                                      |
 | -------------------- | ------------------------------------------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `work`               | `send_mail`                                            | `WorkQueueProcessor`        | Envoie un ou plusieurs emails via Mailjet                                                                        |
-| `work`               | `newsletter_subscription`                              | `WorkQueueProcessor`        | Inscrit un contact à la newsletter (Mailjet/Mailchimp)                                                           |
+| `work`               | `newsletter_subscription`                              | `WorkQueueProcessor`        | Inscrit un contact à la newsletter (Mailjet)                                                           |
 | `work`               | `create_or_update_salesforce_user`                     | `WorkQueueProcessor`        | Crée ou met à jour un utilisateur dans Salesforce CRM                                                            |
 | `work`               | `create_or_update_salesforce_company`                  | `WorkQueueProcessor`        | Crée ou met à jour une entreprise dans Salesforce CRM                                                            |
 | `work`               | `update_salesforce_user_company`                       | `WorkQueueProcessor`        | Met à jour l'entreprise associée à un utilisateur dans Salesforce                                                |
@@ -244,8 +243,7 @@ graph TB
 | **OpenAI**         | Extraction de CV par vision (PDF → données structurées) | API Key (env)                       | `ProfileGeneratorProcessor`, `ReadDocumentsModule`               |
 | **VoyageAI**       | Génération d'embeddings texte pour le matching          | API Key (env)                       | `EmbeddingQueueProcessor`, `EmbeddingsModule`                    |
 | **Salesforce**     | CRM — synchronisation utilisateurs et entreprises       | OAuth2 / jsforce (env)              | `WorkQueueProcessor`, `SalesforceModule`                         |
-| **Mailjet**        | Envoi d'emails transactionnels par template             | API Key + Secret (env)              | `WorkQueueProcessor`, `MailsModule`                              |
-| **Mailchimp**      | Gestion des abonnements newsletter                      | API Key (env)                       | `WorkQueueProcessor`, `MailsModule`                              |
+| **Mailjet**        | Envoi d'emails transactionnels par template (via la Lambda relais `mailjet-relay-pro` si `MAILJET_RELAY_URL` est défini, appel direct sinon) | API Key + Secret (env) ; `MAILJET_RELAY_SECRET` pour le relais | `WorkQueueProcessor`, `MailsModule`                              |
 | **Pusher**         | Notifications push temps réel vers le frontend          | App ID + Key + Secret (env)         | `ProfileGeneratorProcessor`, modules temps réel                  |
 | **Slack**          | Alertes internes de monitoring cron                     | Webhook / Bot Token (env)           | `CronTasksSlackReporterService`                                  |
 | **PostgreSQL**     | Base de données principale                              | URI (`DATABASE_URL`)                | Tous les modules via Sequelize                                   |
