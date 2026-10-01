@@ -116,6 +116,18 @@ export class MailjetService {
     'otpCode',
   ]);
 
+  // Query parameters that carry a bearer secret inside URL-valued variables
+  // (e.g. `conversationUrl`, `checkinUrl`, `finalizeAccountUrl`).
+  private static readonly SENSITIVE_QUERY_PARAM = /token|otp|secret|password/i;
+
+  private redactUrlSecrets(value: string): string {
+    return value.replace(/([?&])([^=&#\s]+)=([^&#\s]*)/g, (match, sep, key) =>
+      MailjetService.SENSITIVE_QUERY_PARAM.test(key)
+        ? `${sep}${key}=[REDACTED]`
+        : match
+    );
+  }
+
   private redactSensitiveVariables(
     variables: Record<string, unknown> | undefined
   ): Record<string, unknown> | undefined {
@@ -123,11 +135,15 @@ export class MailjetService {
       return variables;
     }
     return Object.fromEntries(
-      Object.entries(variables).map(([key, value]) =>
-        MailjetService.SENSITIVE_VARIABLE_KEYS.has(key)
-          ? [key, '[REDACTED]']
-          : [key, value]
-      )
+      Object.entries(variables).map(([key, value]) => {
+        if (MailjetService.SENSITIVE_VARIABLE_KEYS.has(key)) {
+          return [key, '[REDACTED]'];
+        }
+        return [
+          key,
+          typeof value === 'string' ? this.redactUrlSecrets(value) : value,
+        ];
+      })
     );
   }
 

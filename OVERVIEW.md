@@ -13,7 +13,7 @@ The PRO product backend. NestJS 9 + Sequelize 6 (PostgreSQL) + BullMQ (Redis) + 
                                        └────────► Redis     ◄────────┘
                                        └────────► AWS S3 + CloudFront (CV PDFs, images)
                                        └────────► Salesforce  (jsforce, OAuth client-credentials)
-                                       └────────► Mailjet     (transactional + Mailchimp newsletter; via the mailjet-relay-pro lambda when MAILJET_RELAY_URL is set)
+                                       └────────► Mailjet     (transactional + newsletter contacts; via the mailjet-relay-pro lambda when MAILJET_RELAY_URL is set)
                                        └────────► Slack       (@slack/bolt — scheduled queue reports)
                                        └────────► Pusher      (server SDK — fan-out)
                                        └────────► Anthropic Claude / OpenAI / VoyageAI (LLMs + embeddings)
@@ -27,7 +27,7 @@ The PRO product backend. NestJS 9 + Sequelize 6 (PostgreSQL) + BullMQ (Redis) + 
 - **AI**: `@anthropic-ai/sdk` 0.91.1, `openai` 4.98.0, `voyageai` 0.2.1 — used for matching, profile recommendations and prompt-cached chat.
 - **PDF / images**: `pdf-lib` 1.17, `pdf2pic` 3.1.4, `puppeteer-core` 16.1.0, `sharp` 0.32.6 — CV rendering pipeline.
 - **CRM**: Salesforce via `jsforce` 1.11 (OAuth client-credentials), syncing contacts, companies, campaigns and events.
-- **Email**: Mailjet via `node-mailjet` 6.0.4 (transactional), `@mailchimp/mailchimp_marketing` (newsletter).
+- **Email**: Mailjet via `node-mailjet` 6.0.4 (transactional and newsletter contacts).
 
 ## Installing / scripts
 
@@ -83,7 +83,7 @@ mainWorker: pnpm worker:start
 - **Queue**: BullMQ 5.70.4, `@nestjs/bullmq`, Bull-Board.
 - **Cache**: `ioredis`, `cache-manager`, `cache-manager-ioredis`.
 - **AWS**: `@aws-sdk/client-s3`, `@aws-sdk/client-cloudfront`, `@aws-sdk/lib-storage`, `@aws-sdk/s3-request-presigner` (all v3.142.0).
-- **Integrations**: `jsforce` 1.11 (Salesforce), `node-mailjet` 6.0.4, `@mailchimp/mailchimp_marketing`, `@anthropic-ai/sdk` 0.91.1, `openai` 4.98.0, `voyageai` 0.2.1, `@slack/bolt` 3.19, `pusher` 5.1.1-beta, `@vonage/server-sdk` 2.11.2, `bitly` 7.1.2.
+- **Integrations**: `jsforce` 1.11 (Salesforce), `node-mailjet` 6.0.4, `@anthropic-ai/sdk` 0.91.1, `openai` 4.98.0, `voyageai` 0.2.1, `@slack/bolt` 3.19, `pusher` 5.1.1-beta, `@vonage/server-sdk` 2.11.2, `bitly` 7.1.2.
 - **PDF / image**: `pdf-lib` 1.17, `pdf2pic` 3.1.4, `puppeteer-core` 16.1.0, `sharp` 0.32.6.
 - **Monitoring / hardening**: `dd-trace` 6.16, `@nestjs/throttler`, `class-validator`, `class-transformer`.
 - **Utils**: `axios`, `node-fetch`, `lodash`, `moment` + `moment-timezone`, `uuid`, `validator`, `deep-diff`.

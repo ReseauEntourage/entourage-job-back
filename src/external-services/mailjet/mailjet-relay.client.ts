@@ -99,6 +99,7 @@ export class MailjetRelayClient {
     payload: unknown
   ): Promise<MailjetRelayResult> {
     let response: Response;
+    let text: string;
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
         method: 'POST',
@@ -109,6 +110,9 @@ export class MailjetRelayClient {
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(MAILJET_RELAY_TIMEOUT_MS),
       });
+      // The body is read inside the same `try`: a connection lost after the
+      // headers (or a timeout while reading) is a network failure too.
+      text = await response.text();
     } catch (error) {
       const cause = (error as { cause?: { code?: string } })?.cause;
       throw new MailjetRelayError(
@@ -122,7 +126,6 @@ export class MailjetRelayClient {
       );
     }
 
-    const text = await response.text();
     let data: unknown = text;
     try {
       data = text ? JSON.parse(text) : null;

@@ -77,7 +77,13 @@ const mailParams = {
   toEmail: 'user@example.org',
   subject: 'Reset your password',
   replyTo: 'staff@entourage.social',
-  variables: { firstName: 'Ada', token: 'SECRET-TOKEN', otpCode: '123456' },
+  variables: {
+    firstName: 'Ada',
+    token: 'SECRET-TOKEN',
+    otpCode: '123456',
+    finalizeAccountUrl:
+      'https://pro.example.org/finalize?autologinToken=URL-SECRET&lang=fr',
+  },
 };
 
 const relayResponse = (
@@ -192,12 +198,36 @@ describe('Mailjet relay transport', () => {
       expect(call.body).toEqual({ listId: LIST_ID, body: contact });
     });
 
-    it('waits longer than the relay limit of 20 s and aborts after that', async () => {
-      await client().send({ Messages: [] });
+    it('aborts the request after the relay limit of 20 s has passed', async () => {
+      const controller = new AbortController();
+      const timeoutSpy = jest
+        .spyOn(AbortSignal, 'timeout')
+        .mockReturnValue(controller.signal);
+      // Stays pending until the signal aborts, like a real fetch would.
+      fetchMock.mockImplementation(
+        (_url: string, init: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            init.signal.addEventListener('abort', () =>
+              reject(init.signal.reason)
+            );
+          })
+      );
+
+      const pending = client()
+        .send({ Messages: [] })
+        .catch((e) => e);
+      controller.abort(
+        Object.assign(new Error('The operation timed out'), {
+          name: 'TimeoutError',
+        })
+      );
+      const error = await pending;
 
       expect(MAILJET_RELAY_TIMEOUT_MS).toBeGreaterThan(20000);
-      expect((relayCall().init.signal as AbortSignal).aborted).toBe(false);
-      expect(relayCall().init.signal).toBeInstanceOf(AbortSignal);
+      expect(timeoutSpy).toHaveBeenCalledWith(MAILJET_RELAY_TIMEOUT_MS);
+      expect(error).toBeInstanceOf(MailjetRelayError);
+      expect(error.source).toBe('network');
+      expect(error.message).toContain('TimeoutError');
     });
 
     it('resolves a 2xx with the status and the parsed body', async () => {
@@ -267,6 +297,23 @@ describe('Mailjet relay transport', () => {
       expect(error).toBeInstanceOf(MailjetRelayError);
       expect(error.source).toBe('network');
       expect(error.statusCode).toBeUndefined();
+    });
+
+    it('throws a network error when the connection drops while reading the body', async () => {
+      const response = relayResponse(200, { ok: true });
+      jest.spyOn(response, 'text').mockRejectedValue(
+        Object.assign(new Error('terminated'), {
+          cause: { code: 'ECONNRESET' },
+        })
+      );
+      fetchMock.mockResolvedValue(response);
+
+      const error = await client()
+        .send({ Messages: [] })
+        .catch((e) => e);
+
+      expect(error).toBeInstanceOf(MailjetRelayError);
+      expect(error).toMatchObject({ source: 'network', code: 'ECONNRESET' });
     });
 
     it('throws a network error with the code when the connection is reset', async () => {
@@ -435,6 +482,8 @@ describe('Mailjet relay transport', () => {
       expect(message).toContain('[REDACTED]');
       expect(message).not.toContain('SECRET-TOKEN');
       expect(message).not.toContain('123456');
+      expect(message).not.toContain('URL-SECRET');
+      expect(message).toContain('lang=fr');
       expect(message).toContain('Ada');
     });
   });
