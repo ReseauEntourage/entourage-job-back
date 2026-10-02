@@ -11,6 +11,8 @@ import { HelpGroupAdminItem } from './help-groups.types';
 import { findAvailableSlug, slugify } from './help-groups.utils';
 import { HelpGroup } from './models';
 
+const SLUG_CREATE_MAX_ATTEMPTS = 5;
+
 @Injectable()
 export class HelpGroupsAdminService {
   constructor(
@@ -91,13 +93,12 @@ export class HelpGroupsAdminService {
   }
 
   /**
-   * Created unpublished. The unique index on `slug` guards against two
-   * concurrent creations: on violation, retry once with the next suffix.
+   * Created unpublished. The unique index on `slug` guards against
+   * concurrent creations: on violation, retry with the next available slug,
+   * up to `SLUG_CREATE_MAX_ATTEMPTS` attempts.
    */
   async create(dto: CreateHelpGroupDto, adminId: string): Promise<HelpGroup> {
     const baseSlug = slugify(dto.name);
-    const takenSlugs = await this.findTakenSlugs(baseSlug);
-    const slug = findAvailableSlug(baseSlug, takenSlugs);
     const values = {
       name: dto.name,
       description: dto.description,
@@ -107,17 +108,23 @@ export class HelpGroupsAdminService {
       pinnedAt: null as Date | null,
     };
 
-    try {
-      return await this.helpGroupModel.create({ ...values, slug });
-    } catch (error) {
-      if (!(error instanceof UniqueConstraintError)) {
-        throw error;
-      }
-      const retrySlug = findAvailableSlug(baseSlug, [
+    const attemptedSlugs: string[] = [];
+    for (let attempt = 1; ; attempt += 1) {
+      const slug = findAvailableSlug(baseSlug, [
         ...(await this.findTakenSlugs(baseSlug)),
-        slug,
+        ...attemptedSlugs,
       ]);
-      return this.helpGroupModel.create({ ...values, slug: retrySlug });
+      try {
+        return await this.helpGroupModel.create({ ...values, slug });
+      } catch (error) {
+        if (
+          !(error instanceof UniqueConstraintError) ||
+          attempt >= SLUG_CREATE_MAX_ATTEMPTS
+        ) {
+          throw error;
+        }
+        attemptedSlugs.push(slug);
+      }
     }
   }
 

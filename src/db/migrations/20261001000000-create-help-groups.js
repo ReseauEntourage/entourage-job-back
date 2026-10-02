@@ -246,6 +246,18 @@ module.exports = {
         name: 'post_reactions_user_id_reply_id_unique',
         transaction,
       });
+      // The unique indexes above lead with `userId`: these serve the
+      // reactions summaries, which filter on the target only
+      await queryInterface.addIndex('PostReactions', ['postId'], {
+        where: { deletedAt: null, postId: { [Sequelize.Op.ne]: null } },
+        name: 'post_reactions_post_id',
+        transaction,
+      });
+      await queryInterface.addIndex('PostReactions', ['replyId'], {
+        where: { deletedAt: null, replyId: { [Sequelize.Op.ne]: null } },
+        name: 'post_reactions_reply_id',
+        transaction,
+      });
     });
   },
 

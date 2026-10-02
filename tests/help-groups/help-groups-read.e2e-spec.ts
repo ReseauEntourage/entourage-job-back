@@ -416,6 +416,16 @@ describe('Help groups - Read', () => {
       expect(response.status).toBe(400);
     });
 
+    it.each(['2abc', '0', '-1', '1.5', 'abc'])(
+      'Should return 400 for an invalid limit "%s"',
+      async (limit) => {
+        const response = await get(
+          `${route}/${group.slug}/discussions?limit=${limit}`
+        );
+        expect(response.status).toBe(400);
+      }
+    );
+
     it('Should give the replies count without deleted replies, and reactions without any count', async () => {
       const discussion = await discussionFactory.create(
         { authorId: reader.user.id },
