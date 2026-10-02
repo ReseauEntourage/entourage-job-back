@@ -49,8 +49,12 @@ export const parsePageLimit = (
   if (rawLimit === undefined || rawLimit === '') {
     return defaultLimit;
   }
+  // The whole value must be a positive integer (`parseInt` would accept `2abc`)
+  if (!/^\d+$/.test(rawLimit)) {
+    throw new BadRequestException('Invalid limit');
+  }
   const limit = parseInt(rawLimit, 10);
-  if (Number.isNaN(limit) || limit < 1) {
+  if (limit < 1) {
     throw new BadRequestException('Invalid limit');
   }
   return Math.min(limit, maxLimit);

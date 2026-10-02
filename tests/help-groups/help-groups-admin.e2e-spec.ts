@@ -206,6 +206,65 @@ describe('Help groups - Admin', () => {
       expect(response.body.slug).toBe('refaire-un-cv-3');
     });
 
+    describe('Concurrent slug conflicts', () => {
+      afterEach(() => {
+        jest.restoreAllMocks();
+      });
+
+      // Stale reads of the taken slugs simulate groups created concurrently
+      // between the read and the insert
+      const staleTakenSlugs = (...slugs: string[]) =>
+        slugs.map((slug) => ({ slug })) as unknown as HelpGroup[];
+
+      it('Should retry with the next slug on repeated unique violations', async () => {
+        for (const slug of [
+          'refaire-un-cv',
+          'refaire-un-cv-2',
+          'refaire-un-cv-3',
+        ]) {
+          await helpGroupFactory.create({ slug });
+        }
+        jest
+          .spyOn(helpGroupModel, 'findAll')
+          .mockResolvedValueOnce(staleTakenSlugs())
+          .mockResolvedValueOnce(staleTakenSlugs())
+          .mockResolvedValueOnce(staleTakenSlugs());
+        const createSpy = jest.spyOn(helpGroupModel, 'create');
+
+        const response = await asAdmin(
+          request(server).post(adminRoute).send(validGroup)
+        );
+        expect(response.status).toBe(201);
+        expect(response.body.slug).toBe('refaire-un-cv-4');
+        expect(createSpy).toHaveBeenCalledTimes(4);
+      });
+
+      it('Should give up after a bounded number of attempts', async () => {
+        for (const slug of [
+          'refaire-un-cv',
+          'refaire-un-cv-2',
+          'refaire-un-cv-3',
+          'refaire-un-cv-4',
+          'refaire-un-cv-5',
+          'refaire-un-cv-6',
+        ]) {
+          await helpGroupFactory.create({ slug });
+        }
+        jest
+          .spyOn(helpGroupModel, 'findAll')
+          .mockResolvedValue(staleTakenSlugs());
+        const createSpy = jest.spyOn(helpGroupModel, 'create');
+
+        const response = await asAdmin(
+          request(server).post(adminRoute).send(validGroup)
+        );
+        expect(response.status).toBe(500);
+        expect(createSpy).toHaveBeenCalledTimes(5);
+        jest.restoreAllMocks();
+        expect(await helpGroupModel.count({ paranoid: false })).toBe(6);
+      });
+    });
+
     it.each([
       ['name', ''],
       ['name', '   '],
