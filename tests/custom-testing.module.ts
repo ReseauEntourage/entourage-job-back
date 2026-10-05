@@ -51,6 +51,7 @@ import { OrganizationsTestingModule } from './organizations/organizations-testin
 import { PublicCVsTestingModule } from './public-cvs/public-cvs-testing.module';
 import { QueuesTestingModule } from './queues/queues-testing.module';
 import { RecruitementAlertsTestingModule } from './recruitement-alerts/recruitement-alerts-testing.module';
+import { ReportsTestingModule } from './reports/reports-testing.module';
 import { UserCreationTestingModule } from './user-creation/user-creation-testing.module';
 import { UserDeletionTestingModule } from './user-deletion/user-deletion-testing.module';
 import { UserProfilesTestingModule } from './user-profiles/user-profiles-testing.module';
@@ -119,6 +120,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ContactsTestingModule,
     MessagingTestingModule,
     HelpGroupsTestingModule,
+    ReportsTestingModule,
     QueuesTestingModule,
     CompaniesTestingModule,
     ElearningTestingModule,

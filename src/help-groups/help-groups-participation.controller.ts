@@ -14,16 +14,19 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { UserPayload } from 'src/auth/guards';
+import { User } from 'src/users/models';
 import {
   CreateDiscussionDto,
   CreateReplyDto,
   RemoveReactionDto,
+  ReportMessageDto,
   SetReactionDto,
   TitleSuggestionDto,
   UpdateDiscussionDto,
   UpdateReplyDto,
 } from './dto';
 import { HelpGroupsParticipationService } from './help-groups-participation.service';
+import { HelpGroupsReportingService } from './help-groups-reporting.service';
 import { HelpGroupsTitleService } from './help-groups-title.service';
 import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 
@@ -39,7 +42,8 @@ const idPipe = new ParseUUIDPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND });
 /**
  * Write routes of the members. Every write goes through the single write
  * control of `HelpGroupsWriteGuardService`, except editing and deleting
- * one's own message, which only checks the authorship.
+ * one's own message, which only checks the authorship, and reporting a
+ * message, open to any reader.
  */
 @ApiTags('Help groups - Participation')
 @ApiBearerAuth()
@@ -48,7 +52,8 @@ export class HelpGroupsParticipationController {
   constructor(
     private readonly participationService: HelpGroupsParticipationService,
     private readonly titleService: HelpGroupsTitleService,
-    private readonly writeGuard: HelpGroupsWriteGuardService
+    private readonly writeGuard: HelpGroupsWriteGuardService,
+    private readonly reportingService: HelpGroupsReportingService
   ) {}
 
   @HttpCode(HttpStatus.OK)
@@ -202,6 +207,25 @@ export class HelpGroupsParticipationController {
       discussionId,
       userId,
       dto.target
+    );
+  }
+
+  /**
+   * Report of the discussion or of one of its replies, open to any logged-in
+   * user who can read it, member or not: no write control here.
+   */
+  @Post(':slug/discussions/:discussionId/reports')
+  async report(
+    @Param('slug') slug: string,
+    @Param('discussionId', idPipe) discussionId: string,
+    @UserPayload() user: Partial<User>,
+    @Body(bodyPipe) dto: ReportMessageDto
+  ) {
+    return this.reportingService.report(
+      slug,
+      discussionId,
+      { id: user.id, role: user.role },
+      dto
     );
   }
 }

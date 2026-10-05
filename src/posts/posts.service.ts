@@ -12,6 +12,7 @@ import {
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UserRole } from 'src/users/users.types';
+import { isEntourageAdmin } from 'src/users/users.utils';
 import {
   Post,
   PostContext,
@@ -20,7 +21,12 @@ import {
   PostReactionEmojis,
   PostReply,
 } from './models';
-import { PostAuthor, ReactionsSummary, ReactionTarget } from './posts.types';
+import {
+  HiddenMessage,
+  PostAuthor,
+  ReactionsSummary,
+  ReactionTarget,
+} from './posts.types';
 import {
   decodePostCursor,
   encodePostCursor,
@@ -29,6 +35,15 @@ import {
 } from './posts.utils';
 
 const MAX_REACTION_FIRST_NAMES = 3;
+
+const replyAttributes = [
+  'id',
+  'content',
+  'createdAt',
+  'editedAt',
+  'authorId',
+  'hiddenAt',
+];
 
 export const postAuthorAttributes = [
   'id',
@@ -46,10 +61,24 @@ export interface PostReplyItem {
   createdAt: Date;
   editedAt: Date | null;
   id: string;
+  // Hidden after reports: only its author and the admins read it
+  isUnderReview: boolean;
   reactionsSummary: ReactionsSummary | null;
   // Active reaction of the reader on this reply
   viewerReaction: PostReactionEmoji | null;
 }
+
+// A reply as serialized for a given reader
+export type PostReplyView = PostReplyItem | HiddenMessage;
+
+/**
+ * Content of a message hidden after reports stays readable by its author
+ * and by the admins only.
+ */
+export const canReadHiddenMessage = (
+  authorId: string,
+  reader: PostReader
+): boolean => authorId === reader.id || isEntourageAdmin(reader.role);
 
 export interface PostReader {
   id: string;
@@ -143,7 +172,8 @@ export class PostsService {
     }
     const rows = (await this.postReplyModel.findAll({
       attributes: ['postId', [fn('COUNT', col('id')), 'count']],
-      where: { postId: postIds },
+      // A hidden reply does not count, so as not to expose a signal
+      where: { postId: postIds, hiddenAt: null },
       group: ['postId'],
       raw: true,
     })) as unknown as { postId: string; count: string }[];
@@ -263,9 +293,9 @@ export class PostsService {
   async findReplyItem(
     replyId: string,
     reader: PostReader
-  ): Promise<PostReplyItem | null> {
+  ): Promise<PostReplyView | null> {
     const reply = await this.postReplyModel.findByPk(replyId, {
-      attributes: ['id', 'content', 'createdAt', 'editedAt', 'authorId'],
+      attributes: replyAttributes,
       include: [this.authorInclude()],
     });
     if (!reply) {
@@ -275,12 +305,31 @@ export class PostsService {
       this.getReactionsSummaries('replyId', [reply.id]),
       this.getViewerReactions('replyId', [reply.id], reader.id),
     ]);
+    return this.toReplyView(reply, reader, reactionsSummaries, viewerReactions);
+  }
+
+  /**
+   * Single projection of a reply: a reply hidden after reports is reduced to
+   * `{ id, isUnderReview }` for any reader but its author and the admins, so
+   * that its content, author and reactions are never serialized for them.
+   */
+  private toReplyView(
+    reply: PostReply,
+    reader: PostReader,
+    reactionsSummaries: Record<string, ReactionsSummary>,
+    viewerReactions: Record<string, PostReactionEmoji>
+  ): PostReplyView {
+    const isUnderReview = reply.hiddenAt !== null;
+    if (isUnderReview && !canReadHiddenMessage(reply.authorId, reader)) {
+      return { id: reply.id, isUnderReview: true };
+    }
     return {
       id: reply.id,
       content: reply.content,
       createdAt: reply.createdAt,
       editedAt: reply.editedAt,
       author: this.toAuthor(reply.author, reader.role),
+      isUnderReview,
       reactionsSummary: reactionsSummaries[reply.id] ?? null,
       viewerReaction: viewerReactions[reply.id] ?? null,
     };
@@ -294,11 +343,11 @@ export class PostsService {
     reader: PostReader,
     limit: number,
     after?: string
-  ): Promise<Page<PostReplyItem>> {
+  ): Promise<Page<PostReplyView>> {
     const cursor = after ? decodePostCursor(after) : null;
 
     const replies = await this.postReplyModel.findAll({
-      attributes: ['id', 'content', 'createdAt', 'editedAt', 'authorId'],
+      attributes: replyAttributes,
       where: {
         postId,
         ...(cursor
@@ -328,15 +377,9 @@ export class PostsService {
     const lastReply = pageReplies[pageReplies.length - 1];
 
     return {
-      items: pageReplies.map((reply) => ({
-        id: reply.id,
-        content: reply.content,
-        createdAt: reply.createdAt,
-        editedAt: reply.editedAt,
-        author: this.toAuthor(reply.author, reader.role),
-        reactionsSummary: reactionsSummaries[reply.id] ?? null,
-        viewerReaction: viewerReactions[reply.id] ?? null,
-      })),
+      items: pageReplies.map((reply) =>
+        this.toReplyView(reply, reader, reactionsSummaries, viewerReactions)
+      ),
       nextCursor:
         replies.length > limit
           ? encodePostCursor({ date: lastReply.createdAt, id: lastReply.id })

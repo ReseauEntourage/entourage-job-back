@@ -1,5 +1,11 @@
 import { PostReactionEmoji } from 'src/posts/models';
-import { PostAuthor, ReactionsSummary } from 'src/posts/posts.types';
+import { PostReplyItem } from 'src/posts/posts.service';
+import {
+  HiddenMessage,
+  PostAuthor,
+  ReactionsSummary,
+} from 'src/posts/posts.types';
+import { ReportReason } from 'src/reports/reports.types';
 
 export interface HelpGroupContributor {
   // The front builds the picture URL from the user id, as in the directory
@@ -25,6 +31,13 @@ export const HelpGroupErrorCodes = {
   CHARTER_NOT_ACCEPTED: 'HELP_GROUP_CHARTER_NOT_ACCEPTED',
   DISCUSSION_NOT_FOUND: 'HELP_GROUP_DISCUSSION_NOT_FOUND',
 } as const;
+
+/**
+ * Number of distinct reporters, with a report still to handle, from which a
+ * help group message is hidden automatically: 1 (PM decision of 01/10/2026,
+ * every report hides the message). 0 disables the automatic hiding.
+ */
+export const HELP_GROUPS_AUTO_HIDE_THRESHOLD = 1;
 
 /**
  * What the viewer can do in a group, from which the front picks the
@@ -64,19 +77,46 @@ export interface HelpGroupDiscussionItem {
   author: PostAuthor;
   createdAt: Date;
   id: string;
+  // Hidden after reports: only listed for its author and the admins
+  isUnderReview: boolean;
   lastActivityAt: Date;
   reactionsSummary: ReactionsSummary | null;
   repliesCount: number;
   title: string | null;
 }
 
+export interface HelpGroupDiscussionGroup {
+  id: string;
+  isPublished: boolean;
+  name: string;
+  slug: string;
+}
+
 export interface HelpGroupDiscussion extends HelpGroupDiscussionItem {
   content: string;
   editedAt: Date | null;
-  group: { id: string; slug: string; name: string; isPublished: boolean };
+  group: HelpGroupDiscussionGroup;
+  // Admins only, on a message under review: motives of the pending reports
+  reportReasons?: ReportReason[];
   // Active reaction of the reader on the discussion message
   viewerReaction: PostReactionEmoji | null;
 }
+
+/**
+ * A discussion hidden after reports, for a reader who is neither its author
+ * nor an admin: its title and message are replaced by a neutral mention,
+ * its replies stay readable.
+ */
+export interface HelpGroupHiddenDiscussion extends HiddenMessage {
+  group: HelpGroupDiscussionGroup;
+  repliesCount: number;
+}
+
+export type HelpGroupDiscussionView =
+  HelpGroupDiscussion | HelpGroupHiddenDiscussion;
+
+export type HelpGroupReplyView =
+  (PostReplyItem & { reportReasons?: ReportReason[] }) | HiddenMessage;
 
 export interface HelpGroupAdminItem {
   createdAt: Date;

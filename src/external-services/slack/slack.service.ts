@@ -23,6 +23,30 @@ import {
   SlackMsgPart,
 } from './slack.types';
 
+export interface HelpGroupMessageReport {
+  author: User;
+  comment: string | null;
+  excerpt: string;
+  groupName: string;
+  isReply: boolean;
+  messageUrl: string;
+  reasonLabel: string;
+  reporter: User;
+}
+
+export interface HelpGroupMessageAutoHidden {
+  author: User;
+  groupName: string;
+  isReply: boolean;
+  messageUrl: string;
+  reasonLabels: string[];
+}
+
+const formatSlackUser = (user: User | null | undefined) =>
+  user
+    ? `${user.firstName} ${user.lastName} <${user.email}>`
+    : 'Compte supprimé';
+
 @Injectable()
 export class SlackService implements OnModuleInit {
   private app: App;
@@ -117,6 +141,107 @@ export class SlackService implements OnModuleInit {
         slackStaffContactUserId
       ),
       `Le profil de ${userReported.firstName} ${userReported.lastName} a été signalé`
+    );
+  };
+
+  /**
+   * Slack ids of the referents of the given users, each once. A referent
+   * without Slack email, or not found on Slack, is ignored.
+   */
+  private async getReferentSlackUserIds(users: User[]): Promise<string[]> {
+    const emails = [
+      ...new Set(
+        users.map((user) => user?.staffContact?.slackEmail).filter(Boolean)
+      ),
+    ];
+    const ids = await Promise.all(
+      emails.map((email) => this.getUserIdByEmail(email))
+    );
+    return [...new Set(ids.filter(Boolean))];
+  }
+
+  /**
+   * A help group message was reported: link, group, excerpt, motive,
+   * comment, reporter and author, with the referents of the author and of
+   * the reporter mentioned once each. Never any email.
+   */
+  sendHelpGroupMessageReported = async ({
+    author,
+    comment,
+    excerpt,
+    groupName,
+    isReply,
+    messageUrl,
+    reasonLabel,
+    reporter,
+  }: HelpGroupMessageReport): Promise<void> => {
+    const referentIds = await this.getReferentSlackUserIds([author, reporter]);
+    const blocks = this.generateSlackBlockMsg({
+      title: '🚨 Un message de groupe d’entraide a été signalé',
+      context: [
+        { title: 'Signalé par', content: formatSlackUser(reporter) },
+        { title: 'Auteur du message', content: formatSlackUser(author) },
+        {
+          title: '👮 Référents',
+          content: referentIds.length
+            ? referentIds.map((id) => `<@${id}>`).join(' ')
+            : 'Aucun référent identifié',
+        },
+      ],
+      msgParts: [
+        { content: `*Groupe* : ${groupName}` },
+        {
+          content: `*${isReply ? 'Réponse' : 'Discussion'}* : <${messageUrl}|Voir le message>`,
+        },
+        { content: `*Extrait* : ${excerpt}` },
+        { content: `*Motif* : ${reasonLabel}` },
+        { content: `*Commentaire* : ${comment || 'Aucun commentaire'}` },
+      ],
+    });
+    await this.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      blocks,
+      `Un message du groupe ${groupName} a été signalé`
+    );
+  };
+
+  /**
+   * Priority alert: a help group message was hidden automatically after
+   * reports, so that an admin restores it quickly in case of abuse.
+   */
+  sendHelpGroupMessageAutoHidden = async ({
+    author,
+    groupName,
+    isReply,
+    messageUrl,
+    reasonLabels,
+  }: HelpGroupMessageAutoHidden): Promise<void> => {
+    const [referentId] = await this.getReferentSlackUserIds([author]);
+    const blocks = this.generateSlackBlockMsg({
+      title: '‼️ PRIORITAIRE — Message masqué automatiquement',
+      context: [
+        { title: 'Auteur du message', content: formatSlackUser(author) },
+        {
+          title: '👮 Référent de l’auteur',
+          content: referentId ? `<@${referentId}>` : 'Aucun référent identifié',
+        },
+      ],
+      msgParts: [
+        { content: `*Groupe* : ${groupName}` },
+        {
+          content: `*${isReply ? 'Réponse' : 'Discussion'}* : <${messageUrl}|Voir le message>`,
+        },
+        { content: `*Motifs reçus* : ${reasonLabels.join(', ')}` },
+        {
+          content:
+            'Le message n’est plus visible des membres. Un admin peut le rétablir ou le supprimer depuis le groupe.',
+        },
+      ],
+    });
+    await this.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      blocks,
+      `PRIORITAIRE : un message du groupe ${groupName} a été masqué automatiquement`
     );
   };
 

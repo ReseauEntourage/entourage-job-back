@@ -476,6 +476,7 @@ describe('Help groups - Read', () => {
           id: reader.user.id,
           roleLabel: 'Candidat',
         }),
+        isUnderReview: false,
         repliesCount: 2,
         reactionsSummary: {
           emojis: ['💪', '👏'],
@@ -518,6 +519,7 @@ describe('Help groups - Read', () => {
         createdAt: expect.any(String),
         editedAt: null,
         lastActivityAt: expect.any(String),
+        isUnderReview: false,
         repliesCount: 0,
         reactionsSummary: null,
         viewerReaction: null,

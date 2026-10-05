@@ -28,7 +28,7 @@ import {
 } from 'src/posts/models';
 import {
   PostReader,
-  PostReplyItem,
+  PostReplyView,
   PostsService,
 } from 'src/posts/posts.service';
 import {
@@ -36,6 +36,11 @@ import {
   ReactionsSummary,
   ReactionTarget,
 } from 'src/posts/posts.types';
+import { ReportsService } from 'src/reports/reports.service';
+import {
+  ReportResolutions,
+  ReportTargetTypes,
+} from 'src/reports/reports.types';
 import { User } from 'src/users/models';
 import {
   CreateDiscussionDto,
@@ -49,7 +54,10 @@ import { HelpGroupsModerationAlertService } from './help-groups-moderation-alert
 import { HelpGroupsRealtimeService } from './help-groups-realtime.service';
 import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 import { HelpGroupsService } from './help-groups.service';
-import { HelpGroupDiscussion, HelpGroupErrorCodes } from './help-groups.types';
+import {
+  HelpGroupDiscussionView,
+  HelpGroupErrorCodes,
+} from './help-groups.types';
 import { HelpGroup, HelpGroupMembership } from './models';
 
 export interface ReactionResult {
@@ -110,7 +118,8 @@ export class HelpGroupsParticipationService {
     private postsService: PostsService,
     private realtime: HelpGroupsRealtimeService,
     private moderationAlert: HelpGroupsModerationAlertService,
-    private pusherService: PusherService
+    private pusherService: PusherService,
+    private reportsService: ReportsService
   ) {}
 
   private transaction<T>(callback: (transaction: Transaction) => Promise<T>) {
@@ -195,7 +204,7 @@ export class HelpGroupsParticipationService {
     slug: string,
     userId: string,
     dto: CreateDiscussionDto
-  ): Promise<HelpGroupDiscussion> {
+  ): Promise<HelpGroupDiscussionView> {
     const { group, user } = await this.writeGuard.assertCanWrite(userId, slug);
 
     const post = await this.transaction(async (transaction) => {
@@ -252,7 +261,7 @@ export class HelpGroupsParticipationService {
     discussionId: string,
     userId: string,
     dto: CreateReplyDto
-  ): Promise<PostReplyItem> {
+  ): Promise<PostReplyView> {
     const { group, user } = await this.writeGuard.assertCanWrite(userId, slug);
     const post = await this.findDiscussionOrFail(discussionId, group);
 
@@ -286,11 +295,13 @@ export class HelpGroupsParticipationService {
 
   /**
    * The reacted message must be the discussion itself or one of its visible
-   * replies.
+   * replies. A message hidden after reports offers no action to anyone but
+   * its author.
    */
   private async resolveReactionTarget(
     post: Post,
-    target: ReactionTargetDto
+    target: ReactionTargetDto,
+    userId: string
   ): Promise<{ field: ReactionTarget; id: string }> {
     const hasDiscussion = !!target?.discussionId;
     const hasReply = !!target?.replyId;
@@ -300,16 +311,19 @@ export class HelpGroupsParticipationService {
       );
     }
     if (hasDiscussion) {
-      if (target.discussionId !== post.id) {
+      if (
+        target.discussionId !== post.id ||
+        (post.hiddenAt && post.authorId !== userId)
+      ) {
         throw new NotFoundException();
       }
       return { field: 'postId', id: post.id };
     }
     const reply = await this.postReplyModel.findOne({
-      attributes: ['id'],
+      attributes: ['id', 'authorId', 'hiddenAt'],
       where: { id: target.replyId, postId: post.id },
     });
-    if (!reply) {
+    if (!reply || (reply.hiddenAt && reply.authorId !== userId)) {
       throw new NotFoundException();
     }
     return { field: 'replyId', id: reply.id };
@@ -360,7 +374,11 @@ export class HelpGroupsParticipationService {
   ): Promise<ReactionResult> {
     const { group } = await this.writeGuard.assertCanWrite(userId, slug);
     const post = await this.findDiscussionOrFail(discussionId, group);
-    const { field, id } = await this.resolveReactionTarget(post, target);
+    const { field, id } = await this.resolveReactionTarget(
+      post,
+      target,
+      userId
+    );
 
     const values = { userId, [field]: id } as Partial<PostReaction>;
     const where = values as WhereOptions<PostReaction>;
@@ -389,7 +407,11 @@ export class HelpGroupsParticipationService {
   ): Promise<ReactionResult> {
     const { group } = await this.writeGuard.assertCanWrite(userId, slug);
     const post = await this.findDiscussionOrFail(discussionId, group);
-    const { field, id } = await this.resolveReactionTarget(post, target);
+    const { field, id } = await this.resolveReactionTarget(
+      post,
+      target,
+      userId
+    );
 
     await this.postReactionModel.destroy({
       where: { userId, [field]: id } as WhereOptions<PostReaction>,
@@ -450,7 +472,7 @@ export class HelpGroupsParticipationService {
     discussionId: string,
     userId: string,
     dto: UpdateDiscussionDto
-  ): Promise<HelpGroupDiscussion> {
+  ): Promise<HelpGroupDiscussionView> {
     if (dto.title === undefined && dto.content === undefined) {
       throw new BadRequestException('title or content is required');
     }
@@ -514,7 +536,7 @@ export class HelpGroupsParticipationService {
     replyId: string,
     userId: string,
     dto: UpdateReplyDto
-  ): Promise<PostReplyItem> {
+  ): Promise<PostReplyView> {
     const user = await this.writeGuard.findWriter(userId);
     const { group, post } = await this.findOwnDiscussion(
       slug,
@@ -568,7 +590,8 @@ export class HelpGroupsParticipationService {
    */
   private async softDeletePost(
     postId: string,
-    deletion: Partial<Post>
+    deletion: Partial<Post>,
+    moderatorId?: string
   ): Promise<void> {
     await this.transaction(async (transaction) => {
       await this.postModel.update(deletion, {
@@ -576,6 +599,14 @@ export class HelpGroupsParticipationService {
         transaction,
       });
       await this.postModel.destroy({ where: { id: postId }, transaction });
+      if (moderatorId) {
+        await this.reportsService.resolvePending(
+          { targetType: ReportTargetTypes.POST, targetId: postId },
+          ReportResolutions.DELETED,
+          moderatorId,
+          transaction
+        );
+      }
     });
     this.realtime.notify(PusherEvents.DISCUSSION_DELETED, {
       discussionId: postId,
@@ -588,7 +619,8 @@ export class HelpGroupsParticipationService {
    */
   private async softDeleteReply(
     reply: PostReply,
-    deletion: Partial<PostReply>
+    deletion: Partial<PostReply>,
+    moderatorId?: string
   ): Promise<void> {
     await this.transaction(async (transaction) => {
       await this.postReplyModel.update(deletion, {
@@ -600,6 +632,14 @@ export class HelpGroupsParticipationService {
         transaction,
       });
       await this.postsService.refreshLastActivityAt(reply.postId, transaction);
+      if (moderatorId) {
+        await this.reportsService.resolvePending(
+          { targetType: ReportTargetTypes.POST_REPLY, targetId: reply.id },
+          ReportResolutions.DELETED,
+          moderatorId,
+          transaction
+        );
+      }
     });
     this.realtime.notify(PusherEvents.REPLY_DELETED, {
       discussionId: reply.postId,
@@ -638,7 +678,7 @@ export class HelpGroupsParticipationService {
   /**
    * A non deleted help group discussion, whatever the state of its group:
    * an admin moderates from the group, member or not. The author is never
-   * notified.
+   * notified. Its pending reports are closed as DELETED.
    */
   async moderateDiscussion(
     discussionId: string,
@@ -661,11 +701,15 @@ export class HelpGroupsParticipationService {
     if (!post) {
       throw new NotFoundException();
     }
-    await this.softDeletePost(post.id, {
-      deletedById: adminId,
-      deletionReason: dto.reason,
-      deletionComment: dto.comment || null,
-    });
+    await this.softDeletePost(
+      post.id,
+      {
+        deletedById: adminId,
+        deletionReason: dto.reason,
+        deletionComment: dto.comment || null,
+      },
+      adminId
+    );
   }
 
   async moderateReply(
@@ -677,11 +721,15 @@ export class HelpGroupsParticipationService {
     if (!reply || !(await this.isHelpGroupPost(reply.postId))) {
       throw new NotFoundException();
     }
-    await this.softDeleteReply(reply, {
-      deletedById: adminId,
-      deletionReason: dto.reason,
-      deletionComment: dto.comment || null,
-    });
+    await this.softDeleteReply(
+      reply,
+      {
+        deletedById: adminId,
+        deletionReason: dto.reason,
+        deletionComment: dto.comment || null,
+      },
+      adminId
+    );
   }
 
   /**

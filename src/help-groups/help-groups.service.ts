@@ -2,17 +2,24 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes } from 'sequelize';
 import { Post, PostContext } from 'src/posts/models';
-import { PostsService, Page } from 'src/posts/posts.service';
+import {
+  canReadHiddenMessage,
+  PostsService,
+  Page,
+} from 'src/posts/posts.service';
 import { decodePostCursor, encodePostCursor } from 'src/posts/posts.utils';
+import { ReportsService } from 'src/reports/reports.service';
+import { ReportTargetTypes } from 'src/reports/reports.types';
 import { UserRole } from 'src/users/users.types';
 import { isEntourageAdmin } from 'src/users/users.utils';
 import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 import {
   HelpGroupCard,
   HelpGroupContributor,
-  HelpGroupDiscussion,
   HelpGroupDiscussionItem,
+  HelpGroupDiscussionView,
   HelpGroupPage,
+  HelpGroupReplyView,
 } from './help-groups.types';
 import { getInitials } from './help-groups.utils';
 import { HelpGroup, HelpGroupMembership } from './models';
@@ -34,7 +41,8 @@ export class HelpGroupsService {
     @InjectModel(Post)
     private postModel: typeof Post,
     private postsService: PostsService,
-    private helpGroupsWriteGuardService: HelpGroupsWriteGuardService
+    private helpGroupsWriteGuardService: HelpGroupsWriteGuardService,
+    private reportsService: ReportsService
   ) {}
 
   /**
@@ -153,7 +161,8 @@ export class HelpGroupsService {
 
   /**
    * Up to 3 distinct authors of the most recent visible discussions and
-   * replies of each group, deleted accounts excluded, for all the groups in
+   * replies of each group, deleted accounts and messages hidden after
+   * reports excluded, for all the groups in
    * a single query (the groups list is small and not paginated):
    * 1. `activity`: every visible discussion and reply with its group,
    * 2. `latest`: the most recent activity of each (group, author), only for
@@ -177,12 +186,14 @@ export class HelpGroupsService {
          SELECT pc."helpGroupId" AS "groupId", p."authorId" AS "userId", p."createdAt" AS "at"
          FROM "PostContexts" pc
          JOIN "Posts" p ON p."id" = pc."postId" AND p."deletedAt" IS NULL
+           AND p."hiddenAt" IS NULL
          WHERE pc."helpGroupId" IN (:groupIds)
          UNION ALL
          SELECT pc."helpGroupId" AS "groupId", r."authorId" AS "userId", r."createdAt" AS "at"
          FROM "PostContexts" pc
          JOIN "Posts" p ON p."id" = pc."postId" AND p."deletedAt" IS NULL
          JOIN "PostReplies" r ON r."postId" = p."id" AND r."deletedAt" IS NULL
+           AND r."hiddenAt" IS NULL
          WHERE pc."helpGroupId" IN (:groupIds)
        ),
        "latest" AS (
@@ -294,18 +305,34 @@ export class HelpGroupsService {
     const decodedCursor = cursor ? decodePostCursor(cursor) : null;
 
     const posts = await this.postModel.findAll({
-      attributes: ['id', 'title', 'createdAt', 'lastActivityAt', 'authorId'],
-      where: decodedCursor
-        ? {
-            [Op.or]: [
-              { lastActivityAt: { [Op.lt]: decodedCursor.date } },
-              {
-                lastActivityAt: decodedCursor.date,
-                id: { [Op.lt]: decodedCursor.id },
-              },
-            ],
-          }
-        : {},
+      attributes: [
+        'id',
+        'title',
+        'createdAt',
+        'lastActivityAt',
+        'authorId',
+        'hiddenAt',
+      ],
+      where: {
+        [Op.and]: [
+          decodedCursor
+            ? {
+                [Op.or]: [
+                  { lastActivityAt: { [Op.lt]: decodedCursor.date } },
+                  {
+                    lastActivityAt: decodedCursor.date,
+                    id: { [Op.lt]: decodedCursor.id },
+                  },
+                ],
+              }
+            : {},
+          // A discussion hidden after reports is only listed for its author
+          // and the admins
+          isEntourageAdmin(reader.role)
+            ? {}
+            : { [Op.or]: [{ hiddenAt: null }, { authorId: reader.id }] },
+        ],
+      },
       include: [
         this.postsService.authorInclude(),
         {
@@ -340,6 +367,7 @@ export class HelpGroupsService {
         createdAt: post.createdAt,
         lastActivityAt: post.lastActivityAt,
         author: this.postsService.toAuthor(post.author, reader.role),
+        isUnderReview: post.hiddenAt !== null,
         repliesCount: repliesCounts[post.id] ?? 0,
         reactionsSummary: reactionsSummaries[post.id] ?? null,
       })),
@@ -375,18 +403,44 @@ export class HelpGroupsService {
     slug: string,
     discussionId: string,
     reader: HelpGroupReader
-  ): Promise<HelpGroupDiscussion> {
+  ): Promise<HelpGroupDiscussionView> {
     const { group, post } = await this.findVisibleDiscussion(
       slug,
       discussionId,
       reader,
       true
     );
-    const [repliesCounts, reactionsSummaries, viewerReactions] =
+    const groupSummary = {
+      id: group.id,
+      slug: group.slug,
+      name: group.name,
+      isPublished: group.publishedAt !== null,
+    };
+    const isUnderReview = post.hiddenAt !== null;
+    const repliesCounts = await this.postsService.countRepliesByPostIds([
+      post.id,
+    ]);
+
+    // Single projection of a hidden discussion: neither its title, message,
+    // author nor reactions are serialized for a reader who may not read it
+    if (isUnderReview && !canReadHiddenMessage(post.authorId, reader)) {
+      return {
+        id: post.id,
+        isUnderReview: true,
+        repliesCount: repliesCounts[post.id] ?? 0,
+        group: groupSummary,
+      };
+    }
+
+    const [reactionsSummaries, viewerReactions, reportReasons] =
       await Promise.all([
-        this.postsService.countRepliesByPostIds([post.id]),
         this.postsService.getReactionsSummaries('postId', [post.id]),
         this.postsService.getViewerReactions('postId', [post.id], reader.id),
+        isUnderReview && isEntourageAdmin(reader.role)
+          ? this.reportsService.findPendingReasons(ReportTargetTypes.POST, [
+              post.id,
+            ])
+          : Promise.resolve(null),
       ]);
 
     return {
@@ -400,12 +454,9 @@ export class HelpGroupsService {
       repliesCount: repliesCounts[post.id] ?? 0,
       reactionsSummary: reactionsSummaries[post.id] ?? null,
       viewerReaction: viewerReactions[post.id] ?? null,
-      group: {
-        id: group.id,
-        slug: group.slug,
-        name: group.name,
-        isPublished: group.publishedAt !== null,
-      },
+      isUnderReview,
+      ...(reportReasons ? { reportReasons: reportReasons[post.id] ?? [] } : {}),
+      group: groupSummary,
     };
   }
 
@@ -415,12 +466,46 @@ export class HelpGroupsService {
     reader: HelpGroupReader,
     limit: number,
     after?: string
-  ) {
+  ): Promise<Page<HelpGroupReplyView>> {
     const { post } = await this.findVisibleDiscussion(
       slug,
       discussionId,
       reader
     );
-    return this.postsService.findReplies(post.id, reader, limit, after);
+    const page = await this.postsService.findReplies(
+      post.id,
+      reader,
+      limit,
+      after
+    );
+    return { ...page, items: await this.withReportReasons(page.items, reader) };
+  }
+
+  /**
+   * Adds the motives of the pending reports to the replies under review, for
+   * an admin only.
+   */
+  async withReportReasons(
+    replies: HelpGroupReplyView[],
+    reader: HelpGroupReader
+  ): Promise<HelpGroupReplyView[]> {
+    if (!isEntourageAdmin(reader.role)) {
+      return replies;
+    }
+    const hiddenIds = replies
+      .filter(({ isUnderReview }) => isUnderReview)
+      .map(({ id }) => id);
+    if (hiddenIds.length === 0) {
+      return replies;
+    }
+    const reasons = await this.reportsService.findPendingReasons(
+      ReportTargetTypes.POST_REPLY,
+      hiddenIds
+    );
+    return replies.map((reply) =>
+      reply.isUnderReview
+        ? { ...reply, reportReasons: reasons[reply.id] ?? [] }
+        : reply
+    );
   }
 }

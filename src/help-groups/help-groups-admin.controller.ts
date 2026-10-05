@@ -23,6 +23,7 @@ import {
 } from './dto';
 import { HelpGroupsAdminService } from './help-groups-admin.service';
 import { HelpGroupsParticipationService } from './help-groups-participation.service';
+import { HelpGroupsReportingService } from './help-groups-reporting.service';
 
 const helpGroupBodyPipe = new ValidationPipe({
   whitelist: true,
@@ -48,7 +49,8 @@ const moderationBodyPipe = new ValidationPipe({
 export class HelpGroupsAdminController {
   constructor(
     private readonly helpGroupsAdminService: HelpGroupsAdminService,
-    private readonly participationService: HelpGroupsParticipationService
+    private readonly participationService: HelpGroupsParticipationService,
+    private readonly reportingService: HelpGroupsReportingService
   ) {}
 
   /**
@@ -82,6 +84,33 @@ export class HelpGroupsAdminController {
     @UserPayload('id') adminId: string
   ) {
     await this.participationService.moderateReply(replyId, adminId, dto);
+  }
+
+  /**
+   * Makes a message hidden after reports visible again to everyone, and
+   * closes its pending reports. Deleting it goes through the moderation
+   * deletion above, which closes them too.
+   */
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @HttpCode(204)
+  @Post('discussions/:discussionId/restore')
+  async restoreDiscussion(
+    @Param('discussionId', new ParseUUIDPipe()) discussionId: string,
+    @UserPayload('id') adminId: string
+  ) {
+    await this.reportingService.restoreDiscussion(discussionId, adminId);
+  }
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @HttpCode(204)
+  @Post('replies/:replyId/restore')
+  async restoreReply(
+    @Param('replyId', new ParseUUIDPipe()) replyId: string,
+    @UserPayload('id') adminId: string
+  ) {
+    await this.reportingService.restoreReply(replyId, adminId);
   }
 
   @UserPermissions(Permissions.ADMIN)
