@@ -58,7 +58,6 @@ export class HelpGroupsAdminService {
       slug: group.slug,
       name: group.name,
       description: group.description,
-      charter: group.charter,
       publishedAt: group.publishedAt,
       pinnedAt: group.pinnedAt,
       createdAt: group.createdAt,
@@ -102,7 +101,6 @@ export class HelpGroupsAdminService {
     const values = {
       name: dto.name,
       description: dto.description,
-      charter: dto.charter,
       createdById: adminId,
       publishedAt: null as Date | null,
       pinnedAt: null as Date | null,
@@ -134,7 +132,6 @@ export class HelpGroupsAdminService {
     return group.update({
       name: dto.name,
       description: dto.description,
-      charter: dto.charter,
     });
   }
 

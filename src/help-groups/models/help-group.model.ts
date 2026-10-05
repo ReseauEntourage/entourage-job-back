@@ -45,10 +45,6 @@ export class HelpGroup extends Model {
   @Column(DataType.STRING(500))
   description: string;
 
-  @AllowNull(false)
-  @Column(DataType.TEXT)
-  charter: string;
-
   @AllowNull(true)
   @Column
   publishedAt: Date | null;

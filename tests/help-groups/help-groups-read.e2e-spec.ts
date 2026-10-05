@@ -112,7 +112,6 @@ describe('Help groups - Read', () => {
         slug: group.slug,
         name: group.name,
         description: 'Ligne 1\nLigne 2',
-        charter: group.charter,
         membersCount: 0,
         isMember: false,
         isPublished: true,

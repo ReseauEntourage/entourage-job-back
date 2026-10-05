@@ -255,7 +255,6 @@ export class HelpGroupsService {
       slug: group.slug,
       name: group.name,
       description: group.description,
-      charter: group.charter,
       membersCount: membersCounts[group.id] ?? 0,
       isMember: memberGroupIds.has(group.id),
       isPublished: group.publishedAt !== null,

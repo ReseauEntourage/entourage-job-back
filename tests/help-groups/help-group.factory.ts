@@ -19,7 +19,6 @@ export class HelpGroupFactory implements Factory<HelpGroup> {
       name: faker.lorem.words(3).slice(0, 80),
       slug: `groupe-${id}`,
       description: faker.lorem.sentence(),
-      charter: faker.lorem.paragraphs(2),
       // Published by default, as most read tests need a visible group
       publishedAt: new Date(),
       pinnedAt: null,

@@ -15,7 +15,6 @@ export class HelpGroupMembershipFactory implements Factory<HelpGroupMembership> 
       Pick<HelpGroupMembership, 'groupId' | 'userId'>
   ): Promise<HelpGroupMembership> {
     const membership = await this.helpGroupMembershipModel.create({
-      charterAcceptedAt: new Date(),
       leftAt: null,
       ...props,
     });

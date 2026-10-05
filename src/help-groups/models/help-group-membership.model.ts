@@ -41,10 +41,6 @@ export class HelpGroupMembership extends Model {
 
   @AllowNull(true)
   @Column
-  charterAcceptedAt: Date | null;
-
-  @AllowNull(true)
-  @Column
   leftAt: Date | null;
 
   @CreatedAt
