@@ -16,12 +16,23 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
-import { CreateHelpGroupDto, UpdateHelpGroupDto } from './dto';
+import {
+  CreateHelpGroupDto,
+  ModerationDeleteDto,
+  UpdateHelpGroupDto,
+} from './dto';
 import { HelpGroupsAdminService } from './help-groups-admin.service';
+import { HelpGroupsParticipationService } from './help-groups-participation.service';
 
 const helpGroupBodyPipe = new ValidationPipe({
   whitelist: true,
   forbidNonWhitelisted: true,
+});
+
+const moderationBodyPipe = new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: true,
+  transform: true,
 });
 
 /**
@@ -36,8 +47,60 @@ const helpGroupBodyPipe = new ValidationPipe({
 @Controller('admin/help-groups')
 export class HelpGroupsAdminController {
   constructor(
-    private readonly helpGroupsAdminService: HelpGroupsAdminService
+    private readonly helpGroupsAdminService: HelpGroupsAdminService,
+    private readonly participationService: HelpGroupsParticipationService
   ) {}
+
+  /**
+   * Moderation deletion of a discussion (and so of its replies), with a
+   * mandatory motive. An admin deleting their own message uses the author
+   * route instead. The author is not notified.
+   */
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @HttpCode(204)
+  @Delete('discussions/:discussionId')
+  async moderateDiscussion(
+    @Param('discussionId', new ParseUUIDPipe()) discussionId: string,
+    @Body(moderationBodyPipe) dto: ModerationDeleteDto,
+    @UserPayload('id') adminId: string
+  ) {
+    await this.participationService.moderateDiscussion(
+      discussionId,
+      adminId,
+      dto
+    );
+  }
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @HttpCode(204)
+  @Delete('replies/:replyId')
+  async moderateReply(
+    @Param('replyId', new ParseUUIDPipe()) replyId: string,
+    @Body(moderationBodyPipe) dto: ModerationDeleteDto,
+    @UserPayload('id') adminId: string
+  ) {
+    await this.participationService.moderateReply(replyId, adminId, dto);
+  }
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Get('discussions/:discussionId/revisions')
+  async findDiscussionRevisions(
+    @Param('discussionId', new ParseUUIDPipe()) discussionId: string
+  ) {
+    return this.participationService.findRevisions('postId', discussionId);
+  }
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Get('replies/:replyId/revisions')
+  async findReplyRevisions(
+    @Param('replyId', new ParseUUIDPipe()) replyId: string
+  ) {
+    return this.participationService.findRevisions('replyId', replyId);
+  }
 
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)

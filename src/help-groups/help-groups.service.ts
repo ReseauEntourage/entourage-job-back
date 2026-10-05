@@ -48,9 +48,23 @@ export class HelpGroupsService {
     slug: string,
     reader: HelpGroupReader
   ): Promise<HelpGroup> {
+    return this.findVisibleGroup({ slug }, reader);
+  }
+
+  async findVisibleGroupById(
+    id: string,
+    reader: HelpGroupReader
+  ): Promise<HelpGroup> {
+    return this.findVisibleGroup({ id }, reader);
+  }
+
+  private async findVisibleGroup(
+    where: { slug: string } | { id: string },
+    reader: HelpGroupReader
+  ): Promise<HelpGroup> {
     const group = await this.helpGroupModel.findOne({
       where: {
-        slug,
+        ...where,
         ...(isEntourageAdmin(reader.role)
           ? {}
           : { publishedAt: { [Op.ne]: null } }),
@@ -368,10 +382,12 @@ export class HelpGroupsService {
       reader,
       true
     );
-    const [repliesCounts, reactionsSummaries] = await Promise.all([
-      this.postsService.countRepliesByPostIds([post.id]),
-      this.postsService.getReactionsSummaries('postId', [post.id]),
-    ]);
+    const [repliesCounts, reactionsSummaries, viewerReactions] =
+      await Promise.all([
+        this.postsService.countRepliesByPostIds([post.id]),
+        this.postsService.getReactionsSummaries('postId', [post.id]),
+        this.postsService.getViewerReactions('postId', [post.id], reader.id),
+      ]);
 
     return {
       id: post.id,
@@ -383,6 +399,7 @@ export class HelpGroupsService {
       author: this.postsService.toAuthor(post.author, reader.role, true),
       repliesCount: repliesCounts[post.id] ?? 0,
       reactionsSummary: reactionsSummaries[post.id] ?? null,
+      viewerReaction: viewerReactions[post.id] ?? null,
       group: {
         id: group.id,
         slug: group.slug,
@@ -404,6 +421,6 @@ export class HelpGroupsService {
       discussionId,
       reader
     );
-    return this.postsService.findReplies(post.id, reader.role, limit, after);
+    return this.postsService.findReplies(post.id, reader, limit, after);
   }
 }

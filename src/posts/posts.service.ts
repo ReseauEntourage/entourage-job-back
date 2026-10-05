@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { fn, col, Includeable, Op, WhereOptions } from 'sequelize';
+import {
+  fn,
+  col,
+  Includeable,
+  Op,
+  QueryTypes,
+  Transaction,
+  WhereOptions,
+} from 'sequelize';
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UserRole } from 'src/users/users.types';
@@ -8,6 +16,7 @@ import {
   Post,
   PostContext,
   PostReaction,
+  PostReactionEmoji,
   PostReactionEmojis,
   PostReply,
 } from './models';
@@ -38,6 +47,13 @@ export interface PostReplyItem {
   editedAt: Date | null;
   id: string;
   reactionsSummary: ReactionsSummary | null;
+  // Active reaction of the reader on this reply
+  viewerReaction: PostReactionEmoji | null;
+}
+
+export interface PostReader {
+  id: string;
+  role: UserRole;
 }
 
 export interface Page<T> {
@@ -197,11 +213,85 @@ export class PostsService {
   }
 
   /**
+   * Active reaction of a user on each of the given posts or replies.
+   */
+  async getViewerReactions(
+    target: ReactionTarget,
+    ids: string[],
+    userId: string
+  ): Promise<Record<string, PostReactionEmoji>> {
+    if (ids.length === 0) {
+      return {};
+    }
+    const reactions = await this.postReactionModel.findAll({
+      attributes: ['postId', 'replyId', 'emoji'],
+      where: { [target]: ids, userId } as WhereOptions<PostReaction>,
+    });
+    return reactions.reduce<Record<string, PostReactionEmoji>>(
+      (acc, reaction) => {
+        acc[reaction[target]] = reaction.emoji;
+        return acc;
+      },
+      {}
+    );
+  }
+
+  /**
+   * Recomputes the last activity of a post after a reply was created or
+   * deleted: the date of its most recent visible reply, or its creation date.
+   * Meant to run in the transaction of the reply write.
+   */
+  async refreshLastActivityAt(postId: string, transaction: Transaction) {
+    await this.postModel.sequelize.query(
+      `UPDATE "Posts" p
+       SET "lastActivityAt" = GREATEST(
+         p."createdAt",
+         COALESCE(
+           (SELECT MAX(r."createdAt") FROM "PostReplies" r
+            WHERE r."postId" = p."id" AND r."deletedAt" IS NULL),
+           p."createdAt"
+         )
+       )
+       WHERE p."id" = :postId`,
+      { replacements: { postId }, type: QueryTypes.UPDATE, transaction }
+    );
+  }
+
+  /**
+   * A single visible reply, shaped like the items of `findReplies`.
+   */
+  async findReplyItem(
+    replyId: string,
+    reader: PostReader
+  ): Promise<PostReplyItem | null> {
+    const reply = await this.postReplyModel.findByPk(replyId, {
+      attributes: ['id', 'content', 'createdAt', 'editedAt', 'authorId'],
+      include: [this.authorInclude()],
+    });
+    if (!reply) {
+      return null;
+    }
+    const [reactionsSummaries, viewerReactions] = await Promise.all([
+      this.getReactionsSummaries('replyId', [reply.id]),
+      this.getViewerReactions('replyId', [reply.id], reader.id),
+    ]);
+    return {
+      id: reply.id,
+      content: reply.content,
+      createdAt: reply.createdAt,
+      editedAt: reply.editedAt,
+      author: this.toAuthor(reply.author, reader.role),
+      reactionsSummary: reactionsSummaries[reply.id] ?? null,
+      viewerReaction: viewerReactions[reply.id] ?? null,
+    };
+  }
+
+  /**
    * Visible replies of a post, oldest first, paginated on `(createdAt, id)`.
    */
   async findReplies(
     postId: string,
-    readerRole: UserRole,
+    reader: PostReader,
     limit: number,
     after?: string
   ): Promise<Page<PostReplyItem>> {
@@ -229,10 +319,11 @@ export class PostsService {
     });
 
     const pageReplies = replies.slice(0, limit);
-    const reactionsSummaries = await this.getReactionsSummaries(
-      'replyId',
-      pageReplies.map(({ id }) => id)
-    );
+    const replyIds = pageReplies.map(({ id }) => id);
+    const [reactionsSummaries, viewerReactions] = await Promise.all([
+      this.getReactionsSummaries('replyId', replyIds),
+      this.getViewerReactions('replyId', replyIds, reader.id),
+    ]);
 
     const lastReply = pageReplies[pageReplies.length - 1];
 
@@ -242,8 +333,9 @@ export class PostsService {
         content: reply.content,
         createdAt: reply.createdAt,
         editedAt: reply.editedAt,
-        author: this.toAuthor(reply.author, readerRole),
+        author: this.toAuthor(reply.author, reader.role),
         reactionsSummary: reactionsSummaries[reply.id] ?? null,
+        viewerReaction: viewerReactions[reply.id] ?? null,
       })),
       nextCursor:
         replies.length > limit
