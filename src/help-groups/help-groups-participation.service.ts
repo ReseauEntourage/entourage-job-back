@@ -608,9 +608,12 @@ export class HelpGroupsParticipationService {
         );
         // Its replies are no longer reachable: their pending reports are
         // closed with it
+        // Replies deleted by their author included: their reports stay
+        // pending otherwise
         const replies = await this.postReplyModel.findAll({
           attributes: ['id'],
           where: { postId },
+          paranoid: false,
           transaction,
         });
         if (replies.length > 0) {

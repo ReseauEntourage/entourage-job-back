@@ -213,28 +213,43 @@ export class HelpGroupsReportingService {
     if (threshold <= 0) {
       return false;
     }
-    const reporters = await this.reportsService.countPendingDistinctReporters(
-      message.target
-    );
-    if (reporters < threshold) {
-      return false;
-    }
-    const model = message.replyId ? this.postReplyModel : this.postModel;
+    const model = (
+      message.replyId ? this.postReplyModel : this.postModel
+    ) as typeof Post;
     const isHidden = await this.postModel.sequelize.transaction(
       async (transaction) => {
-        // Conditional update: two concurrent reports hide the message once
-        const [affected] = await (model as typeof Post).update(
+        // The message row is locked before counting: a restoration (which
+        // updates the same row and resolves the reports in one transaction)
+        // is either committed before, so its resolved reports no longer
+        // count, or waits for this hiding
+        const current = await model.findByPk(message.id, {
+          attributes: ['id', 'hiddenAt'],
+          lock: transaction.LOCK.UPDATE,
+          transaction,
+        });
+        if (!current || current.hiddenAt) {
+          return false;
+        }
+        const reporters =
+          await this.reportsService.countPendingDistinctReporters(
+            message.target,
+            transaction
+          );
+        if (reporters < threshold) {
+          return false;
+        }
+        await model.update(
           { hiddenAt: new Date() },
-          { where: { id: message.id, hiddenAt: null }, transaction }
+          { where: { id: message.id }, transaction }
         );
         // The last activity of a discussion only counts its visible replies
-        if (affected > 0 && message.replyId) {
+        if (message.replyId) {
           await this.postsService.refreshLastActivityAt(
             message.discussionId,
             transaction
           );
         }
-        return affected > 0;
+        return true;
       }
     );
     if (!isHidden) {

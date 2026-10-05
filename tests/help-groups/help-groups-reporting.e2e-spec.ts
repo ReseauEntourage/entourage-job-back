@@ -841,6 +841,26 @@ describe('Help groups - Reporting', () => {
       });
     });
 
+    it('Should also close the reports of a reply its author deleted, when an admin deletes the discussion', async () => {
+      disableAutoHide();
+      await reportReply(member);
+      await api(
+        'delete',
+        `${discussionPath()}/replies/${reply.id}`,
+        author
+      ).expect(204);
+      await api(
+        'delete',
+        `/admin/help-groups/discussions/${discussion.id}`,
+        admin,
+        { reason: 'SPAM' }
+      );
+      expect(await reportModel.findOne()).toMatchObject({
+        status: ReportStatuses.RESOLVED,
+        resolution: ReportResolutions.DELETED,
+      });
+    });
+
     it('Should refuse the restoration to a non admin with a 403', async () => {
       await reportReply(member);
       const response = await api(
