@@ -26,6 +26,15 @@ export interface ReactionsSummary {
 
 export type ReactionTarget = 'postId' | 'replyId';
 
+/**
+ * A message hidden after reports, as serialized for a reader who is neither
+ * its author nor an admin: no content, title, author nor reactions.
+ */
+export interface HiddenMessage {
+  id: string;
+  isUnderReview: true;
+}
+
 // Motives of a deletion by an Entourage admin, visible to the team only
 export const PostDeletionReasons = {
   PERSONAL_DATA: 'PERSONAL_DATA',

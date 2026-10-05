@@ -14,6 +14,10 @@ import {
 } from 'class-validator';
 import { PostReactionEmojis } from 'src/posts/models';
 import { PostDeletionReasons, PostTitleSources } from 'src/posts/posts.types';
+import {
+  REPORT_COMMENT_MAX_LENGTH,
+  ReportReasons,
+} from 'src/reports/reports.types';
 
 export const DISCUSSION_TITLE_MAX_LENGTH = 120;
 export const MESSAGE_MAX_LENGTH = 5000;
@@ -150,5 +154,22 @@ export class ModerationDeleteDto {
   @Transform(trim)
   @IsString()
   @MaxLength(DELETION_COMMENT_MAX_LENGTH)
+  comment?: string;
+}
+
+/**
+ * Report of the discussion or of one of its replies (exactly one target,
+ * checked by the service). The comment is optional.
+ */
+export class ReportMessageDto extends RemoveReactionDto {
+  @ApiProperty({ enum: Object.values(ReportReasons) })
+  @IsIn(Object.values(ReportReasons))
+  reason: (typeof ReportReasons)[keyof typeof ReportReasons];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(REPORT_COMMENT_MAX_LENGTH)
   comment?: string;
 }

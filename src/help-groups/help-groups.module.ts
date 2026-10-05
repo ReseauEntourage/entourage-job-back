@@ -4,6 +4,7 @@ import { AnthropicModule } from 'src/external-services/anthropic/anthropic.modul
 import { PusherModule } from 'src/external-services/pusher/pusher.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { PostsModule } from 'src/posts/posts.module';
+import { ReportsModule } from 'src/reports/reports.module';
 import { UsersModule } from 'src/users/users.module';
 import { HelpGroupsAdminController } from './help-groups-admin.controller';
 import { HelpGroupsAdminService } from './help-groups-admin.service';
@@ -11,6 +12,7 @@ import { HelpGroupsModerationAlertService } from './help-groups-moderation-alert
 import { HelpGroupsParticipationController } from './help-groups-participation.controller';
 import { HelpGroupsParticipationService } from './help-groups-participation.service';
 import { HelpGroupsRealtimeService } from './help-groups-realtime.service';
+import { HelpGroupsReportingService } from './help-groups-reporting.service';
 import { HelpGroupsTitleService } from './help-groups-title.service';
 import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 import { HelpGroupsController } from './help-groups.controller';
@@ -26,6 +28,7 @@ import { PusherAuthController } from './pusher-auth.controller';
   imports: [
     SequelizeModule.forFeature([HelpGroup, HelpGroupMembership]),
     PostsModule,
+    ReportsModule,
     UsersModule,
     AnthropicModule,
     PusherModule,
@@ -45,6 +48,7 @@ import { PusherAuthController } from './pusher-auth.controller';
     HelpGroupsTitleService,
     HelpGroupsRealtimeService,
     HelpGroupsModerationAlertService,
+    HelpGroupsReportingService,
   ],
   exports: [SequelizeModule, HelpGroupsService],
 })

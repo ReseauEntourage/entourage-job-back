@@ -45,6 +45,7 @@ import { QueuesBoardModule } from './queues/producers/queues-board.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RecruitementAlertsModule } from './recruitement-alerts/recruitement-alerts.module';
 import { RedisModule, REDIS_CLIENT } from './redis/redis.module';
+import { ReportsModule } from './reports/reports.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { UserProfileSharesModule } from './user-profile-shares/user-profile-shares.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
@@ -149,6 +150,7 @@ export function getSequelizeOptions(
     ReadDocumentsModule,
     MessagingModule,
     PostsModule,
+    ReportsModule,
     HelpGroupsModule,
     AiAssistantModule,
     UserProfileSharesModule,

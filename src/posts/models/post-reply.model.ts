@@ -63,6 +63,12 @@ export class PostReply extends Model {
   @Column(DataType.STRING(500))
   deletionComment: string | null;
 
+  // Set by the automatic hiding after reports, cleared by an admin restoring
+  // the message: only its author and the admins still read its content
+  @AllowNull(true)
+  @Column
+  hiddenAt: Date | null;
+
   @CreatedAt
   createdAt: Date;
 
