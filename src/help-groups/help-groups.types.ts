@@ -1,3 +1,4 @@
+import { PostReactionEmoji } from 'src/posts/models';
 import { PostAuthor, ReactionsSummary } from 'src/posts/posts.types';
 
 export interface HelpGroupContributor {
@@ -73,6 +74,8 @@ export interface HelpGroupDiscussion extends HelpGroupDiscussionItem {
   content: string;
   editedAt: Date | null;
   group: { id: string; slug: string; name: string; isPublished: boolean };
+  // Active reaction of the reader on the discussion message
+  viewerReaction: PostReactionEmoji | null;
 }
 
 export interface HelpGroupAdminItem {

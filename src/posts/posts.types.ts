@@ -5,6 +5,8 @@ export interface PostAuthor {
   department?: string | null;
   firstName: string | null;
   id: string | null;
+  // Entourage admin: their links open without the external link warning
+  isAdmin: boolean;
   isDeleted: boolean;
   // e.g. "P." — the full last name is never exposed
   lastNameInitial: string | null;

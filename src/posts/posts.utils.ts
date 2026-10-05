@@ -103,6 +103,7 @@ export const toPostAuthor = (
       firstName: null,
       lastNameInitial: null,
       roleLabel: null,
+      isAdmin: false,
       isDeleted: true,
       profileLinkable: false,
     };
@@ -119,6 +120,7 @@ export const toPostAuthor = (
       ? `${author.lastName.trim().charAt(0).toUpperCase()}.`
       : null,
     roleLabel: RoleLabels[author.role] ?? null,
+    isAdmin: isEntourageAdmin(author.role),
     isDeleted: false,
     profileLinkable,
     ...(withLocation && profileLinkable
