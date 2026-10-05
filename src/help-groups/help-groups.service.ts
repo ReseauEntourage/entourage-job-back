@@ -273,19 +273,22 @@ export class HelpGroupsService {
     reader: HelpGroupReader
   ): Promise<HelpGroupPage> {
     const group = await this.findVisibleGroupBySlug(slug, reader);
-    const [membersCounts, memberGroupIds, viewerPermissions] =
-      await Promise.all([
-        this.countMembersByGroupIds([group.id]),
-        this.findMemberGroupIds(reader.id, [group.id]),
-        this.helpGroupsWriteGuardService.getViewerPermissions(group, reader.id),
-      ]);
+    const [membersCounts, membership, viewerPermissions] = await Promise.all([
+      this.countMembersByGroupIds([group.id]),
+      this.helpGroupsWriteGuardService.findActiveMembership(
+        group.id,
+        reader.id
+      ),
+      this.helpGroupsWriteGuardService.getViewerPermissions(group, reader.id),
+    ]);
     return {
       id: group.id,
       slug: group.slug,
       name: group.name,
       description: group.description,
       membersCount: membersCounts[group.id] ?? 0,
-      isMember: memberGroupIds.has(group.id),
+      isMember: !!membership,
+      emailsEnabled: membership ? membership.emailsEnabled : null,
       isPublished: group.publishedAt !== null,
       viewerPermissions,
     };

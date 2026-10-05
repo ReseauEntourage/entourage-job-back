@@ -2,8 +2,10 @@ import { CheckinService } from 'src/checkin/checkin.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { GamificationService } from 'src/gamification/gamification.service';
+import { HelpGroupsDigestService } from 'src/help-groups/help-groups-digest.service';
 import { ConversationPipelineService } from 'src/messaging/conversation-pipeline.service';
 import { MessagingService } from 'src/messaging/messaging.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import { CronTasksProcessor } from 'src/queues/consumers/cron-tasks/cron-tasks.processor';
 import { RecruitementAlertsService } from 'src/recruitement-alerts/recruitement-alerts.service';
@@ -25,6 +27,8 @@ type CronTasksProcessorDeps = {
   checkinService: CheckinService;
   salesforceService: SalesforceService;
   slackService: SlackService;
+  helpGroupsDigestService: HelpGroupsDigestService;
+  notificationsService: NotificationsService;
 };
 
 /**
@@ -53,6 +57,8 @@ export function buildCronTasksProcessor(
     checkinService: {} as never,
     salesforceService: {} as never,
     slackService: {} as never,
+    helpGroupsDigestService: {} as never,
+    notificationsService: {} as never,
     ...overrides,
   };
 
@@ -68,6 +74,8 @@ export function buildCronTasksProcessor(
     deps.conversationPipelineService,
     deps.checkinService,
     deps.salesforceService,
-    deps.slackService
+    deps.slackService,
+    deps.helpGroupsDigestService,
+    deps.notificationsService
   );
 }

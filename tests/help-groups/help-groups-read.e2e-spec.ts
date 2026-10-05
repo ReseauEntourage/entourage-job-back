@@ -114,6 +114,7 @@ describe('Help groups - Read', () => {
         description: 'Ligne 1\nLigne 2',
         membersCount: 0,
         isMember: false,
+        emailsEnabled: null,
         isPublished: true,
         viewerPermissions: {
           state: 'mustJoin',

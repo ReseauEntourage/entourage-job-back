@@ -20,6 +20,7 @@ import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
 import { HelpGroupsModule } from 'src/help-groups/help-groups.module';
 import { LanguagesModule } from 'src/languages/languages.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { PassionsModule } from 'src/passions/passions.module';
 import { PostsModule } from 'src/posts/posts.module';
@@ -93,6 +94,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     OrganizationsModule,
     MessagingModule,
     PostsModule,
+    NotificationsModule,
     HelpGroupsModule,
     CheckinModule,
     ReadDocumentsModule,

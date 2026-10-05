@@ -1435,7 +1435,7 @@ describe('Help groups - Participation', () => {
       );
       const channel = deleted
         ? `private-post-${discussion.id}`
-        : `private-user-${member.user.id}`;
+        : `private-unknown-${member.user.id}`;
       expect((await api('post', path, member, form(channel))).status).toBe(403);
       expect(authorizeChannel).not.toHaveBeenCalled();
     });

@@ -18,6 +18,7 @@ import {
   POST_PRIVATE_CHANNEL_PREFIX,
   PusherEvents,
 } from 'src/external-services/pusher/pusher.types';
+import { NotificationSubjectTypes } from 'src/notifications/notifications.types';
 import {
   Post,
   PostContext,
@@ -51,6 +52,7 @@ import {
   UpdateReplyDto,
 } from './dto';
 import { HelpGroupsModerationAlertService } from './help-groups-moderation-alert.service';
+import { HelpGroupsNotificationsService } from './help-groups-notifications.service';
 import { HelpGroupsRealtimeService } from './help-groups-realtime.service';
 import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 import { HelpGroupsService } from './help-groups.service';
@@ -119,7 +121,8 @@ export class HelpGroupsParticipationService {
     private realtime: HelpGroupsRealtimeService,
     private moderationAlert: HelpGroupsModerationAlertService,
     private pusherService: PusherService,
-    private reportsService: ReportsService
+    private reportsService: ReportsService,
+    private notifications: HelpGroupsNotificationsService
   ) {}
 
   private transaction<T>(callback: (transaction: Transaction) => Promise<T>) {
@@ -169,6 +172,27 @@ export class HelpGroupsParticipationService {
       { where: { groupId: group.id, userId, leftAt: null } }
     );
     return { isMember: false };
+  }
+
+  /**
+   * "Emails de ce groupe", for a member only (403 otherwise). A new
+   * membership starts with emails enabled again.
+   */
+  async updateMembership(
+    slug: string,
+    userId: string,
+    emailsEnabled: boolean
+  ): Promise<{ emailsEnabled: boolean }> {
+    const group = await this.writeGuard.findPublishedGroupBySlug(slug);
+    const membership = await this.writeGuard.findActiveMembership(
+      group.id,
+      userId
+    );
+    if (!membership) {
+      throw new ForbiddenException(HelpGroupErrorCodes.NOT_MEMBER);
+    }
+    await membership.update({ emailsEnabled });
+    return { emailsEnabled };
   }
 
   // ---------------------------------------------------------------------
@@ -279,6 +303,15 @@ export class HelpGroupsParticipationService {
       discussionId: post.id,
       replyId: reply.id,
     });
+    await this.notifications.onReplyCreated({
+      groupId: group.id,
+      discussion: { id: post.id, authorId: post.authorId },
+      reply: {
+        id: reply.id,
+        authorId: reply.authorId,
+        createdAt: reply.createdAt,
+      },
+    });
     this.moderationAlert.checkMessage({
       author: user,
       group,
@@ -302,7 +335,7 @@ export class HelpGroupsParticipationService {
     post: Post,
     target: ReactionTargetDto,
     userId: string
-  ): Promise<{ field: ReactionTarget; id: string }> {
+  ): Promise<{ authorId: string; field: ReactionTarget; id: string }> {
     const hasDiscussion = !!target?.discussionId;
     const hasReply = !!target?.replyId;
     if (hasDiscussion === hasReply) {
@@ -317,7 +350,7 @@ export class HelpGroupsParticipationService {
       ) {
         throw new NotFoundException();
       }
-      return { field: 'postId', id: post.id };
+      return { field: 'postId', id: post.id, authorId: post.authorId };
     }
     const reply = await this.postReplyModel.findOne({
       attributes: ['id', 'authorId', 'hiddenAt'],
@@ -326,7 +359,7 @@ export class HelpGroupsParticipationService {
     if (!reply || (reply.hiddenAt && reply.authorId !== userId)) {
       throw new NotFoundException();
     }
-    return { field: 'replyId', id: reply.id };
+    return { field: 'replyId', id: reply.id, authorId: reply.authorId };
   }
 
   private async toReactionResult(
@@ -345,19 +378,23 @@ export class HelpGroupsParticipationService {
     };
   }
 
+  /**
+   * Returns the reaction when it was created, null when an existing one was
+   * kept or replaced.
+   */
   private async upsertReaction(
     where: WhereOptions<PostReaction>,
     values: Partial<PostReaction>,
     emoji: PostReactionEmoji
-  ) {
+  ): Promise<PostReaction | null> {
     const existing = await this.postReactionModel.findOne({ where });
     if (existing) {
       if (existing.emoji !== emoji) {
         await existing.update({ emoji });
       }
-      return;
+      return null;
     }
-    await this.postReactionModel.create({ ...values, emoji });
+    return this.postReactionModel.create({ ...values, emoji });
   }
 
   /**
@@ -374,7 +411,7 @@ export class HelpGroupsParticipationService {
   ): Promise<ReactionResult> {
     const { group } = await this.writeGuard.assertCanWrite(userId, slug);
     const post = await this.findDiscussionOrFail(discussionId, group);
-    const { field, id } = await this.resolveReactionTarget(
+    const { field, id, authorId } = await this.resolveReactionTarget(
       post,
       target,
       userId
@@ -382,20 +419,40 @@ export class HelpGroupsParticipationService {
 
     const values = { userId, [field]: id } as Partial<PostReaction>;
     const where = values as WhereOptions<PostReaction>;
+    let created: PostReaction | null;
     try {
-      await this.upsertReaction(where, values, emoji);
+      created = await this.upsertReaction(where, values, emoji);
     } catch (error) {
       // Concurrent reaction of the same person: retry once, as an update
       if (!(error instanceof UniqueConstraintError)) {
         throw error;
       }
-      await this.upsertReaction(where, values, emoji);
+      created = await this.upsertReaction(where, values, emoji);
     }
 
     this.realtime.notify(PusherEvents.REACTIONS_UPDATED, {
       discussionId: post.id,
       targetId: id,
     });
+    // Replacing one's emoji is not a new event
+    if (created) {
+      await this.notifications.onReactionAdded({
+        groupId: group.id,
+        message: {
+          id,
+          authorId,
+          subjectType:
+            field === 'postId'
+              ? NotificationSubjectTypes.POST
+              : NotificationSubjectTypes.POST_REPLY,
+        },
+        reaction: {
+          id: created.id,
+          userId,
+          createdAt: created.createdAt,
+        },
+      });
+    }
     return this.toReactionResult(field, id, userId);
   }
 
@@ -420,6 +477,10 @@ export class HelpGroupsParticipationService {
     this.realtime.notify(PusherEvents.REACTIONS_UPDATED, {
       discussionId: post.id,
       targetId: id,
+    });
+    await this.notifications.onReactionRemoved({
+      actorId: userId,
+      messageId: id,
     });
     return this.toReactionResult(field, id, userId);
   }
@@ -629,6 +690,7 @@ export class HelpGroupsParticipationService {
     this.realtime.notify(PusherEvents.DISCUSSION_DELETED, {
       discussionId: postId,
     });
+    await this.notifications.onDiscussionRemoved({ discussionId: postId });
   }
 
   /**
@@ -660,6 +722,10 @@ export class HelpGroupsParticipationService {
       }
     });
     this.realtime.notify(PusherEvents.REPLY_DELETED, {
+      discussionId: reply.postId,
+      replyId: reply.id,
+    });
+    await this.notifications.onReplyRemoved({
       discussionId: reply.postId,
       replyId: reply.id,
     });

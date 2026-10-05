@@ -43,6 +43,13 @@ export class HelpGroupMembership extends Model {
   @Column
   leftAt: Date | null;
 
+  // "Emails de ce groupe": notification emails and the share of the group
+  // in the weekly digest. The bell ignores it
+  @AllowNull(false)
+  @Default(true)
+  @Column
+  emailsEnabled: boolean;
+
   @CreatedAt
   createdAt: Date;
 

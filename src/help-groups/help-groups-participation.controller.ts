@@ -23,6 +23,7 @@ import {
   SetReactionDto,
   TitleSuggestionDto,
   UpdateDiscussionDto,
+  UpdateMembershipDto,
   UpdateReplyDto,
 } from './dto';
 import { HelpGroupsParticipationService } from './help-groups-participation.service';
@@ -66,6 +67,19 @@ export class HelpGroupsParticipationController {
   @Delete(':slug/membership')
   async leave(@Param('slug') slug: string, @UserPayload('id') userId: string) {
     return this.participationService.leave(slug, userId);
+  }
+
+  @Patch(':slug/membership')
+  async updateMembership(
+    @Param('slug') slug: string,
+    @UserPayload('id') userId: string,
+    @Body(bodyPipe) dto: UpdateMembershipDto
+  ) {
+    return this.participationService.updateMembership(
+      slug,
+      userId,
+      dto.emailsEnabled
+    );
   }
 
   @Post(':slug/discussions')

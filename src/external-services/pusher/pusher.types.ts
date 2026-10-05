@@ -17,6 +17,16 @@ export const POST_PRIVATE_CHANNEL_PREFIX = 'private-post-';
 export const getPostPrivateChannel = (postId: string) =>
   `${POST_PRIVATE_CHANNEL_PREFIX}${postId}`;
 
+/**
+ * Private channel of a user: the notifications center signals on it that
+ * the notifications of this user changed. `POST /pusher/auth` only signs it
+ * for the logged-in user themselves.
+ */
+export const USER_PRIVATE_CHANNEL_PREFIX = 'private-user-';
+
+export const getUserPrivateChannel = (userId: string) =>
+  `${USER_PRIVATE_CHANNEL_PREFIX}${userId}`;
+
 export const PusherEvents = {
   CV_PDF_DONE: 'cv-pdf-done',
   PROFILE_GENERATION_COMPLETE: 'profile-generation-complete',
@@ -28,6 +38,8 @@ export const PusherEvents = {
   REACTIONS_UPDATED: 'reactions-updated',
   DISCUSSION_UPDATED: 'discussion-updated',
   DISCUSSION_DELETED: 'discussion-deleted',
+  // Notifications center: an empty payload, the front reloads its bell
+  NOTIFICATIONS_CHANGED: 'notifications-changed',
 } as const;
 
 export type PusherEvent = (typeof PusherEvents)[keyof typeof PusherEvents];

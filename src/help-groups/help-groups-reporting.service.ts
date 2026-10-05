@@ -22,6 +22,7 @@ import {
 import { UsersService } from 'src/users/users.service';
 import { isEntourageAdmin } from 'src/users/users.utils';
 import { ReactionTargetDto, ReportMessageDto } from './dto';
+import { HelpGroupsNotificationsService } from './help-groups-notifications.service';
 import { HelpGroupsRealtimeService } from './help-groups-realtime.service';
 import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 import {
@@ -73,7 +74,8 @@ export class HelpGroupsReportingService {
     private reportsService: ReportsService,
     private usersService: UsersService,
     private slackService: SlackService,
-    private realtime: HelpGroupsRealtimeService
+    private realtime: HelpGroupsRealtimeService,
+    private notifications: HelpGroupsNotificationsService
   ) {}
 
   getAutoHideThreshold(): number {
@@ -241,6 +243,17 @@ export class HelpGroupsReportingService {
       return false;
     }
     this.notifyChange(message.discussionId, message.replyId);
+    // A hidden message is no longer notified; a restoration recreates nothing
+    if (message.replyId) {
+      await this.notifications.onReplyRemoved({
+        discussionId: message.discussionId,
+        replyId: message.replyId,
+      });
+    } else {
+      await this.notifications.onDiscussionRemoved({
+        discussionId: message.discussionId,
+      });
+    }
     return true;
   }
 

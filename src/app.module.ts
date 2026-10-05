@@ -35,6 +35,7 @@ import { LocationsModule } from './locations/locations.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PassionsModule } from './passions/passions.module';
 import { PingModule } from './ping/ping.module';
@@ -151,6 +152,7 @@ export function getSequelizeOptions(
     MessagingModule,
     PostsModule,
     ReportsModule,
+    NotificationsModule,
     HelpGroupsModule,
     AiAssistantModule,
     UserProfileSharesModule,

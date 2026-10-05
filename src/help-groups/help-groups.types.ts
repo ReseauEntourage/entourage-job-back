@@ -74,6 +74,8 @@ export interface HelpGroupViewerPermissions {
 
 export interface HelpGroupPage {
   description: string;
+  // "Emails de ce groupe" of the viewer; null when not a member
+  emailsEnabled: boolean | null;
   id: string;
   isMember: boolean;
   // Only false in an admin preview of an unpublished group
@@ -142,4 +144,47 @@ export interface HelpGroupAdminItem {
   pinnedAt: Date | null;
   publishedAt: Date | null;
   slug: string;
+}
+
+/**
+ * The three immediate emails of the help groups, which differ by their
+ * subject and their reason of reception.
+ */
+export const HelpGroupNotificationEmailKinds = {
+  REPLY_TO_AUTHOR: 'REPLY_TO_AUTHOR',
+  REPLY_TO_PARTICIPANT: 'REPLY_TO_PARTICIPANT',
+  REACTION: 'REACTION',
+} as const;
+
+export type HelpGroupNotificationEmailKind =
+  (typeof HelpGroupNotificationEmailKinds)[keyof typeof HelpGroupNotificationEmailKinds];
+
+export interface HelpGroupNotificationEmail {
+  actorFirstName: string;
+  discussionTitle: string | null;
+  // Links opening the content and the emails setting without logging in
+  discussionUrl: string;
+  // Beginning of the reply, for a reply
+  excerpt: string | null;
+  groupName: string;
+  kind: HelpGroupNotificationEmailKind;
+  settingsUrl: string;
+}
+
+// Discussions shown at most in a weekly digest
+export const HELP_GROUPS_DIGEST_MAX_DISCUSSIONS = 10;
+
+export interface HelpGroupsWeeklyDigestEmail {
+  groups: {
+    discussions: {
+      // First name of the author, or "Utilisateur supprimé"
+      authorFirstName: string;
+      title: string | null;
+      url: string;
+    }[];
+    name: string;
+    settingsUrl: string;
+  }[];
+  // Link to the groups list, only when more discussions were active
+  groupsUrl: string | null;
 }

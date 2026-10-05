@@ -160,6 +160,11 @@ export const MailjetTemplates = {
   MAILER_CONVERSATION_CHECKIN_RELANCE: 8294437,
   MAILER_CONVERSATION_CHECKIN_NOTE: 8317148,
   UNVERIFIED_ACCOUNT_RELAUNCH: 8317361,
+  // TODO(add-help-groups-notifications, task 5.1): ids of the "Notification
+  // des groupes" and "Cette semaine dans vos groupes" templates, to fill once
+  // created in Mailjet and before the deployment
+  HELP_GROUP_NOTIFICATION: 0,
+  HELP_GROUPS_WEEKLY_DIGEST: 0,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

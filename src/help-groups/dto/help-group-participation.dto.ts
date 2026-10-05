@@ -173,3 +173,9 @@ export class ReportMessageDto extends RemoveReactionDto {
   @MaxLength(REPORT_COMMENT_MAX_LENGTH)
   comment?: string;
 }
+
+export class UpdateMembershipDto {
+  @ApiProperty()
+  @IsBoolean()
+  emailsEnabled: boolean;
+}
