@@ -178,6 +178,7 @@ describe('Help groups - Reporting', () => {
     await Promise.allSettled(pendingAlerts);
     delete process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_PARIS;
     delete process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_PARIS;
+    delete process.env.HELP_GROUPS_AUTO_HIDE_THRESHOLD;
   });
 
   const api = (
@@ -226,8 +227,9 @@ describe('Help groups - Reporting', () => {
       ...body,
     });
 
-  const disableAutoHide = () =>
-    jest.spyOn(reportingService, 'getAutoHideThreshold').mockReturnValue(0);
+  const disableAutoHide = () => {
+    process.env.HELP_GROUPS_AUTO_HIDE_THRESHOLD = '0';
+  };
 
   const hideReply = (id = reply.id) =>
     postReplyModel.update({ hiddenAt: new Date() }, { where: { id } });
@@ -453,6 +455,21 @@ describe('Help groups - Reporting', () => {
       expect(addToWorkQueue).not.toHaveBeenCalled();
     });
 
+    it('Should escape the user written texts, so that they never mention anyone', async () => {
+      disableAutoHide();
+      await postReplyModel.update(
+        { content: 'Bonjour <@U_CANDIDATES> & <!here>' },
+        { where: { id: reply.id } }
+      );
+      await reportReply(member, { comment: '<!channel> urgent' });
+      await Promise.allSettled(pendingAlerts);
+      const blocksText = JSON.stringify(sendMessage.mock.calls[0][1]);
+      expect(blocksText).not.toContain('<!channel>');
+      expect(blocksText).not.toContain('<!here>');
+      expect(blocksText).toContain('&lt;!channel&gt; urgent');
+      expect(blocksText).toContain('&lt;@U_CANDIDATES&gt; &amp; &lt;!here&gt;');
+    });
+
     it('Should mention a referent shared by the author and the reporter only once', async () => {
       disableAutoHide();
       await reportReply(member);
@@ -544,6 +561,65 @@ describe('Help groups - Reporting', () => {
       expect(JSON.stringify(sendMessage.mock.calls[0][1])).not.toContain(
         'PRIORITAIRE'
       );
+    });
+
+    it('Should keep the default threshold of 1 when the env var is malformed', async () => {
+      process.env.HELP_GROUPS_AUTO_HIDE_THRESHOLD = 'abc';
+      expect(reportingService.getAutoHideThreshold()).toBe(1);
+      expect((await reportReply(member)).status).toBe(201);
+      expect((await findReplyRow()).hiddenAt).not.toBeNull();
+    });
+
+    it('Should wait for a second reporter when the threshold is 2', async () => {
+      process.env.HELP_GROUPS_AUTO_HIDE_THRESHOLD = '2';
+      await reportReply(member);
+      expect((await findReplyRow()).hiddenAt).toBeNull();
+      await reportReply(await createMember());
+      expect((await findReplyRow()).hiddenAt).not.toBeNull();
+    });
+
+    it('Should recompute the last activity of the discussion without the hidden reply, then with it once restored', async () => {
+      const lastActivityAt = async () =>
+        (await postModel.findByPk(discussion.id)).lastActivityAt.getTime();
+      await postReplyModel.update(
+        { createdAt: new Date('2026-09-01T10:00:00.000Z') },
+        { where: { id: reply.id }, silent: true }
+      );
+      const latest = await postReplyFactory.create({
+        postId: discussion.id,
+        authorId: author.user.id,
+      });
+      await postModel.update(
+        { lastActivityAt: latest.createdAt },
+        { where: { id: discussion.id } }
+      );
+
+      await reportReply(member, {}, latest.id);
+      expect(await lastActivityAt()).toBe(
+        Math.max(
+          new Date(discussion.createdAt).getTime(),
+          new Date('2026-09-01T10:00:00.000Z').getTime()
+        )
+      );
+
+      await api(
+        'post',
+        `/admin/help-groups/replies/${latest.id}/restore`,
+        admin
+      );
+      expect(await lastActivityAt()).toBe(new Date(latest.createdAt).getTime());
+    });
+
+    it('Should still send the priority alert when the report alert fails', async () => {
+      sendMessage.mockRejectedValueOnce(new Error('Slack down'));
+      expect((await reportReply(member)).status).toBe(201);
+      await Promise.allSettled(pendingAlerts);
+      expect(sendMessage).toHaveBeenCalledTimes(2);
+      expect(
+        sendMessage.mock.calls.some(([, , text]) =>
+          String(text).includes('PRIORITAIRE')
+        )
+      ).toBe(true);
     });
 
     it('Should hide the message even when Slack fails', async () => {
@@ -746,6 +822,23 @@ describe('Help groups - Reporting', () => {
       expect((await reportModel.findOne()).resolution).toBe(
         ReportResolutions.DELETED
       );
+    });
+
+    it('Should close the pending reports of its replies when an admin deletes a discussion', async () => {
+      disableAutoHide();
+      await reportReply(member);
+      await api(
+        'delete',
+        `/admin/help-groups/discussions/${discussion.id}`,
+        admin,
+        { reason: 'SPAM' }
+      );
+      expect(await reportModel.findOne()).toMatchObject({
+        targetType: ReportTargetTypes.POST_REPLY,
+        status: ReportStatuses.RESOLVED,
+        resolution: ReportResolutions.DELETED,
+        resolvedById: admin.user.id,
+      });
     });
 
     it('Should refuse the restoration to a non admin with a 403', async () => {

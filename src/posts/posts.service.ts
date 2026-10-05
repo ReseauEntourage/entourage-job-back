@@ -267,8 +267,9 @@ export class PostsService {
   }
 
   /**
-   * Recomputes the last activity of a post after a reply was created or
-   * deleted: the date of its most recent visible reply, or its creation date.
+   * Recomputes the last activity of a post after a reply was created,
+   * deleted, hidden after reports or restored: the date of its most recent
+   * visible reply, or its creation date.
    * Meant to run in the transaction of the reply write.
    */
   async refreshLastActivityAt(postId: string, transaction: Transaction) {
@@ -278,7 +279,8 @@ export class PostsService {
          p."createdAt",
          COALESCE(
            (SELECT MAX(r."createdAt") FROM "PostReplies" r
-            WHERE r."postId" = p."id" AND r."deletedAt" IS NULL),
+            WHERE r."postId" = p."id" AND r."deletedAt" IS NULL
+              AND r."hiddenAt" IS NULL),
            p."createdAt"
          )
        )
