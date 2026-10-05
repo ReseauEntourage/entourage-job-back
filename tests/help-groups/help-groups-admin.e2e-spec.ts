@@ -45,7 +45,6 @@ describe('Help groups - Admin', () => {
   const validGroup = {
     name: 'Refaire un CV',
     description: 'Échanger sur la rédaction de son CV.\nEt de sa lettre.',
-    charter: 'Bienveillance et respect.',
   };
 
   let admin: LoggedInUser;
@@ -183,7 +182,6 @@ describe('Help groups - Admin', () => {
       const markup = {
         name: '<b>Groupe</b> **gras**',
         description: '<script>alert(1)</script>',
-        charter: '# Titre\n<i>italique</i>',
       };
       const response = await asAdmin(
         request(server).post(adminRoute).send(markup)
@@ -271,8 +269,6 @@ describe('Help groups - Admin', () => {
       ['name', 'a'.repeat(81)],
       ['description', ''],
       ['description', 'a'.repeat(501)],
-      ['charter', ''],
-      ['charter', 'a'.repeat(5001)],
     ])(
       'Should return 400 naming the field when %s is "%s"',
       async (field, value) => {
@@ -288,12 +284,12 @@ describe('Help groups - Admin', () => {
     );
 
     it('Should return 400 when a field is missing', async () => {
-      const { charter, ...missingCharter } = validGroup;
+      const { description, ...missingDescription } = validGroup;
       const response = await asAdmin(
-        request(server).post(adminRoute).send(missingCharter)
+        request(server).post(adminRoute).send(missingDescription)
       );
       expect(response.status).toBe(400);
-      expect(JSON.stringify(response.body.message)).toContain('charter');
+      expect(JSON.stringify(response.body.message)).toContain('description');
     });
 
     it('Should accept the maximum lengths', async () => {
@@ -303,7 +299,6 @@ describe('Help groups - Admin', () => {
           .send({
             name: 'a'.repeat(80),
             description: 'b'.repeat(500),
-            charter: 'c'.repeat(5000),
           })
       );
       expect(response.status).toBe(201);

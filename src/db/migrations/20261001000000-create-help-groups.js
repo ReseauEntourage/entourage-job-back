@@ -37,8 +37,6 @@ module.exports = {
           name: { allowNull: false, type: Sequelize.STRING(80) },
           slug: { allowNull: false, type: Sequelize.STRING(100) },
           description: { allowNull: false, type: Sequelize.STRING(500) },
-          // Max length (5000) is enforced by the DTO only
-          charter: { allowNull: false, type: Sequelize.TEXT },
           publishedAt: { allowNull: true, type: Sequelize.DATE },
           pinnedAt: { allowNull: true, type: Sequelize.DATE },
           createdById: userReference(Sequelize, true, 'SET NULL'),
@@ -71,7 +69,6 @@ module.exports = {
             onDelete: 'CASCADE',
           },
           userId: userReference(Sequelize, false, 'CASCADE'),
-          charterAcceptedAt: { allowNull: true, type: Sequelize.DATE },
           leftAt: { allowNull: true, type: Sequelize.DATE },
           ...timestamps(Sequelize),
         },

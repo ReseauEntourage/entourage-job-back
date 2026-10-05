@@ -19,7 +19,6 @@ export interface HelpGroupCard {
 }
 
 export interface HelpGroupPage {
-  charter: string;
   description: string;
   id: string;
   isMember: boolean;
@@ -47,7 +46,6 @@ export interface HelpGroupDiscussion extends HelpGroupDiscussionItem {
 }
 
 export interface HelpGroupAdminItem {
-  charter: string;
   createdAt: Date;
   deletedAt: Date | null;
   description: string;
