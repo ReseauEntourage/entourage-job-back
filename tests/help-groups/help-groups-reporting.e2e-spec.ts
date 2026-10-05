@@ -679,34 +679,60 @@ describe('Help groups - Reporting', () => {
       expect(await reportModel.count()).toBe(0);
     });
 
-    it('Should not deadlock when a reply is reported while an admin deletes its discussion', async () => {
+    it('Should refuse, without deadlock, a reply report sent while an admin deletes its discussion', async () => {
       // An admin deletion in progress: it holds the discussion row
       const deletion = await postModel.sequelize.transaction();
       await postModel.update(
         { deletedById: admin.user.id },
         { where: { id: discussion.id }, transaction: deletion }
       );
-      // The report locks the reply, then waits for the discussion to hide it
+      await postModel.destroy({
+        where: { id: discussion.id },
+        transaction: deletion,
+      });
+      // The report locks the reply, then waits for the discussion
       const pending = reportReply(member).then((response) => response);
       await new Promise((resolve) => setTimeout(resolve, 300));
-      // The deletion then closes the pending reports of the replies
-      await reportModel.update(
-        {
-          status: ReportStatuses.RESOLVED,
-          resolution: ReportResolutions.DELETED,
-        },
-        {
-          where: {
-            targetType: ReportTargetTypes.POST_REPLY,
-            targetId: reply.id,
-            status: ReportStatuses.PENDING,
-          },
-          transaction: deletion,
-        }
-      );
       await deletion.commit();
 
-      expect((await pending).status).toBe(201);
+      expect((await pending).status).toBe(404);
+      expect(
+        await reportModel.count({ where: { status: ReportStatuses.PENDING } })
+      ).toBe(0);
+    });
+
+    it('Should close a reply report saved just before the deletion of its discussion', async () => {
+      disableAutoHide();
+      // A report in progress: it holds the discussion with a shared lock
+      const reporting = await postModel.sequelize.transaction();
+      await postModel.findByPk(discussion.id, {
+        lock: reporting.LOCK.SHARE,
+        transaction: reporting,
+      });
+      await reportModel.create(
+        {
+          targetType: ReportTargetTypes.POST_REPLY,
+          targetId: reply.id,
+          reporterId: member.user.id,
+          reason: ReportReasons.SPAM,
+        },
+        { transaction: reporting }
+      );
+      // The deletion waits for the report, then closes it
+      const deletion = api(
+        'delete',
+        `/admin/help-groups/discussions/${discussion.id}`,
+        admin,
+        { reason: 'SPAM' }
+      ).then((response) => response);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await reporting.commit();
+
+      expect((await deletion).status).toBe(204);
+      expect(await reportModel.findOne()).toMatchObject({
+        status: ReportStatuses.RESOLVED,
+        resolution: ReportResolutions.DELETED,
+      });
     });
 
     it('Should save the report even when the hiding fails, without hiding anything', async () => {

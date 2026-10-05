@@ -127,6 +127,21 @@ export class HelpGroupsReportingService {
         if (!current || (current.hiddenAt && !isEntourageAdmin(reader.role))) {
           throw new NotFoundException();
         }
+        // For a reply, its discussion is locked too, after the reply (the lock
+        // order of every reply write): a discussion deletion in progress makes
+        // the report wait, then find the discussion deleted; a deletion coming
+        // after waits for the report, then closes it with the others
+        if (message.replyId) {
+          const discussion = await this.postModel.findByPk(
+            message.discussionId,
+            { attributes: ['id'], lock: transaction.LOCK.SHARE, transaction }
+          );
+          if (!discussion) {
+            throw new NotFoundException(
+              HelpGroupErrorCodes.DISCUSSION_NOT_FOUND
+            );
+          }
+        }
         const created = await this.reportsService.create(
           {
             ...message.target,
