@@ -122,7 +122,9 @@ export class HelpGroupsReportingService {
           lock: transaction.LOCK.UPDATE,
           transaction,
         });
-        if (!current) {
+        // Checked again under the lock: another report may have hidden the
+        // message since it was read
+        if (!current || (current.hiddenAt && !isEntourageAdmin(reader.role))) {
           throw new NotFoundException();
         }
         const created = await this.reportsService.create(

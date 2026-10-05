@@ -664,6 +664,21 @@ describe('Help groups - Reporting', () => {
       expect((await findReplyRow()).hiddenAt).not.toBeNull();
     });
 
+    it('Should refuse with a 404 a report sent while another report hides the message', async () => {
+      // Another report hiding the message: it holds the reply row
+      const hiding = await postReplyModel.sequelize.transaction();
+      await postReplyModel.update(
+        { hiddenAt: new Date() },
+        { where: { id: reply.id }, transaction: hiding }
+      );
+      const pending = reportReply(member).then((response) => response);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await hiding.commit();
+
+      expect((await pending).status).toBe(404);
+      expect(await reportModel.count()).toBe(0);
+    });
+
     it('Should save the report even when the hiding fails, without hiding anything', async () => {
       jest
         .spyOn(postsService, 'refreshLastActivityAt')
