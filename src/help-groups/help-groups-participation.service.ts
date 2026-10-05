@@ -462,24 +462,38 @@ export class HelpGroupsParticipationService {
     );
     this.assertAuthor(post.authorId, userId);
 
-    const title = dto.title ?? post.title;
-    const content = dto.content ?? post.content;
-    if (title !== post.title || content !== post.content) {
-      await this.transaction(async (transaction) => {
-        await this.postRevisionModel.create(
-          {
-            postId: post.id,
-            title: post.title,
-            content: post.content,
-            editedById: userId,
-          },
-          { transaction }
-        );
-        await this.postModel.update(
-          { title, content, editedAt: new Date() },
-          { where: { id: post.id }, transaction }
-        );
+    // Re-read and locked in the transaction: two overlapping edits each save
+    // the actual previous version and never overwrite each other's fields
+    const edited = await this.transaction(async (transaction) => {
+      const current = await this.postModel.findByPk(post.id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
       });
+      if (!current) {
+        throw new NotFoundException(HelpGroupErrorCodes.DISCUSSION_NOT_FOUND);
+      }
+      const title = dto.title ?? current.title;
+      const content = dto.content ?? current.content;
+      if (title === current.title && content === current.content) {
+        return null;
+      }
+      await this.postRevisionModel.create(
+        {
+          postId: current.id,
+          title: current.title,
+          content: current.content,
+          editedById: userId,
+        },
+        { transaction }
+      );
+      await this.postModel.update(
+        { title, content, editedAt: new Date() },
+        { where: { id: current.id }, transaction }
+      );
+      return { title, content };
+    });
+    if (edited) {
+      const { title, content } = edited;
       this.realtime.notify(PusherEvents.DISCUSSION_UPDATED, {
         discussionId: post.id,
       });
@@ -510,17 +524,29 @@ export class HelpGroupsParticipationService {
     const reply = await this.findReplyOrFail(post, replyId);
     this.assertAuthor(reply.authorId, userId);
 
-    if (dto.content !== reply.content) {
-      await this.transaction(async (transaction) => {
-        await this.postRevisionModel.create(
-          { replyId: reply.id, content: reply.content, editedById: userId },
-          { transaction }
-        );
-        await this.postReplyModel.update(
-          { content: dto.content, editedAt: new Date() },
-          { where: { id: reply.id }, transaction }
-        );
+    // Re-read and locked in the transaction, as for a discussion
+    const isEdited = await this.transaction(async (transaction) => {
+      const current = await this.postReplyModel.findByPk(reply.id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
       });
+      if (!current) {
+        throw new NotFoundException();
+      }
+      if (dto.content === current.content) {
+        return false;
+      }
+      await this.postRevisionModel.create(
+        { replyId: current.id, content: current.content, editedById: userId },
+        { transaction }
+      );
+      await this.postReplyModel.update(
+        { content: dto.content, editedAt: new Date() },
+        { where: { id: current.id }, transaction }
+      );
+      return true;
+    });
+    if (isEdited) {
       this.realtime.notify(PusherEvents.REPLY_UPDATED, {
         discussionId: post.id,
         replyId: reply.id,
@@ -648,7 +674,7 @@ export class HelpGroupsParticipationService {
     dto: ModerationDeleteDto
   ): Promise<void> {
     const reply = await this.postReplyModel.findByPk(replyId);
-    if (!reply) {
+    if (!reply || !(await this.isHelpGroupPost(reply.postId))) {
       throw new NotFoundException();
     }
     await this.softDeleteReply(reply, {
@@ -656,6 +682,17 @@ export class HelpGroupsParticipationService {
       deletionReason: dto.reason,
       deletionComment: dto.comment || null,
     });
+  }
+
+  /**
+   * Posts and replies are generic: the admin routes of this module only act
+   * on the ones shown in a help group.
+   */
+  private async isHelpGroupPost(postId: string): Promise<boolean> {
+    const count = await this.postContextModel.count({
+      where: { postId, helpGroupId: { [Op.ne]: null } },
+    });
+    return count > 0;
   }
 
   /**
@@ -670,7 +707,8 @@ export class HelpGroupsParticipationService {
       target === 'postId'
         ? await this.postModel.findByPk(id, { paranoid: false })
         : await this.postReplyModel.findByPk(id, { paranoid: false });
-    if (!message) {
+    const postId = message instanceof PostReply ? message.postId : message?.id;
+    if (!message || !(await this.isHelpGroupPost(postId))) {
       throw new NotFoundException();
     }
     const revisions = await this.postRevisionModel.findAll({

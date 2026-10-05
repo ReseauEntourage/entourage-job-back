@@ -61,8 +61,8 @@ export class HelpGroupsTitleService {
     previousTitles: string[]
   ): Promise<{ title: string | null }> {
     const raw = await this.anthropicService.generateText(
-      buildHelpGroupTitleSystemPrompt(previousTitles),
-      buildHelpGroupTitleUserMessage(content),
+      buildHelpGroupTitleSystemPrompt(),
+      buildHelpGroupTitleUserMessage(content, previousTitles),
       {
         maxTokens: HELP_GROUP_TITLE_CONFIG.maxTokens,
         timeoutMs: HELP_GROUP_TITLE_CONFIG.timeoutMs,
