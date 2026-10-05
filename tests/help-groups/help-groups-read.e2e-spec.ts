@@ -115,6 +115,11 @@ describe('Help groups - Read', () => {
         membersCount: 0,
         isMember: false,
         isPublished: true,
+        viewerPermissions: {
+          state: 'mustJoin',
+          charterAccepted: false,
+          showWelcomeInvite: false,
+        },
       });
     });
 
@@ -515,11 +520,13 @@ describe('Help groups - Read', () => {
         lastActivityAt: expect.any(String),
         repliesCount: 0,
         reactionsSummary: null,
+        viewerReaction: null,
         author: {
           id: author.id,
           firstName: 'Julien',
           lastNameInitial: 'P.',
           roleLabel: 'Candidat',
+          isAdmin: false,
           isDeleted: false,
           profileLinkable: true,
           department: 'Paris (75)',
@@ -605,12 +612,14 @@ describe('Help groups - Read', () => {
           firstName: 'Amina',
           lastNameInitial: 'L.',
           roleLabel: 'Coach',
+          isAdmin: false,
           isDeleted: false,
           profileLinkable: true,
         },
-        expect.objectContaining({ roleLabel: 'Prescripteur' }),
+        expect.objectContaining({ roleLabel: 'Prescripteur', isAdmin: false }),
         expect.objectContaining({
           roleLabel: 'Équipe Entourage',
+          isAdmin: true,
           profileLinkable: false,
         }),
       ]);
@@ -655,6 +664,7 @@ describe('Help groups - Read', () => {
         firstName: null as string | null,
         lastNameInitial: null as string | null,
         roleLabel: null as string | null,
+        isAdmin: false,
         isDeleted: true,
         profileLinkable: false,
       };
