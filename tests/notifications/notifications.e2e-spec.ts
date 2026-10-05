@@ -40,6 +40,7 @@ describe('Notifications center', () => {
   let notificationsService: NotificationsService;
   let notificationModel: typeof Notification;
   let userModel: typeof User;
+  let helpGroupModel: typeof HelpGroup;
 
   const sendEvent = jest.fn();
   const authorizeChannel = jest.fn();
@@ -73,6 +74,7 @@ describe('Notifications center', () => {
     notificationsService = moduleFixture.get(NotificationsService);
     notificationModel = moduleFixture.get(getModelToken(Notification));
     userModel = moduleFixture.get(getModelToken(User));
+    helpGroupModel = moduleFixture.get(getModelToken(HelpGroup));
   });
 
   afterAll(async () => {
@@ -273,6 +275,17 @@ describe('Notifications center', () => {
         },
       });
       expect(await unseenCount()).toBe(2);
+    });
+
+    it('Should not count a notification the list leaves out, such as one of an unpublished group', async () => {
+      await notifyReply(amina);
+      expect(await unseenCount()).toBe(1);
+      await helpGroupModel.update(
+        { publishedAt: null },
+        { where: { id: group.id } }
+      );
+      expect((await get('/notifications', julien)).body.items).toEqual([]);
+      expect(await unseenCount()).toBe(0);
     });
 
     it('Should mark nothing as seen when the list is opened', async () => {

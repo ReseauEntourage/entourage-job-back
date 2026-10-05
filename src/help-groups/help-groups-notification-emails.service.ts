@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { AuthService } from 'src/auth/auth.service';
+import {
+  isMailjetTemplateConfigured,
+  MailjetTemplates,
+} from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import {
@@ -83,6 +87,16 @@ export class HelpGroupsNotificationEmailsService {
   }: SendHelpGroupNotificationEmailJob): Promise<string> {
     const skip = (reason: string) =>
       `Help group notification email of ${eventId} not sent: ${reason}`;
+
+    // Until its Mailjet template exists, nothing is sent nor marked as sent
+    if (
+      !isMailjetTemplateConfigured(MailjetTemplates.HELP_GROUP_NOTIFICATION)
+    ) {
+      this.logger.warn(
+        '[HelpGroupsNotificationEmails] HELP_GROUP_NOTIFICATION template not configured'
+      );
+      return skip('Mailjet template not configured');
+    }
 
     const notification =
       await this.notificationsService.findById(notificationId);

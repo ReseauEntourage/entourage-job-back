@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { QueryTypes, Transaction } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
+import {
+  isMailjetTemplateConfigured,
+  MailjetTemplates,
+} from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import {
@@ -62,6 +66,16 @@ export class HelpGroupsDigestService {
 
   async sendWeeklyDigests(): Promise<HelpGroupsDigestResult> {
     const result: HelpGroupsDigestResult = { sent: 0, skipped: 0, failed: 0 };
+    // Until its Mailjet template exists, no digest is sent and the activity
+    // stays due for the first run that can send it
+    if (
+      !isMailjetTemplateConfigured(MailjetTemplates.HELP_GROUPS_WEEKLY_DIGEST)
+    ) {
+      this.logger.warn(
+        '[HelpGroupsDigest] HELP_GROUPS_WEEKLY_DIGEST template not configured: no digest sent'
+      );
+      return result;
+    }
     let after: string | null = null;
     for (;;) {
       const userIds = await this.findRecipientIds(after);
@@ -109,49 +123,66 @@ export class HelpGroupsDigestService {
   }
 
   /**
-   * The digest of a person, in their own transaction: the user row is
-   * locked, so that a concurrent run waits and then finds no activity left.
-   * Its email is queued before the commit: a failure rolls back the move of
-   * `helpGroupsDigestSentAt`.
+   * The digest of a person. Its content and the move of
+   * `helpGroupsDigestSentAt` are committed in their own transaction, the
+   * user row being locked so that a concurrent run waits and then finds no
+   * activity left. The email is queued after the commit: should the queue
+   * fail, the previous date is put back, so that the activity is sent by
+   * the next run. A digest is thus never queued twice.
    * Returns true when an email was queued.
    */
   async sendDigest(userId: string): Promise<boolean> {
-    return this.userModel.sequelize.transaction(async (transaction) => {
-      const user = await this.userModel.findByPk(userId, {
-        attributes: [...recipientAttributes, 'helpGroupsDigestSentAt'],
-        transaction,
-        // Not FOR UPDATE: the autologin tokens created meanwhile reference
-        // this row, which needs a key share lock on it
-        lock: transaction.LOCK.NO_KEY_UPDATE,
-      });
-      if (!user) {
-        return false;
-      }
-      const now = new Date();
-      const since =
-        user.helpGroupsDigestSentAt ??
-        new Date(
-          now.getTime() - HELP_GROUPS_DIGEST_DEFAULT_PERIOD_DAYS * DAY_IN_MS
+    const prepared = await this.userModel.sequelize.transaction(
+      async (transaction) => {
+        const user = await this.userModel.findByPk(userId, {
+          attributes: [...recipientAttributes, 'helpGroupsDigestSentAt'],
+          transaction,
+          // Not FOR UPDATE: the autologin tokens created meanwhile reference
+          // this row, which needs a key share lock on it
+          lock: transaction.LOCK.NO_KEY_UPDATE,
+        });
+        if (!user) {
+          return null;
+        }
+        const previousSentAt = user.helpGroupsDigestSentAt;
+        const now = new Date();
+        const since =
+          previousSentAt ??
+          new Date(
+            now.getTime() - HELP_GROUPS_DIGEST_DEFAULT_PERIOD_DAYS * DAY_IN_MS
+          );
+        const discussions = await this.findDigestDiscussions(
+          user.id,
+          since,
+          now,
+          transaction
         );
-      const discussions = await this.findDigestDiscussions(
-        user.id,
-        since,
-        now,
-        transaction
-      );
-
-      if (discussions.length > 0) {
-        await this.mailsService.sendHelpGroupsWeeklyDigest(
-          user,
-          await this.toDigestEmail(user.id, discussions)
+        const email =
+          discussions.length > 0
+            ? await this.toDigestEmail(user.id, discussions)
+            : null;
+        await this.userModel.update(
+          { helpGroupsDigestSentAt: now },
+          { where: { id: user.id }, transaction }
         );
+        return email ? { user, email, previousSentAt, now } : null;
       }
+    );
+    if (!prepared) {
+      return false;
+    }
+    const { user, email, previousSentAt, now } = prepared;
+    try {
+      await this.mailsService.sendHelpGroupsWeeklyDigest(user, email);
+    } catch (error) {
+      // Only if no other run moved it since
       await this.userModel.update(
-        { helpGroupsDigestSentAt: now },
-        { where: { id: user.id }, transaction }
+        { helpGroupsDigestSentAt: previousSentAt },
+        { where: { id: user.id, helpGroupsDigestSentAt: now } }
       );
-      return discussions.length > 0;
-    });
+      throw error;
+    }
+    return true;
   }
 
   /**

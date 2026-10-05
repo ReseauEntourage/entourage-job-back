@@ -110,6 +110,17 @@ describe('Help groups - Notifications', () => {
     sendEvent.mockResolvedValue({});
     // Every module instance of the queues service shares this prototype
     addToWorkQueue = jest.spyOn(QueuesServiceMock.prototype, 'addToWorkQueue');
+    // The real ids are not created in Mailjet yet: 0 sends nothing
+    jest.replaceProperty(
+      MailjetTemplates,
+      'HELP_GROUP_NOTIFICATION',
+      9000001 as never
+    );
+    jest.replaceProperty(
+      MailjetTemplates,
+      'HELP_GROUPS_WEEKLY_DIGEST',
+      9000002 as never
+    );
     // Only reports, never hides, unless a test says otherwise
     process.env.HELP_GROUPS_AUTO_HIDE_THRESHOLD = '0';
 
@@ -332,6 +343,27 @@ describe('Help groups - Notifications', () => {
       );
     });
 
+    it('Should still notify the other recipients when one of them fails', async () => {
+      await reply(amina);
+      addToWorkQueue.mockClear();
+      // The email of the first recipient (the author) cannot be queued
+      addToWorkQueue.mockRejectedValueOnce(new Error('Redis down'));
+      await reply(thomas);
+      expect(await notificationsOf(julien)).toHaveLength(1);
+      const [aminaRow] = await notificationsOf(amina);
+      expect(aminaRow).toBeDefined();
+      // Attempted for both, after the failure of the first one
+      expect(emailJobs().map(({ notificationId }) => notificationId)).toEqual(
+        expect.arrayContaining([aminaRow.id])
+      );
+      expect(emailJobs()).toHaveLength(2);
+      expect(sendEvent).toHaveBeenCalledWith(
+        `private-user-${amina.user.id}`,
+        'notifications-changed',
+        {}
+      );
+    });
+
     it('Should never fail the reply when the notifications fail', async () => {
       jest
         .spyOn(notificationsService, 'upsertEvent')
@@ -546,6 +578,19 @@ describe('Help groups - Notifications', () => {
       expect(sentMails()).toHaveLength(2);
       const [row] = await notificationsOf(julien);
       expect(row.events[0].emailedAt).toBeTruthy();
+    });
+
+    it('Should send nothing, nor mark anything as sent, while the Mailjet template is not configured', async () => {
+      jest.replaceProperty(
+        MailjetTemplates,
+        'HELP_GROUP_NOTIFICATION',
+        0 as never
+      );
+      await reply(amina);
+      await runEmailJobs();
+      expect(sentMails()).toHaveLength(0);
+      const [row] = await notificationsOf(julien);
+      expect(row.events[0].emailedAt ?? null).toBeNull();
     });
   });
 
@@ -766,6 +811,50 @@ describe('Help groups - Notifications', () => {
         attributes: ['helpGroupsDigestSentAt'],
       });
       expect(user.helpGroupsDigestSentAt).toBeTruthy();
+    });
+
+    it('Should put the previous date back when the digest cannot be queued, the next run sending it', async () => {
+      await createDiscussion(thomas.user.id);
+      const before = await userModel.findByPk(julien.user.id, {
+        attributes: ['helpGroupsDigestSentAt'],
+      });
+      addToWorkQueue.mockImplementation(async (type, data) => {
+        if (
+          type === Jobs.SEND_MAIL &&
+          (data as SendMailJob).toEmail === julien.user.email
+        ) {
+          throw new Error('Redis down');
+        }
+        return { id: 'mock-job-id' };
+      });
+      const failed = await digestService.sendWeeklyDigests();
+      expect(failed.failed).toBe(1);
+      const after = await userModel.findByPk(julien.user.id, {
+        attributes: ['helpGroupsDigestSentAt'],
+      });
+      expect(after.helpGroupsDigestSentAt).toEqual(
+        before.helpGroupsDigestSentAt
+      );
+
+      addToWorkQueue.mockReset();
+      addToWorkQueue.mockResolvedValue({ id: 'mock-job-id' });
+      await digestService.sendWeeklyDigests();
+      expect(digestOf(julien)).toBeDefined();
+    });
+
+    it('Should send no digest, and keep the activity due, while the Mailjet template is not configured', async () => {
+      await createDiscussion(thomas.user.id);
+      jest.replaceProperty(
+        MailjetTemplates,
+        'HELP_GROUPS_WEEKLY_DIGEST',
+        0 as never
+      );
+      await digestService.sendWeeklyDigests();
+      expect(digestMails()).toHaveLength(0);
+      const user = await userModel.findByPk(julien.user.id, {
+        attributes: ['helpGroupsDigestSentAt'],
+      });
+      expect(user.helpGroupsDigestSentAt).toBeNull();
     });
 
     it('Should name a deleted author "Utilisateur supprimé"', async () => {

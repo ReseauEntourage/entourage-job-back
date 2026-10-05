@@ -199,21 +199,24 @@ export class HelpGroupsNotificationsService
         reply.authorId
       );
       for (const userId of recipients) {
-        const notificationId = await this.notificationsService.upsertEvent({
-          userId,
-          type: NotificationTypes.HELP_GROUP_REPLY,
-          subjectType: NotificationSubjectTypes.POST,
-          subjectId: discussion.id,
-          groupId,
-          event: {
-            actorId: reply.authorId,
-            eventId: reply.id,
-            at: reply.createdAt,
-          },
+        // Each recipient on their own: a failure never deprives the others
+        await this.safely(`reply ${reply.id} for ${userId}`, async () => {
+          const notificationId = await this.notificationsService.upsertEvent({
+            userId,
+            type: NotificationTypes.HELP_GROUP_REPLY,
+            subjectType: NotificationSubjectTypes.POST,
+            subjectId: discussion.id,
+            groupId,
+            event: {
+              actorId: reply.authorId,
+              eventId: reply.id,
+              at: reply.createdAt,
+            },
+          });
+          if (notificationId) {
+            await this.enqueueEmail(notificationId, reply.id);
+          }
         });
-        if (notificationId) {
-          await this.enqueueEmail(notificationId, reply.id);
-        }
       }
       this.notificationsService.notifyChanged(recipients);
     });
@@ -235,21 +238,24 @@ export class HelpGroupsNotificationsService
         reaction.userId
       );
       for (const userId of recipients) {
-        const notificationId = await this.notificationsService.upsertEvent({
-          userId,
-          type: NotificationTypes.HELP_GROUP_REACTION,
-          subjectType: message.subjectType,
-          subjectId: message.id,
-          groupId,
-          event: {
-            actorId: reaction.userId,
-            eventId: reaction.id,
-            at: reaction.createdAt,
-          },
+        // Each recipient on their own: a failure never deprives the others
+        await this.safely(`reaction ${reaction.id} for ${userId}`, async () => {
+          const notificationId = await this.notificationsService.upsertEvent({
+            userId,
+            type: NotificationTypes.HELP_GROUP_REACTION,
+            subjectType: message.subjectType,
+            subjectId: message.id,
+            groupId,
+            event: {
+              actorId: reaction.userId,
+              eventId: reaction.id,
+              at: reaction.createdAt,
+            },
+          });
+          if (notificationId) {
+            await this.enqueueEmail(notificationId, reaction.id);
+          }
         });
-        if (notificationId) {
-          await this.enqueueEmail(notificationId, reaction.id);
-        }
       }
       this.notificationsService.notifyChanged(recipients);
     });

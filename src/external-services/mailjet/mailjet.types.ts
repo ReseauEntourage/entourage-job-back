@@ -170,3 +170,10 @@ export const MailjetTemplates = {
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;
 
 export type MailjetTemplate = (typeof MailjetTemplates)[MailjetTemplateKey];
+
+/**
+ * A template still at its placeholder id (0) cannot be sent: Mailjet would
+ * receive a message without a template nor a body.
+ */
+export const isMailjetTemplateConfigured = (templateId: MailjetTemplate) =>
+  templateId > 0;
