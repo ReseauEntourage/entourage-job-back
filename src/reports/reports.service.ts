@@ -33,15 +33,21 @@ export class ReportsService {
    * 409 `REPORT_ALREADY_PENDING` when the reporter already has a report to
    * handle on this target. Once it is resolved, they may report again.
    */
-  async create(input: CreateReportInput): Promise<Report> {
+  async create(
+    input: CreateReportInput,
+    transaction?: Transaction
+  ): Promise<Report> {
     try {
-      return await this.reportModel.create({
-        targetType: input.targetType,
-        targetId: input.targetId,
-        reporterId: input.reporterId,
-        reason: input.reason,
-        comment: input.comment || null,
-      });
+      return await this.reportModel.create(
+        {
+          targetType: input.targetType,
+          targetId: input.targetId,
+          reporterId: input.reporterId,
+          reason: input.reason,
+          comment: input.comment || null,
+        },
+        { transaction }
+      );
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
         throw new ConflictException(REPORT_ALREADY_PENDING);

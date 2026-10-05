@@ -7,6 +7,7 @@ import { SlackService } from 'src/external-services/slack/slack.service';
 import { HelpGroupsReportingService } from 'src/help-groups/help-groups-reporting.service';
 import { HelpGroup } from 'src/help-groups/models';
 import { Post, PostReply } from 'src/posts/models';
+import { PostsService } from 'src/posts/posts.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Report } from 'src/reports/models';
 import { ReportsService } from 'src/reports/reports.service';
@@ -67,6 +68,7 @@ describe('Help groups - Reporting', () => {
   let reportingService: HelpGroupsReportingService;
   let slackService: SlackService;
   let queuesService: QueuesService;
+  let postsService: PostsService;
 
   let postModel: typeof Post;
   let postReplyModel: typeof PostReply;
@@ -111,6 +113,7 @@ describe('Help groups - Reporting', () => {
     reportingService = moduleFixture.get(HelpGroupsReportingService);
     slackService = moduleFixture.get(SlackService);
     queuesService = moduleFixture.get(QueuesService);
+    postsService = moduleFixture.get(PostsService);
 
     postModel = moduleFixture.get(getModelToken(Post));
     postReplyModel = moduleFixture.get(getModelToken(PostReply));
@@ -624,6 +627,51 @@ describe('Help groups - Reporting', () => {
           String(text).includes('PRIORITAIRE')
         )
       ).toBe(true);
+    });
+
+    it('Should hide again with a report sent while a restoration holds the message', async () => {
+      await hideReply();
+      await reportFactory.create({
+        targetType: ReportTargetTypes.POST_REPLY,
+        targetId: reply.id,
+        reporterId: member.user.id,
+      });
+      // A restoration in progress: it holds the reply row
+      const restoration = await postReplyModel.sequelize.transaction();
+      await postReplyModel.update(
+        { hiddenAt: null },
+        { where: { id: reply.id }, transaction: restoration }
+      );
+      // An admin can report a hidden message: the request waits for the lock
+      const pending = reportReply(admin).then((response) => response);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await reportModel.update(
+        {
+          status: ReportStatuses.RESOLVED,
+          resolution: ReportResolutions.RESTORED,
+        },
+        {
+          where: { targetId: reply.id, status: ReportStatuses.PENDING },
+          transaction: restoration,
+        }
+      );
+      await restoration.commit();
+
+      expect((await pending).status).toBe(201);
+      expect(
+        await reportModel.findOne({ where: { reporterId: admin.user.id } })
+      ).toMatchObject({ status: ReportStatuses.PENDING });
+      expect((await findReplyRow()).hiddenAt).not.toBeNull();
+    });
+
+    it('Should save the report even when the hiding fails, without hiding anything', async () => {
+      jest
+        .spyOn(postsService, 'refreshLastActivityAt')
+        .mockRejectedValueOnce(new Error('Database hiccup'));
+      const response = await reportReply(member);
+      expect(response.status).toBe(201);
+      expect(await reportModel.count()).toBe(1);
+      expect((await findReplyRow()).hiddenAt).toBeNull();
     });
 
     it('Should hide the message even when Slack fails', async () => {

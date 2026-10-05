@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import { PusherEvents } from 'src/external-services/pusher/pusher.types';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { Post, PostContext, PostReply } from 'src/posts/models';
@@ -108,23 +108,53 @@ export class HelpGroupsReportingService {
       throw new NotFoundException();
     }
 
-    const report = await this.reportsService.create({
-      ...message.target,
-      reporterId: reader.id,
-      reason: dto.reason,
-      comment: dto.comment,
-    });
-
-    // Never fails the report: it is saved, the hiding is a side effect
-    let isHidden = false;
-    try {
-      isHidden = await this.hideIfThresholdReached(message);
-    } catch (error) {
-      this.logger.error(
-        `[HelpGroupsReporting] automatic hiding failed (${message.target.targetType} ${message.id}): ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+    const model = (
+      message.replyId ? this.postReplyModel : this.postModel
+    ) as typeof Post;
+    // The report is created under the lock of the message row, which a
+    // restoration also takes first: a report is either resolved by a
+    // restoration committed before it, or created after it and still pending,
+    // so that it can hide the message again
+    const { report, isHidden } = await this.postModel.sequelize.transaction(
+      async (transaction) => {
+        const current = await model.findByPk(message.id, {
+          attributes: ['id', 'hiddenAt'],
+          lock: transaction.LOCK.UPDATE,
+          transaction,
+        });
+        if (!current) {
+          throw new NotFoundException();
+        }
+        const created = await this.reportsService.create(
+          {
+            ...message.target,
+            reporterId: reader.id,
+            reason: dto.reason,
+            comment: dto.comment,
+          },
+          transaction
+        );
+        // Never fails the report: the hiding runs in a savepoint, rolled back
+        // alone on failure
+        let hidden = false;
+        try {
+          hidden = await this.postModel.sequelize.transaction(
+            { transaction },
+            (savepoint) =>
+              this.hideIfThresholdReached(message, current, model, savepoint)
+          );
+        } catch (error) {
+          this.logger.error(
+            `[HelpGroupsReporting] automatic hiding failed (${message.target.targetType} ${message.id}): ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+        return { report: created, isHidden: hidden };
+      }
+    );
+    if (isHidden) {
+      this.notifyChange(message.discussionId, message.replyId);
     }
 
     this.sendAlerts(message, reader.id, dto, isHidden).catch((error) => {
@@ -204,58 +234,37 @@ export class HelpGroupsReportingService {
   /**
    * Hides the message once the number of distinct reporters with a pending
    * report reaches the threshold. Resolved reports never count: a restored
-   * message starts again from zero. Returns true when this call hid it.
+   * message starts again from zero. Runs in the transaction holding the lock
+   * of the message row. Returns true when this call hid it.
    */
   private async hideIfThresholdReached(
-    message: ReportedMessage
+    message: ReportedMessage,
+    current: Pick<Post, 'hiddenAt'>,
+    model: typeof Post,
+    transaction: Transaction
   ): Promise<boolean> {
     const threshold = this.getAutoHideThreshold();
-    if (threshold <= 0) {
+    if (threshold <= 0 || current.hiddenAt) {
       return false;
     }
-    const model = (
-      message.replyId ? this.postReplyModel : this.postModel
-    ) as typeof Post;
-    const isHidden = await this.postModel.sequelize.transaction(
-      async (transaction) => {
-        // The message row is locked before counting: a restoration (which
-        // updates the same row and resolves the reports in one transaction)
-        // is either committed before, so its resolved reports no longer
-        // count, or waits for this hiding
-        const current = await model.findByPk(message.id, {
-          attributes: ['id', 'hiddenAt'],
-          lock: transaction.LOCK.UPDATE,
-          transaction,
-        });
-        if (!current || current.hiddenAt) {
-          return false;
-        }
-        const reporters =
-          await this.reportsService.countPendingDistinctReporters(
-            message.target,
-            transaction
-          );
-        if (reporters < threshold) {
-          return false;
-        }
-        await model.update(
-          { hiddenAt: new Date() },
-          { where: { id: message.id }, transaction }
-        );
-        // The last activity of a discussion only counts its visible replies
-        if (message.replyId) {
-          await this.postsService.refreshLastActivityAt(
-            message.discussionId,
-            transaction
-          );
-        }
-        return true;
-      }
+    const reporters = await this.reportsService.countPendingDistinctReporters(
+      message.target,
+      transaction
     );
-    if (!isHidden) {
+    if (reporters < threshold) {
       return false;
     }
-    this.notifyChange(message.discussionId, message.replyId);
+    await model.update(
+      { hiddenAt: new Date() },
+      { where: { id: message.id }, transaction }
+    );
+    // The last activity of a discussion only counts its visible replies
+    if (message.replyId) {
+      await this.postsService.refreshLastActivityAt(
+        message.discussionId,
+        transaction
+      );
+    }
     return true;
   }
 
