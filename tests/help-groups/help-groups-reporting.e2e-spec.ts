@@ -521,7 +521,11 @@ describe('Help groups - Reporting', () => {
         { discussionId: discussion.id, replyId: reply.id }
       );
       await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(2));
-      const priority = JSON.stringify(sendMessage.mock.calls[1][1]);
+      // The two alerts are sent concurrently: found by their text, not order
+      const priorityCall = sendMessage.mock.calls.find(([, , text]) =>
+        String(text).startsWith('PRIORITAIRE')
+      );
+      const priority = JSON.stringify(priorityCall?.[1]);
       expect(priority).toContain('PRIORITAIRE');
       expect(priority).toContain('masqué automatiquement');
       expect(priority).toContain('Propos déplacés');
