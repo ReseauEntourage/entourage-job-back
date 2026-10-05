@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Post, PostContext, PostReaction, PostReply } from './models';
+import {
+  Post,
+  PostContext,
+  PostReaction,
+  PostReply,
+  PostRevision,
+} from './models';
 import { PostsService } from './posts.service';
 
 /**
@@ -9,7 +15,13 @@ import { PostsService } from './posts.service';
  */
 @Module({
   imports: [
-    SequelizeModule.forFeature([Post, PostContext, PostReply, PostReaction]),
+    SequelizeModule.forFeature([
+      Post,
+      PostContext,
+      PostReply,
+      PostReaction,
+      PostRevision,
+    ]),
   ],
   providers: [PostsService],
   exports: [SequelizeModule, PostsService],

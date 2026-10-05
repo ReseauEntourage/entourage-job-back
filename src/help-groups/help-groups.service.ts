@@ -6,6 +6,7 @@ import { PostsService, Page } from 'src/posts/posts.service';
 import { decodePostCursor, encodePostCursor } from 'src/posts/posts.utils';
 import { UserRole } from 'src/users/users.types';
 import { isEntourageAdmin } from 'src/users/users.utils';
+import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 import {
   HelpGroupCard,
   HelpGroupContributor,
@@ -32,7 +33,8 @@ export class HelpGroupsService {
     private helpGroupMembershipModel: typeof HelpGroupMembership,
     @InjectModel(Post)
     private postModel: typeof Post,
-    private postsService: PostsService
+    private postsService: PostsService,
+    private helpGroupsWriteGuardService: HelpGroupsWriteGuardService
   ) {}
 
   /**
@@ -246,10 +248,12 @@ export class HelpGroupsService {
     reader: HelpGroupReader
   ): Promise<HelpGroupPage> {
     const group = await this.findVisibleGroupBySlug(slug, reader);
-    const [membersCounts, memberGroupIds] = await Promise.all([
-      this.countMembersByGroupIds([group.id]),
-      this.findMemberGroupIds(reader.id, [group.id]),
-    ]);
+    const [membersCounts, memberGroupIds, viewerPermissions] =
+      await Promise.all([
+        this.countMembersByGroupIds([group.id]),
+        this.findMemberGroupIds(reader.id, [group.id]),
+        this.helpGroupsWriteGuardService.getViewerPermissions(group, reader.id),
+      ]);
     return {
       id: group.id,
       slug: group.slug,
@@ -258,6 +262,7 @@ export class HelpGroupsService {
       membersCount: membersCounts[group.id] ?? 0,
       isMember: memberGroupIds.has(group.id),
       isPublished: group.publishedAt !== null,
+      viewerPermissions,
     };
   }
 

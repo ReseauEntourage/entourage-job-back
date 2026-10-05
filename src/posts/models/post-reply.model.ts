@@ -14,8 +14,10 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { PostDeletionReason } from '../posts.types';
 import { User } from 'src/users/models';
 import { PostReaction } from './post-reaction.model';
+import { PostRevision } from './post-revision.model';
 import { Post } from './post.model';
 
 @Table({ tableName: 'PostReplies' })
@@ -52,6 +54,15 @@ export class PostReply extends Model {
   @Column
   deletedById: string | null;
 
+  // Only set by a moderation deletion (`deletedById` is then an admin)
+  @AllowNull(true)
+  @Column(DataType.STRING(30))
+  deletionReason: PostDeletionReason | null;
+
+  @AllowNull(true)
+  @Column(DataType.STRING(500))
+  deletionComment: string | null;
+
   @CreatedAt
   createdAt: Date;
 
@@ -69,4 +80,7 @@ export class PostReply extends Model {
 
   @HasMany(() => PostReaction, 'replyId')
   reactions: PostReaction[];
+
+  @HasMany(() => PostRevision, 'replyId')
+  revisions: PostRevision[];
 }

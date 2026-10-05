@@ -18,6 +18,35 @@ export interface HelpGroupCard {
   slug: string;
 }
 
+export const HelpGroupErrorCodes = {
+  NOT_MEMBER: 'HELP_GROUP_NOT_MEMBER',
+  ELEARNING_NOT_COMPLETED: 'ELEARNING_NOT_COMPLETED',
+  CHARTER_NOT_ACCEPTED: 'HELP_GROUP_CHARTER_NOT_ACCEPTED',
+  DISCUSSION_NOT_FOUND: 'HELP_GROUP_DISCUSSION_NOT_FOUND',
+} as const;
+
+/**
+ * What the viewer can do in a group, from which the front picks the
+ * invitation shown instead of the write actions. Write actions are never
+ * shown on an unpublished group (admin preview), whatever the state.
+ */
+export const HelpGroupViewerStates = {
+  CAN_WRITE: 'canWrite',
+  MUST_JOIN: 'mustJoin',
+  MUST_COMPLETE_ELEARNING: 'mustCompleteElearning',
+} as const;
+
+export type HelpGroupViewerState =
+  (typeof HelpGroupViewerStates)[keyof typeof HelpGroupViewerStates];
+
+export interface HelpGroupViewerPermissions {
+  // The charter is common to every group and accepted once per person
+  charterAccepted: boolean;
+  // Member for less than 7 days who has not published in the group yet
+  showWelcomeInvite: boolean;
+  state: HelpGroupViewerState;
+}
+
 export interface HelpGroupPage {
   description: string;
   id: string;
@@ -27,6 +56,7 @@ export interface HelpGroupPage {
   membersCount: number;
   name: string;
   slug: string;
+  viewerPermissions: HelpGroupViewerPermissions;
 }
 
 export interface HelpGroupDiscussionItem {

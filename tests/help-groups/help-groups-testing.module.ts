@@ -6,6 +6,7 @@ import { HelpGroupMembershipFactory } from './help-group-membership.factory';
 import { HelpGroupFactory } from './help-group.factory';
 import { PostReactionFactory } from './post-reaction.factory';
 import { PostReplyFactory } from './post-reply.factory';
+import { PostRevisionFactory } from './post-revision.factory';
 
 const factories = [
   HelpGroupFactory,
@@ -13,6 +14,7 @@ const factories = [
   DiscussionFactory,
   PostReplyFactory,
   PostReactionFactory,
+  PostRevisionFactory,
 ];
 
 @Module({
