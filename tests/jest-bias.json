@@ -1,0 +1,21 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "testEnvironment": "node",
+  "rootDir": "..",
+  "roots": ["<rootDir>/tests"],
+  "testRegex": ".bias-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      { "tsconfig": { "isolatedModules": false, "module": "commonjs" } }
+    ]
+  },
+  "moduleDirectories": ["node_modules"],
+  "moduleNameMapper": {
+    "^src/(.*)": "<rootDir>/src/$1",
+    "^tests/(.*)": "<rootDir>/tests/$1"
+  },
+  "testTimeout": 60000,
+  "maxWorkers": 1,
+  "verbose": true
+}

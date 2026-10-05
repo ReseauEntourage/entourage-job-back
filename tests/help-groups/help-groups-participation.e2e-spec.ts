@@ -2,7 +2,6 @@ import { APIConnectionTimeoutError } from '@anthropic-ai/sdk';
 import { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import moment from 'moment';
 import request from 'supertest';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
@@ -59,7 +58,6 @@ describe('Help groups - Participation', () => {
   let postReactionFactory: PostReactionFactory;
   let postRevisionFactory: PostRevisionFactory;
   let slackService: SlackService;
-  let throttlerStorage: ThrottlerStorageService;
 
   let membershipModel: typeof HelpGroupMembership;
   let postModel: typeof Post;
@@ -103,7 +101,6 @@ describe('Help groups - Participation', () => {
     postReactionFactory = moduleFixture.get(PostReactionFactory);
     postRevisionFactory = moduleFixture.get(PostRevisionFactory);
     slackService = moduleFixture.get(SlackService);
-    throttlerStorage = moduleFixture.get(ThrottlerStorage);
 
     membershipModel = moduleFixture.get(getModelToken(HelpGroupMembership));
     postModel = moduleFixture.get(getModelToken(Post));
@@ -122,7 +119,6 @@ describe('Help groups - Participation', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-    throttlerStorage.storage.clear();
     delete process.env.FORBIDDEN_EXPRESSIONS;
     generateText.mockResolvedValue('Comment expliquer deux ans sans emploi ?');
     sendEvent.mockResolvedValue({});
@@ -295,6 +291,59 @@ describe('Help groups - Participation', () => {
         (await api('get', `${route}/${group.slug}`, member)).body
           .viewerPermissions.charterAccepted
       ).toBe(true);
+    });
+  });
+
+  describe('Welcome invite', () => {
+    const showWelcomeInvite = async (viewer: LoggedInUser) =>
+      (await api('get', `${route}/${group.slug}`, viewer)).body
+        .viewerPermissions.showWelcomeInvite;
+
+    const createNewcomer = async (joinedDaysAgo: number) => {
+      const user = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+      await membershipFactory.create({
+        groupId: group.id,
+        userId: user.user.id,
+        createdAt: moment().subtract(joinedDaysAgo, 'days').toDate(),
+      });
+      return user;
+    };
+
+    it('Should invite a member who joined 2 days ago without publishing', async () => {
+      expect(await showWelcomeInvite(await createNewcomer(2))).toBe(true);
+    });
+
+    it('Should not invite a member once they published a reply in the group', async () => {
+      const newcomer = await createNewcomer(2);
+      const discussion = await createDiscussion();
+      await postReplyFactory.create({
+        postId: discussion.id,
+        authorId: newcomer.user.id,
+      });
+      expect(await showWelcomeInvite(newcomer)).toBe(false);
+    });
+
+    it('Should still invite a member who published in another group only', async () => {
+      const newcomer = await createNewcomer(2);
+      const otherGroup = await helpGroupFactory.create();
+      await discussionFactory.create(
+        { authorId: newcomer.user.id },
+        otherGroup.id
+      );
+      expect(await showWelcomeInvite(newcomer)).toBe(true);
+    });
+
+    it('Should not invite a member who joined more than 7 days ago', async () => {
+      expect(await showWelcomeInvite(await createNewcomer(8))).toBe(false);
+    });
+
+    it('Should not invite a non member', async () => {
+      const outsider = await usersHelper.createLoggedInUser({
+        role: UserRoles.COACH,
+      });
+      expect(await showWelcomeInvite(outsider)).toBe(false);
     });
   });
 
@@ -1101,10 +1150,11 @@ describe('Help groups - Participation', () => {
         content: 'Version 3',
         title: null,
       });
-      expect(response.body.previous.map(({ content }) => content)).toEqual([
-        'Version 2',
-        'Version 1',
-      ]);
+      expect(
+        response.body.previous.map(
+          ({ content }: { content: string }) => content
+        )
+      ).toEqual(['Version 2', 'Version 1']);
     });
   });
 

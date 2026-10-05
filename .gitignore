@@ -48,3 +48,4 @@ create_database_structure?*.sql
 
 # Postman files
 postman/
+help-groups-title-bias-report-*.md
