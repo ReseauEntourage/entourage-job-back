@@ -30,7 +30,6 @@
     "test": "run-s test:*",
     "test:ts-check": "tsc -p tsconfig.json --noEmit",
     "test:eslint": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix --max-warnings=0",
-    "test:help-groups-title-bias": "jest --config ./tests/jest-bias.json --runInBand",
     "test:e2e": "jest --config ./tests/jest-e2e.json --runInBand --forceExit --verbose",
     "db:create": "sequelize db:create",
     "db:drop": "sequelize db:drop",
