@@ -734,16 +734,17 @@ describe('Help groups - Notifications', () => {
       expect(digestOf(julien)).toBeUndefined();
 
       await createDiscussion(thomas.user.id, {
-        createdAt: new Date(),
-        lastActivityAt: new Date(),
+        createdAt: lastWeek(1),
+        lastActivityAt: lastWeek(1),
       });
       await membershipModel.update(
         { emailsEnabled: false },
         { where: { userId: julien.user.id } }
       );
+      // A new week for both: their first digest covers the last 7 days
       await userModel.update(
         { helpGroupsDigestSentAt: null },
-        { where: { id: julien.user.id } }
+        { where: { id: [julien.user.id, amina.user.id] } }
       );
       addToWorkQueue.mockClear();
       await digestService.sendWeeklyDigests();
@@ -855,6 +856,23 @@ describe('Help groups - Notifications', () => {
         attributes: ['helpGroupsDigestSentAt'],
       });
       expect(user.helpGroupsDigestSentAt).toBeNull();
+    });
+
+    it('Should leave the activity of the last minutes to the next digest', async () => {
+      // Its write may still be uncommitted when the digest runs
+      const recent = new Date(Date.now() - 60 * 1000);
+      await createDiscussion(thomas.user.id, {
+        createdAt: recent,
+        lastActivityAt: recent,
+      });
+      await digestService.sendWeeklyDigests();
+      expect(digestOf(julien)).toBeUndefined();
+      const user = await userModel.findByPk(julien.user.id, {
+        attributes: ['helpGroupsDigestSentAt'],
+      });
+      expect(user.helpGroupsDigestSentAt.getTime()).toBeLessThan(
+        recent.getTime()
+      );
     });
 
     it('Should name a deleted author "Utilisateur supprimé"', async () => {

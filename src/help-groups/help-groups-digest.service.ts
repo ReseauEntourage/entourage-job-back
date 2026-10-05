@@ -24,6 +24,14 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 // Lower bound of the first digest of a person
 export const HELP_GROUPS_DIGEST_DEFAULT_PERIOD_DAYS = 7;
 
+/**
+ * The digest stops this long before the moment it runs: a discussion or a
+ * reply dated just before, whose write is not committed yet, would otherwise
+ * be missed by this digest and skipped by the next one. Recent activity is
+ * left to the next digest.
+ */
+export const HELP_GROUPS_DIGEST_SETTLE_DELAY_MS = 5 * 60 * 1000;
+
 // People handled per batch, so that a run stays within the worker limits
 export const HELP_GROUPS_DIGEST_BATCH_SIZE = 200;
 
@@ -145,7 +153,8 @@ export class HelpGroupsDigestService {
           return null;
         }
         const previousSentAt = user.helpGroupsDigestSentAt;
-        const now = new Date();
+        // Upper bound of the activity, and the next lower bound
+        const now = new Date(Date.now() - HELP_GROUPS_DIGEST_SETTLE_DELAY_MS);
         const since =
           previousSentAt ??
           new Date(
