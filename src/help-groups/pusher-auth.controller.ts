@@ -21,7 +21,7 @@ export class PusherAuthController {
   @HttpCode(HttpStatus.OK)
   @Post('auth')
   async authorize(
-    @Body() body: { socket_id?: string; channel_name?: string },
+    @Body() body: { socket_id?: unknown; channel_name?: unknown },
     @UserPayload() user: Partial<User>
   ) {
     return this.participationService.authorizeChannel(

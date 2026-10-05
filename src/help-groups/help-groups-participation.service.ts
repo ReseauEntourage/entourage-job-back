@@ -744,11 +744,15 @@ export class HelpGroupsParticipationService {
    * to every logged-in user. Any other channel name is refused.
    */
   async authorizeChannel(
-    socketId: string,
-    channelName: string,
+    socketId: unknown,
+    channelName: unknown,
     reader: PostReader
   ) {
-    const postId = channelName?.startsWith(POST_PRIVATE_CHANNEL_PREFIX)
+    // Untrusted request body: anything but two strings is refused, not a 500
+    if (typeof socketId !== 'string' || typeof channelName !== 'string') {
+      throw new ForbiddenException();
+    }
+    const postId = channelName.startsWith(POST_PRIVATE_CHANNEL_PREFIX)
       ? channelName.slice(POST_PRIVATE_CHANNEL_PREFIX.length)
       : null;
     if (!socketId || !postId || !isUUID(postId, 4)) {

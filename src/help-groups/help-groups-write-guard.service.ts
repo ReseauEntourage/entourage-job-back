@@ -138,8 +138,11 @@ export class HelpGroupsWriteGuardService {
     return {
       state,
       charterAccepted: !!user.helpGroupsCharterAcceptedAt,
+      // Never in an admin preview of an unpublished group, where no write
+      // is possible
       showWelcomeInvite:
         state === HelpGroupViewerStates.CAN_WRITE &&
+        group.publishedAt !== null &&
         (await this.isWelcomeInviteDue(group.id, membership)),
     };
   }

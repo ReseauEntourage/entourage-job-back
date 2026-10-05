@@ -339,6 +339,20 @@ describe('Help groups - Participation', () => {
       expect(await showWelcomeInvite(await createNewcomer(8))).toBe(false);
     });
 
+    it('Should not invite an admin member in an unpublished group preview', async () => {
+      const unpublished = await helpGroupFactory.create({ publishedAt: null });
+      const memberAdmin = await createMember(
+        { role: UserRoles.ADMIN },
+        unpublished
+      );
+      const response = await api(
+        'get',
+        `${route}/${unpublished.slug}`,
+        memberAdmin
+      );
+      expect(response.body.viewerPermissions.showWelcomeInvite).toBe(false);
+    });
+
     it('Should not invite a non member', async () => {
       const outsider = await usersHelper.createLoggedInUser({
         role: UserRoles.COACH,
@@ -1379,6 +1393,15 @@ describe('Help groups - Participation', () => {
         '1234.5678',
         `private-post-${discussion.id}`
       );
+    });
+
+    it('Should refuse a non string channel name with a 403, not a 500', async () => {
+      const response = await api('post', path, member, {
+        socket_id: '1234.5678',
+        channel_name: { startsWith: 'x' },
+      });
+      expect(response.status).toBe(403);
+      expect(authorizeChannel).not.toHaveBeenCalled();
     });
 
     it('Should return 401 when not logged in', async () => {
