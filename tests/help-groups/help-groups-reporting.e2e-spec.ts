@@ -7,6 +7,7 @@ import { SlackService } from 'src/external-services/slack/slack.service';
 import { HelpGroupsReportingService } from 'src/help-groups/help-groups-reporting.service';
 import { HelpGroup } from 'src/help-groups/models';
 import { Post, PostReply } from 'src/posts/models';
+import { PostsService } from 'src/posts/posts.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Report } from 'src/reports/models';
 import { ReportsService } from 'src/reports/reports.service';
@@ -67,6 +68,7 @@ describe('Help groups - Reporting', () => {
   let reportingService: HelpGroupsReportingService;
   let slackService: SlackService;
   let queuesService: QueuesService;
+  let postsService: PostsService;
 
   let postModel: typeof Post;
   let postReplyModel: typeof PostReply;
@@ -111,6 +113,7 @@ describe('Help groups - Reporting', () => {
     reportingService = moduleFixture.get(HelpGroupsReportingService);
     slackService = moduleFixture.get(SlackService);
     queuesService = moduleFixture.get(QueuesService);
+    postsService = moduleFixture.get(PostsService);
 
     postModel = moduleFixture.get(getModelToken(Post));
     postReplyModel = moduleFixture.get(getModelToken(PostReply));
@@ -521,7 +524,11 @@ describe('Help groups - Reporting', () => {
         { discussionId: discussion.id, replyId: reply.id }
       );
       await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(2));
-      const priority = JSON.stringify(sendMessage.mock.calls[1][1]);
+      // The two alerts are sent concurrently: found by their text, not order
+      const priorityCall = sendMessage.mock.calls.find(([, , text]) =>
+        String(text).startsWith('PRIORITAIRE')
+      );
+      const priority = JSON.stringify(priorityCall?.[1]);
       expect(priority).toContain('PRIORITAIRE');
       expect(priority).toContain('masqué automatiquement');
       expect(priority).toContain('Propos déplacés');
@@ -620,6 +627,122 @@ describe('Help groups - Reporting', () => {
           String(text).includes('PRIORITAIRE')
         )
       ).toBe(true);
+    });
+
+    it('Should hide again with a report sent while a restoration holds the message', async () => {
+      await hideReply();
+      await reportFactory.create({
+        targetType: ReportTargetTypes.POST_REPLY,
+        targetId: reply.id,
+        reporterId: member.user.id,
+      });
+      // A restoration in progress: it holds the reply row
+      const restoration = await postReplyModel.sequelize.transaction();
+      await postReplyModel.update(
+        { hiddenAt: null },
+        { where: { id: reply.id }, transaction: restoration }
+      );
+      // An admin can report a hidden message: the request waits for the lock
+      const pending = reportReply(admin).then((response) => response);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await reportModel.update(
+        {
+          status: ReportStatuses.RESOLVED,
+          resolution: ReportResolutions.RESTORED,
+        },
+        {
+          where: { targetId: reply.id, status: ReportStatuses.PENDING },
+          transaction: restoration,
+        }
+      );
+      await restoration.commit();
+
+      expect((await pending).status).toBe(201);
+      expect(
+        await reportModel.findOne({ where: { reporterId: admin.user.id } })
+      ).toMatchObject({ status: ReportStatuses.PENDING });
+      expect((await findReplyRow()).hiddenAt).not.toBeNull();
+    });
+
+    it('Should refuse with a 404 a report sent while another report hides the message', async () => {
+      // Another report hiding the message: it holds the reply row
+      const hiding = await postReplyModel.sequelize.transaction();
+      await postReplyModel.update(
+        { hiddenAt: new Date() },
+        { where: { id: reply.id }, transaction: hiding }
+      );
+      const pending = reportReply(member).then((response) => response);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await hiding.commit();
+
+      expect((await pending).status).toBe(404);
+      expect(await reportModel.count()).toBe(0);
+    });
+
+    it('Should refuse, without deadlock, a reply report sent while an admin deletes its discussion', async () => {
+      // An admin deletion in progress: it holds the discussion row
+      const deletion = await postModel.sequelize.transaction();
+      await postModel.update(
+        { deletedById: admin.user.id },
+        { where: { id: discussion.id }, transaction: deletion }
+      );
+      await postModel.destroy({
+        where: { id: discussion.id },
+        transaction: deletion,
+      });
+      // The report locks the reply, then waits for the discussion
+      const pending = reportReply(member).then((response) => response);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await deletion.commit();
+
+      expect((await pending).status).toBe(404);
+      expect(
+        await reportModel.count({ where: { status: ReportStatuses.PENDING } })
+      ).toBe(0);
+    });
+
+    it('Should close a reply report saved just before the deletion of its discussion', async () => {
+      disableAutoHide();
+      // A report in progress: it holds the discussion with a shared lock
+      const reporting = await postModel.sequelize.transaction();
+      await postModel.findByPk(discussion.id, {
+        lock: reporting.LOCK.SHARE,
+        transaction: reporting,
+      });
+      await reportModel.create(
+        {
+          targetType: ReportTargetTypes.POST_REPLY,
+          targetId: reply.id,
+          reporterId: member.user.id,
+          reason: ReportReasons.SPAM,
+        },
+        { transaction: reporting }
+      );
+      // The deletion waits for the report, then closes it
+      const deletion = api(
+        'delete',
+        `/admin/help-groups/discussions/${discussion.id}`,
+        admin,
+        { reason: 'SPAM' }
+      ).then((response) => response);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await reporting.commit();
+
+      expect((await deletion).status).toBe(204);
+      expect(await reportModel.findOne()).toMatchObject({
+        status: ReportStatuses.RESOLVED,
+        resolution: ReportResolutions.DELETED,
+      });
+    });
+
+    it('Should save the report even when the hiding fails, without hiding anything', async () => {
+      jest
+        .spyOn(postsService, 'refreshLastActivityAt')
+        .mockRejectedValueOnce(new Error('Database hiccup'));
+      const response = await reportReply(member);
+      expect(response.status).toBe(201);
+      expect(await reportModel.count()).toBe(1);
+      expect((await findReplyRow()).hiddenAt).toBeNull();
     });
 
     it('Should hide the message even when Slack fails', async () => {
@@ -838,6 +961,26 @@ describe('Help groups - Reporting', () => {
         status: ReportStatuses.RESOLVED,
         resolution: ReportResolutions.DELETED,
         resolvedById: admin.user.id,
+      });
+    });
+
+    it('Should also close the reports of a reply its author deleted, when an admin deletes the discussion', async () => {
+      disableAutoHide();
+      await reportReply(member);
+      await api(
+        'delete',
+        `${discussionPath()}/replies/${reply.id}`,
+        author
+      ).expect(204);
+      await api(
+        'delete',
+        `/admin/help-groups/discussions/${discussion.id}`,
+        admin,
+        { reason: 'SPAM' }
+      );
+      expect(await reportModel.findOne()).toMatchObject({
+        status: ReportStatuses.RESOLVED,
+        resolution: ReportResolutions.DELETED,
       });
     });
 
