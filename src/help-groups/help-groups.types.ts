@@ -34,10 +34,21 @@ export const HelpGroupErrorCodes = {
 
 /**
  * Number of distinct reporters, with a report still to handle, from which a
- * help group message is hidden automatically: 1 (PM decision of 01/10/2026,
- * every report hides the message). 0 disables the automatic hiding.
+ * help group message is hidden automatically. Read from the
+ * `HELP_GROUPS_AUTO_HIDE_THRESHOLD` env var so that it can change without a
+ * new development; 1 by default (PM decision of 01/10/2026, every report
+ * hides the message). 0 disables the automatic hiding.
  */
 export const HELP_GROUPS_AUTO_HIDE_THRESHOLD = 1;
+
+/**
+ * A non negative integer, otherwise the default: a malformed value never
+ * disables the hiding by mistake.
+ */
+export const parseAutoHideThreshold = (rawValue: string | undefined): number =>
+  rawValue !== undefined && /^\d+$/.test(rawValue.trim())
+    ? parseInt(rawValue.trim(), 10)
+    : HELP_GROUPS_AUTO_HIDE_THRESHOLD;
 
 /**
  * What the viewer can do in a group, from which the front picks the

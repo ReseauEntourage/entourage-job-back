@@ -606,6 +606,24 @@ export class HelpGroupsParticipationService {
           moderatorId,
           transaction
         );
+        // Its replies are no longer reachable: their pending reports are
+        // closed with it
+        const replies = await this.postReplyModel.findAll({
+          attributes: ['id'],
+          where: { postId },
+          transaction,
+        });
+        if (replies.length > 0) {
+          await this.reportsService.resolvePending(
+            {
+              targetType: ReportTargetTypes.POST_REPLY,
+              targetId: replies.map(({ id }) => id),
+            },
+            ReportResolutions.DELETED,
+            moderatorId,
+            transaction
+          );
+        }
       }
     });
     this.realtime.notify(PusherEvents.DISCUSSION_DELETED, {

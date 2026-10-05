@@ -105,7 +105,9 @@ export class ReportsService {
    * admin (message restored or deleted).
    */
   async resolvePending(
-    target: ReportTarget,
+    // Several targets of the same type at once, e.g. the replies of a
+    // deleted discussion
+    target: Omit<ReportTarget, 'targetId'> & { targetId: string | string[] },
     resolution: ReportResolution,
     resolvedById: string,
     transaction?: Transaction

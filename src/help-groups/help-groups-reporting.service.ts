@@ -25,8 +25,8 @@ import { ReactionTargetDto, ReportMessageDto } from './dto';
 import { HelpGroupsRealtimeService } from './help-groups-realtime.service';
 import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 import {
-  HELP_GROUPS_AUTO_HIDE_THRESHOLD,
   HelpGroupErrorCodes,
+  parseAutoHideThreshold,
 } from './help-groups.types';
 import { HelpGroup } from './models';
 
@@ -76,11 +76,8 @@ export class HelpGroupsReportingService {
     private realtime: HelpGroupsRealtimeService
   ) {}
 
-  /**
-   * Kept as a method so that the threshold can be changed in tests.
-   */
   getAutoHideThreshold(): number {
-    return HELP_GROUPS_AUTO_HIDE_THRESHOLD;
+    return parseAutoHideThreshold(process.env.HELP_GROUPS_AUTO_HIDE_THRESHOLD);
   }
 
   // ---------------------------------------------------------------------
@@ -223,12 +220,24 @@ export class HelpGroupsReportingService {
       return false;
     }
     const model = message.replyId ? this.postReplyModel : this.postModel;
-    // Conditional update: two concurrent reports hide the message once
-    const [affected] = await (model as typeof Post).update(
-      { hiddenAt: new Date() },
-      { where: { id: message.id, hiddenAt: null } }
+    const isHidden = await this.postModel.sequelize.transaction(
+      async (transaction) => {
+        // Conditional update: two concurrent reports hide the message once
+        const [affected] = await (model as typeof Post).update(
+          { hiddenAt: new Date() },
+          { where: { id: message.id, hiddenAt: null }, transaction }
+        );
+        // The last activity of a discussion only counts its visible replies
+        if (affected > 0 && message.replyId) {
+          await this.postsService.refreshLastActivityAt(
+            message.discussionId,
+            transaction
+          );
+        }
+        return affected > 0;
+      }
     );
-    if (affected === 0) {
+    if (!isHidden) {
       return false;
     }
     this.notifyChange(message.discussionId, message.replyId);
@@ -253,9 +262,9 @@ export class HelpGroupsReportingService {
   }
 
   /**
-   * Moderation alerts, after the report is saved: the report itself, then
-   * the priority alert when it hid the message. A Slack failure is logged by
-   * the caller and never fails the report.
+   * Moderation alerts, after the report is saved: the report itself and,
+   * independently, the priority alert when it hid the message. A Slack
+   * failure is logged by the caller and never fails the report.
    */
   private async sendAlerts(
     message: ReportedMessage,
@@ -272,11 +281,12 @@ export class HelpGroupsReportingService {
     const reporter = users.find(({ id }) => id === reporterId);
     const messageUrl = this.messageUrl(message);
 
-    await this.slackService.sendHelpGroupMessageReported({
+    const isReply = !!message.replyId;
+    const reportedAlert = this.slackService.sendHelpGroupMessageReported({
       author,
       reporter,
       groupName: message.group.name,
-      isReply: !!message.replyId,
+      isReply,
       messageUrl,
       excerpt: toExcerpt(
         [message.title, message.content].filter(Boolean).join(' — ')
@@ -284,21 +294,31 @@ export class HelpGroupsReportingService {
       reasonLabel: ReportReasonLabels[dto.reason],
       comment: dto.comment || null,
     });
+    // Attempted whatever happens to the report alert: a hidden message must
+    // always reach the moderation as a priority
+    const autoHiddenAlert = isHidden
+      ? this.reportsService
+          .findPendingReasons(message.target.targetType, [message.id])
+          .then((reasons) =>
+            this.slackService.sendHelpGroupMessageAutoHidden({
+              author,
+              groupName: message.group.name,
+              isReply,
+              messageUrl,
+              reasonLabels: (reasons[message.id] ?? [dto.reason]).map(
+                (reason: ReportReason) => ReportReasonLabels[reason]
+              ),
+            })
+          )
+      : Promise.resolve();
 
-    if (isHidden) {
-      const reasons = await this.reportsService.findPendingReasons(
-        message.target.targetType,
-        [message.id]
-      );
-      await this.slackService.sendHelpGroupMessageAutoHidden({
-        author,
-        groupName: message.group.name,
-        isReply: !!message.replyId,
-        messageUrl,
-        reasonLabels: (reasons[message.id] ?? [dto.reason]).map(
-          (reason: ReportReason) => ReportReasonLabels[reason]
-        ),
-      });
+    const failure = (
+      await Promise.allSettled([reportedAlert, autoHiddenAlert])
+    ).find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    );
+    if (failure) {
+      throw failure.reason;
     }
   }
 
@@ -363,7 +383,8 @@ export class HelpGroupsReportingService {
     await this.restore(
       this.postReplyModel as unknown as typeof Post,
       { targetType: ReportTargetTypes.POST_REPLY, targetId: reply.id },
-      adminId
+      adminId,
+      reply.postId
     );
     this.notifyChange(reply.postId, reply.id);
   }
@@ -371,13 +392,21 @@ export class HelpGroupsReportingService {
   private async restore(
     model: typeof Post,
     target: ReportTarget,
-    adminId: string
+    adminId: string,
+    // For a reply: its discussion, whose last activity counts it again
+    discussionId?: string
   ) {
     await this.postModel.sequelize.transaction(async (transaction) => {
       await model.update(
         { hiddenAt: null },
         { where: { id: target.targetId }, transaction }
       );
+      if (discussionId) {
+        await this.postsService.refreshLastActivityAt(
+          discussionId,
+          transaction
+        );
+      }
       await this.reportsService.resolvePending(
         target,
         ReportResolutions.RESTORED,

@@ -42,9 +42,16 @@ export interface HelpGroupMessageAutoHidden {
   reasonLabels: string[];
 }
 
+/**
+ * Escapes a user written text for Slack mrkdwn: `&`, `<` and `>` are the
+ * control characters of links and mentions (`<!channel>`, `<@U…>`).
+ */
+export const escapeSlackText = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const formatSlackUser = (user: User | null | undefined) =>
   user
-    ? `${user.firstName} ${user.lastName} <${user.email}>`
+    ? escapeSlackText(`${user.firstName} ${user.lastName} (${user.email})`)
     : 'Compte supprimé';
 
 @Injectable()
@@ -189,19 +196,21 @@ export class SlackService implements OnModuleInit {
         },
       ],
       msgParts: [
-        { content: `*Groupe* : ${groupName}` },
+        { content: `*Groupe* : ${escapeSlackText(groupName)}` },
         {
           content: `*${isReply ? 'Réponse' : 'Discussion'}* : <${messageUrl}|Voir le message>`,
         },
-        { content: `*Extrait* : ${excerpt}` },
+        { content: `*Extrait* : ${escapeSlackText(excerpt)}` },
         { content: `*Motif* : ${reasonLabel}` },
-        { content: `*Commentaire* : ${comment || 'Aucun commentaire'}` },
+        {
+          content: `*Commentaire* : ${comment ? escapeSlackText(comment) : 'Aucun commentaire'}`,
+        },
       ],
     });
     await this.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       blocks,
-      `Un message du groupe ${groupName} a été signalé`
+      `Un message du groupe ${escapeSlackText(groupName)} a été signalé`
     );
   };
 
@@ -227,7 +236,7 @@ export class SlackService implements OnModuleInit {
         },
       ],
       msgParts: [
-        { content: `*Groupe* : ${groupName}` },
+        { content: `*Groupe* : ${escapeSlackText(groupName)}` },
         {
           content: `*${isReply ? 'Réponse' : 'Discussion'}* : <${messageUrl}|Voir le message>`,
         },
@@ -241,7 +250,7 @@ export class SlackService implements OnModuleInit {
     await this.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       blocks,
-      `PRIORITAIRE : un message du groupe ${groupName} a été masqué automatiquement`
+      `PRIORITAIRE : un message du groupe ${escapeSlackText(groupName)} a été masqué automatiquement`
     );
   };
 
