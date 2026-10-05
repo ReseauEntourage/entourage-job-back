@@ -23,3 +23,28 @@ export interface ReactionsSummary {
 }
 
 export type ReactionTarget = 'postId' | 'replyId';
+
+// Motives of a deletion by an Entourage admin, visible to the team only
+export const PostDeletionReasons = {
+  PERSONAL_DATA: 'PERSONAL_DATA',
+  DISRESPECT: 'DISRESPECT',
+  SPAM: 'SPAM',
+  OFF_TOPIC: 'OFF_TOPIC',
+  OTHER: 'OTHER',
+} as const;
+
+export type PostDeletionReason =
+  (typeof PostDeletionReasons)[keyof typeof PostDeletionReasons];
+
+/**
+ * Origin of a post title, computed by the front at publication time and only
+ * used to measure the usefulness of the AI title suggestion.
+ */
+export const PostTitleSources = {
+  AI_ACCEPTED: 'AI_ACCEPTED',
+  AI_EDITED: 'AI_EDITED',
+  MANUAL: 'MANUAL',
+} as const;
+
+export type PostTitleSource =
+  (typeof PostTitleSources)[keyof typeof PostTitleSources];

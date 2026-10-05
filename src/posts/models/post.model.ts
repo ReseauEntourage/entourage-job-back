@@ -14,10 +14,12 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { PostDeletionReason, PostTitleSource } from '../posts.types';
 import { User } from 'src/users/models';
 import { PostContext } from './post-context.model';
 import { PostReaction } from './post-reaction.model';
 import { PostReply } from './post-reply.model';
+import { PostRevision } from './post-revision.model';
 
 /**
  * Generic publication. Today it is shown as a "discussion" of a help group
@@ -47,6 +49,11 @@ export class Post extends Model {
   @Column(DataType.TEXT)
   content: string;
 
+  @AllowNull(false)
+  @Default('MANUAL')
+  @Column(DataType.STRING(20))
+  titleSource: PostTitleSource;
+
   // Date of the most recent visible reply, or the creation date
   @AllowNull(false)
   @Default(DataType.NOW)
@@ -62,6 +69,15 @@ export class Post extends Model {
   @AllowNull(true)
   @Column
   deletedById: string | null;
+
+  // Only set by a moderation deletion (`deletedById` is then an admin)
+  @AllowNull(true)
+  @Column(DataType.STRING(30))
+  deletionReason: PostDeletionReason | null;
+
+  @AllowNull(true)
+  @Column(DataType.STRING(500))
+  deletionComment: string | null;
 
   @CreatedAt
   createdAt: Date;
@@ -83,4 +99,7 @@ export class Post extends Model {
 
   @HasMany(() => PostReaction, 'postId')
   reactions: PostReaction[];
+
+  @HasMany(() => PostRevision, 'postId')
+  revisions: PostRevision[];
 }
