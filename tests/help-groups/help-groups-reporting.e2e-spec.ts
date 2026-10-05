@@ -679,6 +679,36 @@ describe('Help groups - Reporting', () => {
       expect(await reportModel.count()).toBe(0);
     });
 
+    it('Should not deadlock when a reply is reported while an admin deletes its discussion', async () => {
+      // An admin deletion in progress: it holds the discussion row
+      const deletion = await postModel.sequelize.transaction();
+      await postModel.update(
+        { deletedById: admin.user.id },
+        { where: { id: discussion.id }, transaction: deletion }
+      );
+      // The report locks the reply, then waits for the discussion to hide it
+      const pending = reportReply(member).then((response) => response);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      // The deletion then closes the pending reports of the replies
+      await reportModel.update(
+        {
+          status: ReportStatuses.RESOLVED,
+          resolution: ReportResolutions.DELETED,
+        },
+        {
+          where: {
+            targetType: ReportTargetTypes.POST_REPLY,
+            targetId: reply.id,
+            status: ReportStatuses.PENDING,
+          },
+          transaction: deletion,
+        }
+      );
+      await deletion.commit();
+
+      expect((await pending).status).toBe(201);
+    });
+
     it('Should save the report even when the hiding fails, without hiding anything', async () => {
       jest
         .spyOn(postsService, 'refreshLastActivityAt')
