@@ -32,6 +32,9 @@ export const HELP_GROUPS_DIGEST_DEFAULT_PERIOD_DAYS = 7;
  */
 export const HELP_GROUPS_DIGEST_SETTLE_DELAY_MS = 5 * 60 * 1000;
 
+// Key of the lock that keeps the runs of the digest from overlapping
+export const HELP_GROUPS_DIGEST_LOCK_KEY = 'help-groups-weekly-digest';
+
 // People handled per batch, so that a run stays within the worker limits
 export const HELP_GROUPS_DIGEST_BATCH_SIZE = 200;
 
@@ -84,27 +87,47 @@ export class HelpGroupsDigestService {
       );
       return result;
     }
-    let after: string | null = null;
-    for (;;) {
-      const userIds = await this.findRecipientIds(after);
-      if (userIds.length === 0) {
+    // One run at a time, whatever started it (several workers, a retry, a
+    // manual run): a run that queues a digest after another run moved the
+    // date again could otherwise neither put it back nor send it. The lock
+    // is held by a transaction that stays open for the whole run, and is
+    // released with it, even if the worker dies.
+    return this.userModel.sequelize.transaction(async (lockTransaction) => {
+      const [{ locked }] = await this.userModel.sequelize.query<{
+        locked: boolean;
+      }>('SELECT pg_try_advisory_xact_lock(hashtext(:key)) AS "locked"', {
+        replacements: { key: HELP_GROUPS_DIGEST_LOCK_KEY },
+        type: QueryTypes.SELECT,
+        transaction: lockTransaction,
+      });
+      if (!locked) {
+        this.logger.warn(
+          '[HelpGroupsDigest] another run is in progress: no digest sent'
+        );
         return result;
       }
-      for (const userId of userIds) {
-        try {
-          const isSent = await this.sendDigest(userId);
-          result[isSent ? 'sent' : 'skipped'] += 1;
-        } catch (error) {
-          result.failed += 1;
-          this.logger.error(
-            `[HelpGroupsDigest] digest of ${userId} failed: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
+      let after: string | null = null;
+      for (;;) {
+        const userIds = await this.findRecipientIds(after);
+        if (userIds.length === 0) {
+          return result;
         }
+        for (const userId of userIds) {
+          try {
+            const isSent = await this.sendDigest(userId);
+            result[isSent ? 'sent' : 'skipped'] += 1;
+          } catch (error) {
+            result.failed += 1;
+            this.logger.error(
+              `[HelpGroupsDigest] digest of ${userId} failed: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          }
+        }
+        after = userIds[userIds.length - 1];
       }
-      after = userIds[userIds.length - 1];
-    }
+    });
   }
 
   /**
@@ -131,7 +154,8 @@ export class HelpGroupsDigestService {
   }
 
   /**
-   * The digest of a person. Its content and the move of
+   * The digest of a person, sent within a run of `sendWeeklyDigests`, which
+   * keeps two runs from overlapping. Its content and the move of
    * `helpGroupsDigestSentAt` are committed in their own transaction, the
    * user row being locked so that a concurrent run waits and then finds no
    * activity left. The email is queued after the commit: should the queue

@@ -4,7 +4,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { MailjetTemplates } from 'src/external-services/mailjet/mailjet.types';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
-import { HelpGroupsDigestService } from 'src/help-groups/help-groups-digest.service';
+import {
+  HELP_GROUPS_DIGEST_LOCK_KEY,
+  HelpGroupsDigestService,
+} from 'src/help-groups/help-groups-digest.service';
 import { HelpGroupsNotificationEmailsService } from 'src/help-groups/help-groups-notification-emails.service';
 import {
   getHelpGroupNotificationEmailJobId,
@@ -812,6 +815,33 @@ describe('Help groups - Notifications', () => {
         attributes: ['helpGroupsDigestSentAt'],
       });
       expect(user.helpGroupsDigestSentAt).toBeTruthy();
+    });
+
+    it('Should send nothing while another run is in progress, the next run sending it', async () => {
+      await createDiscussion(thomas.user.id);
+      const { sequelize } = userModel;
+      // Another run holds the lock until its transaction ends
+      let release: () => void;
+      const released = new Promise<void>((resolve) => (release = resolve));
+      let isLocked: () => void;
+      const locked = new Promise<void>((resolve) => (isLocked = resolve));
+      const otherRun = sequelize.transaction(async (transaction) => {
+        await sequelize.query('SELECT pg_advisory_xact_lock(hashtext(:key))', {
+          replacements: { key: HELP_GROUPS_DIGEST_LOCK_KEY },
+          transaction,
+        });
+        isLocked();
+        await released;
+      });
+      await locked;
+      const skipped = await digestService.sendWeeklyDigests();
+      release();
+      await otherRun;
+      expect(skipped).toEqual({ sent: 0, skipped: 0, failed: 0 });
+      expect(digestMails()).toHaveLength(0);
+
+      await digestService.sendWeeklyDigests();
+      expect(digestOf(julien)).toBeDefined();
     });
 
     it('Should put the previous date back when the digest cannot be queued, the next run sending it', async () => {
