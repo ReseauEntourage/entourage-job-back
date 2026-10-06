@@ -19,6 +19,8 @@ import {
   ReportTarget,
   ReportTargetTypes,
 } from 'src/reports/reports.types';
+import { getReportTargetAdminUrl } from 'src/reports/reports.utils';
+import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { isEntourageAdmin } from 'src/users/users.utils';
 import { ReactionTargetDto, ReportMessageDto } from './dto';
@@ -110,6 +112,15 @@ export class HelpGroupsReportingService {
       throw new NotFoundException();
     }
 
+    // Deleted accounts included: their zone still resolves a referent, and
+    // the zone of the author is the zone of the report
+    const users = await this.usersService.findByIdsWithRelations(
+      [message.authorId, reader.id],
+      { paranoid: false }
+    );
+    const author = users.find(({ id }) => id === message.authorId);
+    const reporter = users.find(({ id }) => id === reader.id);
+
     const model = (
       message.replyId ? this.postReplyModel : this.postModel
     ) as typeof Post;
@@ -150,6 +161,7 @@ export class HelpGroupsReportingService {
             reporterId: reader.id,
             reason: dto.reason,
             comment: dto.comment,
+            zone: author?.zone ?? null,
           },
           transaction
         );
@@ -188,13 +200,15 @@ export class HelpGroupsReportingService {
       }
     }
 
-    this.sendAlerts(message, reader.id, dto, isHidden).catch((error) => {
-      this.logger.error(
-        `[HelpGroupsReporting] Slack alert not sent (${message.target.targetType} ${message.id}): ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    });
+    this.sendAlerts(message, { author, reporter }, dto, isHidden).catch(
+      (error) => {
+        this.logger.error(
+          `[HelpGroupsReporting] Slack alert not sent (${message.target.targetType} ${message.id}): ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    );
 
     return { id: report.id };
   }
@@ -323,17 +337,10 @@ export class HelpGroupsReportingService {
    */
   private async sendAlerts(
     message: ReportedMessage,
-    reporterId: string,
+    { author, reporter }: { author?: User; reporter?: User },
     dto: ReportMessageDto,
     isHidden: boolean
   ) {
-    // Deleted accounts included: their zone still resolves a referent
-    const users = await this.usersService.findByIdsWithRelations(
-      [message.authorId, reporterId],
-      { paranoid: false }
-    );
-    const author = users.find(({ id }) => id === message.authorId);
-    const reporter = users.find(({ id }) => id === reporterId);
     const messageUrl = this.messageUrl(message);
 
     const isReply = !!message.replyId;
@@ -348,6 +355,10 @@ export class HelpGroupsReportingService {
       ),
       reasonLabel: ReportReasonLabels[dto.reason],
       comment: dto.comment || null,
+      reportUrl: getReportTargetAdminUrl(
+        message.target.targetType,
+        message.target.targetId
+      ),
     });
     // Attempted whatever happens to the report alert: a hidden message must
     // always reach the moderation as a priority

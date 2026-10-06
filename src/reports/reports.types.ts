@@ -1,7 +1,6 @@
 /**
- * Reported targets. Help group messages are generic posts and replies;
- * conversations and profiles are reserved for the transverse "Signalements"
- * change, which will plug the messaging and profile reports in this table.
+ * Reported targets: help group messages (generic posts and replies),
+ * messaging conversations and user profiles.
  */
 export const ReportTargetTypes = {
   POST: 'POST',
@@ -42,6 +41,8 @@ export type ReportStatus = (typeof ReportStatuses)[keyof typeof ReportStatuses];
 export const ReportResolutions = {
   RESTORED: 'RESTORED',
   DELETED: 'DELETED',
+  // Closed by an admin from the reports tab (conversation, profile)
+  MANUAL: 'MANUAL',
 } as const;
 
 export type ReportResolution =

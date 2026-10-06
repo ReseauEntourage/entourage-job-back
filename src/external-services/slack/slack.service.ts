@@ -10,6 +10,11 @@ import {
   CheckinPerceivedBenefit,
 } from 'src/checkin/checkin.types';
 import { ConversationCheckin } from 'src/checkin/models/conversation-checkin.model';
+import { ReportTargetTypes } from 'src/reports/reports.types';
+import {
+  REPORT_TARGET_SLACK_ACTION_LABEL,
+  getReportTargetAdminUrl,
+} from 'src/reports/reports.utils';
 import { User } from 'src/users/models';
 import {
   SlackBlockConfig,
@@ -32,6 +37,8 @@ export interface HelpGroupMessageReport {
   messageUrl: string;
   reasonLabel: string;
   reporter: User;
+  // Page of the message in the reports admin tab
+  reportUrl: string;
 }
 
 export interface HelpGroupMessageAutoHidden {
@@ -128,24 +135,28 @@ export class SlackService implements OnModuleInit {
     }
   };
 
+  /**
+   * A profile was reported: reporter, reported person, motive, comment, the
+   * referent of the reported person when identifiable and a link to the page
+   * of the profile in the reports admin tab. Never any email.
+   */
   sendMessageUserReported = async (
     userReporter: User,
     userReported: User,
-    reason: string,
-    comment: string
+    reasonLabel: string,
+    comment: string | null
   ): Promise<void> => {
-    const staffContactSlackEmail = userReported.staffContact?.slackEmail;
-    const slackStaffContactUserId = await this.getUserIdByEmail(
-      staffContactSlackEmail
-    );
+    const [slackStaffContactUserId] = await this.getReferentSlackUserIds([
+      userReported,
+    ]);
     await this.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       await this.generateProfileReportedBlocks(
         userReporter,
         userReported,
-        reason,
+        reasonLabel,
         comment,
-        slackStaffContactUserId
+        slackStaffContactUserId ?? null
       ),
       `Le profil de ${userReported.firstName} ${userReported.lastName} a été signalé`
     );
@@ -180,6 +191,7 @@ export class SlackService implements OnModuleInit {
     isReply,
     messageUrl,
     reasonLabel,
+    reportUrl,
     reporter,
   }: HelpGroupMessageReport): Promise<void> => {
     const referentIds = await this.getReferentSlackUserIds([author, reporter]);
@@ -204,6 +216,13 @@ export class SlackService implements OnModuleInit {
         { content: `*Motif* : ${reasonLabel}` },
         {
           content: `*Commentaire* : ${comment ? escapeSlackText(comment) : 'Aucun commentaire'}`,
+        },
+      ],
+      actions: [
+        {
+          label: REPORT_TARGET_SLACK_ACTION_LABEL,
+          url: reportUrl,
+          value: 'report-target',
         },
       ],
     });
@@ -337,15 +356,15 @@ export class SlackService implements OnModuleInit {
    * Generate a slack message for a profile reported
    * @param userReporter - The user who reported
    * @param userReported - The user who was reported
-   * @param reason - The reason of the report
-   * @param comment - The comment of the report
+   * @param reasonLabel - The label of the motive of the report
+   * @param comment - The optional comment of the report
    * @returns blocks for the message
    */
   generateProfileReportedBlocks = async (
     userReporter: User,
     userReported: User,
-    reason: string,
-    comment: string,
+    reasonLabel: string,
+    comment: string | null,
     slackStaffContactUserId: string | null
   ) => {
     return this.generateSlackBlockMsg({
@@ -367,10 +386,20 @@ export class SlackService implements OnModuleInit {
           content: `Profil signalé : ${userReported.firstName} ${userReported.lastName} <${userReported.email}>`,
         },
         {
-          content: `Raison du signalement : ${reason}`,
+          content: `Raison du signalement : ${reasonLabel}`,
         },
         {
-          content: `Commentaire : ${comment}`,
+          content: `Commentaire : ${comment ? escapeSlackText(comment) : 'Aucun commentaire'}`,
+        },
+      ],
+      actions: [
+        {
+          label: REPORT_TARGET_SLACK_ACTION_LABEL,
+          url: getReportTargetAdminUrl(
+            ReportTargetTypes.USER_PROFILE,
+            userReported.id
+          ),
+          value: 'report-target',
         },
       ],
     });

@@ -19,6 +19,7 @@ import {
 } from 'src/reports/reports.types';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
@@ -274,6 +275,7 @@ describe('Help groups - Reporting', () => {
           ...target(),
           reporterId: member.user.id,
           reason: ReportReasons.SPAM,
+          zone: null,
         })
       ).rejects.toMatchObject({ status: 409 });
       expect(await reportsService.countPendingDistinctReporters(target())).toBe(
@@ -297,6 +299,24 @@ describe('Help groups - Reporting', () => {
         status: ReportStatuses.PENDING,
       });
       expect(response.body).toEqual({ id: reports[0].id });
+    });
+
+    it('Should save the zone of the author of the message, not of the reporter', async () => {
+      await User.update(
+        { zone: ZoneName.AURA },
+        { where: { id: author.user.id } }
+      );
+      await User.update(
+        { zone: ZoneName.NORD },
+        { where: { id: member.user.id } }
+      );
+      expect((await reportReply(member)).status).toBe(201);
+      expect((await reportDiscussion(member)).status).toBe(201);
+      const reports = await reportModel.findAll();
+      expect(reports.map(({ zone }) => zone)).toEqual([
+        ZoneName.AURA,
+        ZoneName.AURA,
+      ]);
     });
 
     it('Should save the report of the discussion message, without comment', async () => {
@@ -454,6 +474,11 @@ describe('Help groups - Reporting', () => {
       expect(blocksText).toContain(`replyId=${reply.id}`);
       expect(blocksText).toContain(member.user.email);
       expect(blocksText).toContain(author.user.email);
+      // Link to the page of the reply in the reports admin tab
+      expect(blocksText).toContain('Voir la fiche');
+      expect(blocksText).toContain(
+        `${process.env.FRONT_URL}/backoffice/admin/signalements/POST_REPLY/${reply.id}`
+      );
       // Emails go through the work queue: nothing is queued
       expect(addToWorkQueue).not.toHaveBeenCalled();
     });

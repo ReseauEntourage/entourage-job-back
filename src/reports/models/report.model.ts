@@ -19,6 +19,7 @@ import type {
   ReportTargetType,
 } from '../reports.types';
 import { User } from 'src/users/models';
+import { ZoneName } from 'src/utils/types/zones.types';
 
 /**
  * Generic report. The target is polymorphic (`targetType`, `targetId`)
@@ -76,6 +77,16 @@ export class Report extends Model {
   @Column(DataType.STRING(20))
   resolution: ReportResolution | null;
 
+  // Zone of the reported person, frozen when the report is created
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  zone: ZoneName | null;
+
+  // Internal note of the admin closing the target from the reports tab
+  @AllowNull(true)
+  @Column(DataType.STRING(1000))
+  resolutionNote: string | null;
+
   @CreatedAt
   createdAt: Date;
 
@@ -84,4 +95,7 @@ export class Report extends Model {
 
   @BelongsTo(() => User, { foreignKey: 'reporterId', constraints: false })
   reporter: User;
+
+  @BelongsTo(() => User, { foreignKey: 'resolvedById', constraints: false })
+  resolvedBy: User | null;
 }

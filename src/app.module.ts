@@ -47,6 +47,7 @@ import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RecruitementAlertsModule } from './recruitement-alerts/recruitement-alerts.module';
 import { RedisModule, REDIS_CLIENT } from './redis/redis.module';
 import { ReportsModule } from './reports/reports.module';
+import { ReportsAdminModule } from './reports-admin/reports-admin.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { UserProfileSharesModule } from './user-profile-shares/user-profile-shares.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
@@ -152,6 +153,7 @@ export function getSequelizeOptions(
     MessagingModule,
     PostsModule,
     ReportsModule,
+    ReportsAdminModule,
     NotificationsModule,
     HelpGroupsModule,
     AiAssistantModule,

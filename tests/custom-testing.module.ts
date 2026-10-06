@@ -28,6 +28,7 @@ import { ProfileGenerationModule } from 'src/profile-generation/profile-generati
 import { ReadDocumentsModule } from 'src/read-documents/read-documents.module';
 import { RecruitementAlertsModule } from 'src/recruitement-alerts/recruitement-alerts.module';
 import { RedisModule } from 'src/redis/redis.module';
+import { ReportsAdminModule } from 'src/reports-admin/reports-admin.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
 import { SkillsModule } from 'src/skills/skills.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
@@ -96,6 +97,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     PostsModule,
     NotificationsModule,
     HelpGroupsModule,
+    ReportsAdminModule,
     CheckinModule,
     ReadDocumentsModule,
     UsersCreationModule,

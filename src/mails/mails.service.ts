@@ -9,13 +9,11 @@ import {
   HelpGroupNotificationEmailKinds,
   HelpGroupsWeeklyDigestEmail,
 } from 'src/help-groups/help-groups.types';
-import { ReportConversationDto } from 'src/messaging/dto/report-conversation.dto';
 import { Conversation, Message } from 'src/messaging/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { RecommendationDto } from 'src/user-profile-recommendations/dto/recommendations.dto';
 import { MatchingReason } from 'src/user-profile-recommendations/user-profile-recommendation.types';
-import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { getZoneDisplayLabel } from 'src/utils/constants/zones';
@@ -208,56 +206,6 @@ export class MailsService {
           },
           _.isNil
         ),
-      },
-    });
-  }
-
-  async sendUserReportedMail(
-    reportAbuseUserProfileDto: ReportAbuseUserProfileDto,
-    reportedUser: User,
-    reporterUser: User
-  ) {
-    this.logger.log(
-      `Sending user reported mail to staff contact with email ${reportedUser.staffContact?.email}`
-    );
-    if (!reportedUser.staffContact) {
-      this.logger.error(`No staff contact found for zone ${reportedUser.zone}`);
-      throw new NotFoundException(
-        `No staff contact found for zone ${reportedUser.zone}`
-      );
-    }
-    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: reportedUser.staffContact.email,
-      templateId: MailjetTemplates.USER_REPORTED_ADMIN,
-      variables: {
-        reportedFirstName: reportedUser.firstName,
-        reportedLastName: reportedUser.lastName,
-        reportedEmail: reportedUser.email,
-        reporterFirstName: reporterUser.firstName,
-        reporterLastName: reporterUser.lastName,
-        reporterEmail: reporterUser.email,
-        ...reportAbuseUserProfileDto,
-      },
-    });
-  }
-
-  async sendConversationReportedMail(
-    reportConversationDto: ReportConversationDto,
-    reportedConversation: Conversation,
-    reporterUser: User
-  ) {
-    this.logger.log(
-      `Sending conversation reported mail to staff contact with email ${reporterUser.staffContact?.email}`
-    );
-    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: reporterUser.staffContact?.email,
-      templateId: MailjetTemplates.CONVERSATION_REPORTED_ADMIN,
-      variables: {
-        reporterFirstName: reporterUser.firstName,
-        reporterLastName: reporterUser.lastName,
-        reporterEmail: reporterUser.email,
-        reportedConversationId: reportedConversation.id,
-        ...reportConversationDto,
       },
     });
   }

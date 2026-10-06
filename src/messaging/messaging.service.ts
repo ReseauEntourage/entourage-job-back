@@ -1,4 +1,10 @@
-import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, Sequelize, Transaction } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
@@ -13,6 +19,15 @@ import { MediasService } from 'src/medias/medias.service';
 import { Media } from 'src/medias/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import {
+  getConversationReportZone,
+  ReportsService,
+} from 'src/reports/reports.service';
+import {
+  ReportReasonLabels,
+  ReportTargetTypes,
+} from 'src/reports/reports.types';
+import { getReportTargetAdminUrl } from 'src/reports/reports.utils';
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
@@ -41,6 +56,7 @@ import {
 } from './messaging.includes';
 import {
   bindVariableInContent,
+  encodeMessageCursor,
   generateSlackMsgConfigConversationReported,
   generateSlackMsgConfigUserSuspiciousUser,
   MessageCursor,
@@ -76,7 +92,8 @@ export class MessagingService {
     private mailsService: MailsService,
     private mediaService: MediasService,
     private queuesService: QueuesService,
-    private conversationPipelineService: ConversationPipelineService
+    private conversationPipelineService: ConversationPipelineService,
+    private reportsService: ReportsService
   ) {}
 
   private readonly DAILY_CONVERSATION_LIMIT_THRESHOLD = 8;
@@ -393,6 +410,46 @@ export class MessagingService {
   }
 
   /**
+   * Read only page of the messages of a conversation, for the moderation of
+   * a reported conversation by an Entourage admin, who is not a participant:
+   * the 30 messages preceding `before`, or the 30 most recent ones. The caller
+   * checks the conversation was reported. Null when it does not exist.
+   */
+  async getConversationMessagesForModeration(
+    conversationId: string,
+    before?: MessageCursor
+  ) {
+    const conversation = await this.conversationModel.findByPk(conversationId, {
+      include: messagingConversationIncludes({
+        before,
+        limit: this.DEFAULT_MESSAGES_PAGE_SIZE,
+      }),
+    });
+    if (!conversation) {
+      return null;
+    }
+    const conversationMedias =
+      await this.findMediasByConversationId(conversationId);
+    conversation.messages.forEach((message) => {
+      const messageMedias = conversationMedias.filter((media) =>
+        message.medias.map((m) => m.id).includes(media.id)
+      );
+      message.setDataValue('medias', messageMedias);
+    });
+    const messages = conversation.messages.map((message) => message.toJSON());
+    const oldest = conversation.messages[conversation.messages.length - 1];
+    return {
+      messages,
+      // Another page may exist only when this one is full
+      nextCursor:
+        oldest &&
+        conversation.messages.length === this.DEFAULT_MESSAGES_PAGE_SIZE
+          ? encodeMessageCursor({ createdAt: oldest.createdAt, id: oldest.id })
+          : null,
+    };
+  }
+
+  /**
    * Counts the conversations holding at least one message the user has not read yet.
    * Only messages that are actually shown to them as incoming count: service messages
    * and their own messages are ignored, so this stays aligned with the unread rule the
@@ -584,20 +641,67 @@ export class MessagingService {
     });
   }
 
+  /**
+   * Saves the report of a conversation by one of its participants (checked
+   * by the guard), with the zone of the reported person, then alerts the
+   * moderation channel. A Slack failure never loses the report. 409 when a
+   * report of the same person on this conversation is still to handle.
+   */
   async reportConversation(
     conversationId: string,
     reportConversationDto: ReportConversationDto,
     reporterUserId: string
-  ) {
+  ): Promise<{ id: string }> {
     const conversation = await this.findConversation(conversationId);
-    const reporterUser =
-      await this.usersService.findOneWithRelations(reporterUserId);
-    // Tag the referents of every participant (reporter included), and include
-    // soft-deleted accounts: their zone and role still resolve a staff contact.
+    if (!conversation) {
+      throw new NotFoundException();
+    }
+    // Every participant (reporter included), deleted accounts too: their
+    // zone and role still resolve a staff contact
     const participants = await this.usersService.findByIdsWithRelations(
       conversation.participants.map((participant) => participant.id),
       { paranoid: false }
     );
+    const reporterUser = participants.find(({ id }) => id === reporterUserId);
+    if (!reporterUser) {
+      throw new NotFoundException();
+    }
+
+    const report = await this.reportsService.create({
+      targetType: ReportTargetTypes.CONVERSATION,
+      targetId: conversation.id,
+      reporterId: reporterUserId,
+      reason: reportConversationDto.reason,
+      comment: reportConversationDto.comment,
+      zone: getConversationReportZone(conversation.participants, reporterUser),
+    });
+
+    try {
+      await this.sendConversationReportedAlert(
+        conversation,
+        reportConversationDto,
+        reporterUser,
+        participants
+      );
+    } catch (error) {
+      this.logger.error(
+        `[MessagingService] Slack alert not sent for the report of the conversation ${conversation.id}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+    return { id: report.id };
+  }
+
+  /**
+   * Tags the referents of every participant, each once.
+   */
+  private async sendConversationReportedAlert(
+    conversation: Conversation,
+    reportConversationDto: ReportConversationDto,
+    reporterUser: User,
+    participants: User[]
+  ) {
     const referentSlackEmails = [
       ...new Set(
         participants
@@ -619,22 +723,18 @@ export class MessagingService {
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
-        reportConversationDto.reason,
-        reportConversationDto.comment,
+        ReportReasonLabels[reportConversationDto.reason],
+        reportConversationDto.comment || null,
         reporterUser,
-        referentSlackUserIds
+        referentSlackUserIds,
+        getReportTargetAdminUrl(ReportTargetTypes.CONVERSATION, conversation.id)
       );
     const slackMessage =
       this.slackService.generateSlackBlockMsg(slackMsgConfig);
-    this.slackService.sendMessage(
+    await this.slackService.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       slackMessage,
       'Conversation de la messagerie signalée'
-    );
-    this.mailsService.sendConversationReportedMail(
-      reportConversationDto,
-      conversation,
-      reporterUser
     );
   }
 

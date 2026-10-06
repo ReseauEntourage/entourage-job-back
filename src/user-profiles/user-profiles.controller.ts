@@ -115,7 +115,7 @@ export class UserProfilesController {
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body(new ReportAbuseUserProfilePipe())
     reportAbuseDto: ReportAbuseUserProfileDto
-  ): Promise<void> {
+  ): Promise<{ id: string }> {
     return this.userProfileModerationService.reportAbuse(
       currentUserId,
       userId,
