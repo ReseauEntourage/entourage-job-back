@@ -288,6 +288,21 @@ describe('Notifications center', () => {
       expect(await unseenCount()).toBe(0);
     });
 
+    it('Should show seen, and not count, a notification whose only unseen events are left out', async () => {
+      const first = await notifyReply(amina);
+      await notifyReply(thomas);
+      await post('/notifications/seen', julien, {
+        messageIds: [first.reply.id],
+      });
+      expect(await unseenCount()).toBe(1);
+      // The unseen reply of Thomas is left out once his account is deleted
+      await userModel.destroy({ where: { id: thomas.user.id } });
+      const [item] = (await get('/notifications', julien)).body.items;
+      expect(item.label).toBe('Amina vous a répondu');
+      expect(item.seen).toBe(true);
+      expect(await unseenCount()).toBe(0);
+    });
+
     it('Should mark nothing as seen when the list is opened', async () => {
       await notifyReply(amina);
       await get('/notifications', julien);

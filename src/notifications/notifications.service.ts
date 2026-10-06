@@ -410,7 +410,8 @@ export class NotificationsService {
   /**
    * Number of unseen notifications (rows, not events) of the last 30 days.
    * Counted through the presenters, like the list: a row the list leaves out
-   * (group unpublished, message deleted) never inflates the badge. The "9+"
+   * (group unpublished, message deleted) never inflates the badge, nor does
+   * an item whose only unseen events are left out. The "9+"
    * cap is applied by the front.
    */
   async countUnseen(userId: string): Promise<number> {
@@ -422,7 +423,7 @@ export class NotificationsService {
       },
     });
     const items = await this.present(notifications.map(toRow), userId);
-    return items.length;
+    return items.filter(({ seen }) => !seen).length;
   }
 
   /**

@@ -14,6 +14,7 @@ import {
   NotificationTypes,
 } from 'src/notifications/notifications.types';
 import {
+  areAllEventsSeen,
   formatActorNames,
   getDistinctActorIds,
   sortEvents,
@@ -545,7 +546,9 @@ export class HelpGroupsNotificationsService
         excerpt,
         context: { groupName: group.name, discussionTitle: discussion.title },
         lastEventAt: row.lastEventAt,
-        seen: row.seenAt !== null,
+        // On the events shown only: an unseen event left out (message
+        // deleted, account deleted) never keeps the item unseen
+        seen: areAllEventsSeen(events),
         destination: { slug: group.slug, discussionId, replyId },
       });
     });
