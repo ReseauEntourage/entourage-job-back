@@ -210,8 +210,15 @@ export class UsersService {
     });
   }
 
-  async findOneWithAttributes(id: string, attributes: string[]): Promise<User> {
-    return this.userModel.findByPk(id, { attributes });
+  async findOneWithAttributes(
+    id: string,
+    attributes: string[],
+    options: { paranoid?: boolean } = {}
+  ): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes,
+      paranoid: options.paranoid ?? true,
+    });
   }
 
   async findOneWithCompanyOnly(id: string): Promise<User> {

@@ -30,19 +30,24 @@ import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { HelpGroupsModule } from './help-groups/help-groups.module';
 import { LocationsModule } from './locations/locations.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PassionsModule } from './passions/passions.module';
 import { PingModule } from './ping/ping.module';
+import { PostsModule } from './posts/posts.module';
 import { ProfileGenerationModule } from './profile-generation/profile-generation.module';
 import { PublicCVsModule } from './public-cv/public-cvs.module';
 import { QueuesBoardModule } from './queues/producers/queues-board.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RecruitementAlertsModule } from './recruitement-alerts/recruitement-alerts.module';
 import { RedisModule, REDIS_CLIENT } from './redis/redis.module';
+import { ReportsModule } from './reports/reports.module';
+import { ReportsAdminModule } from './reports-admin/reports-admin.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { UserProfileSharesModule } from './user-profile-shares/user-profile-shares.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
@@ -146,6 +151,11 @@ export function getSequelizeOptions(
     OrganizationsModule,
     ReadDocumentsModule,
     MessagingModule,
+    PostsModule,
+    ReportsModule,
+    ReportsAdminModule,
+    NotificationsModule,
+    HelpGroupsModule,
     AiAssistantModule,
     UserProfileSharesModule,
     UserSocialSituationsModule,

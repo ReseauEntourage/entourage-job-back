@@ -10,7 +10,9 @@ import { SalesforceModule } from 'src/external-services/salesforce/salesforce.mo
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { VonageModule } from 'src/external-services/vonage/vonage.module';
 import { GamificationModule } from 'src/gamification/gamification.module';
+import { HelpGroupsModule } from 'src/help-groups/help-groups.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import {
   getBullWorkQueueOptions,
@@ -52,6 +54,8 @@ import { WorkQueueProcessor } from './work-queue.processor';
     GamificationModule,
     RecruitementAlertsModule,
     CheckinModule,
+    HelpGroupsModule,
+    NotificationsModule,
   ],
   providers: [
     WorkQueueProcessor,
