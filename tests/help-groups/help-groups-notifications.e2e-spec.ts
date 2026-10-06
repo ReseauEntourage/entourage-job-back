@@ -17,7 +17,7 @@ import { HelpGroup, HelpGroupMembership } from 'src/help-groups/models';
 import { Notification } from 'src/notifications/models';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationTypes } from 'src/notifications/notifications.types';
-import { Post } from 'src/posts/models';
+import { Post, PostReaction } from 'src/posts/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import {
   Jobs,
@@ -59,6 +59,7 @@ describe('Help groups - Notifications', () => {
   let membershipModel: typeof HelpGroupMembership;
   let postModel: typeof Post;
   let userModel: typeof User;
+  let postReactionModel: typeof PostReaction;
 
   const sendEvent = jest.fn();
   let addToWorkQueue: jest.SpyInstance;
@@ -99,6 +100,7 @@ describe('Help groups - Notifications', () => {
     membershipModel = moduleFixture.get(getModelToken(HelpGroupMembership));
     postModel = moduleFixture.get(getModelToken(Post));
     userModel = moduleFixture.get(getModelToken(User));
+    postReactionModel = moduleFixture.get(getModelToken(PostReaction));
   });
 
   afterAll(async () => {
@@ -325,6 +327,20 @@ describe('Help groups - Notifications', () => {
         (await unreact(sofia, { discussionId: discussion.id })).status
       ).toBe(200);
       expect(await notificationsOf(julien)).toHaveLength(0);
+    });
+
+    it('Should leave out of the bell a reaction removed while its event stayed', async () => {
+      const sofia = await createMember({ firstName: 'Sofia' });
+      const amir = await createMember({ firstName: 'Amir' });
+      await react(sofia, { discussionId: discussion.id });
+      await react(amir, { discussionId: discussion.id });
+      // Removed without the cleanup of the notification (failed or racing)
+      await postReactionModel.destroy({ where: { userId: sofia.user.id } });
+      const [item] = await bell(julien);
+      expect(item.label).toBe('Amir soutient votre message');
+
+      await postReactionModel.destroy({ where: { userId: amir.user.id } });
+      expect(await bell(julien)).toEqual([]);
     });
 
     it('Should not notify a reaction to one own message', async () => {

@@ -474,6 +474,10 @@ export class HelpGroupsNotificationsService
         new Set(rows.flatMap(({ events }) => events.map((e) => e.actorId)))
       )
     );
+    // A reaction removed while its event stayed (failed or racing cleanup)
+    const reactionIds = await this.findActiveReactionIds(
+      reactionRows.flatMap(({ events }) => events.map((e) => e.eventId))
+    );
 
     const items = new Map<string, NotificationItem>();
     rows.forEach((row) => {
@@ -495,7 +499,9 @@ export class HelpGroupsNotificationsService
       const events = sortEvents(row.events).filter(
         (event) =>
           firstNames.has(event.actorId) &&
-          (!isReply || replies.has(event.eventId))
+          (isReply
+            ? replies.has(event.eventId)
+            : reactionIds.has(event.eventId))
       );
       if (events.length === 0) {
         return;
