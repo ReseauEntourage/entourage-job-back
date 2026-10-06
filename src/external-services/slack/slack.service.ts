@@ -61,6 +61,24 @@ const formatSlackUser = (user: User | null | undefined) =>
     ? escapeSlackText(`${user.firstName} ${user.lastName} (${user.email})`)
     : 'Compte supprimé';
 
+/**
+ * Slack ids of the referents of the given users, each once. A user without
+ * referent, a referent without Slack email, or not found on Slack, is
+ * ignored. Shared by every moderation alert.
+ */
+export const resolveReferentSlackUserIds = async (
+  users: (User | null | undefined)[],
+  getUserIdByEmail: (email: string) => Promise<string | null>
+): Promise<string[]> => {
+  const emails = [
+    ...new Set(
+      users.map((user) => user?.staffContact?.slackEmail).filter(Boolean)
+    ),
+  ];
+  const ids = await Promise.all(emails.map((email) => getUserIdByEmail(email)));
+  return [...new Set(ids.filter(Boolean))];
+};
+
 @Injectable()
 export class SlackService implements OnModuleInit {
   private app: App;
@@ -163,19 +181,12 @@ export class SlackService implements OnModuleInit {
   };
 
   /**
-   * Slack ids of the referents of the given users, each once. A referent
-   * without Slack email, or not found on Slack, is ignored.
+   * Slack ids of the referents of the given users, each once.
    */
-  private async getReferentSlackUserIds(users: User[]): Promise<string[]> {
-    const emails = [
-      ...new Set(
-        users.map((user) => user?.staffContact?.slackEmail).filter(Boolean)
-      ),
-    ];
-    const ids = await Promise.all(
-      emails.map((email) => this.getUserIdByEmail(email))
+  private getReferentSlackUserIds(users: User[]): Promise<string[]> {
+    return resolveReferentSlackUserIds(users, (email) =>
+      this.getUserIdByEmail(email)
     );
-    return [...new Set(ids.filter(Boolean))];
   }
 
   /**

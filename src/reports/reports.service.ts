@@ -27,7 +27,8 @@ export interface CreateReportInput extends ReportTarget {
   comment?: string | null;
   reason: ReportReason;
   reporterId: string;
-  // Zone of the reported person (see `getReportedZone*` helpers)
+  // Zone of the reported person (`getConversationReportZone` for a
+  // conversation); « Hors zone » when null
   zone: ZoneName | null;
 }
 
@@ -76,7 +77,8 @@ export class ReportsService {
           reporterId: input.reporterId,
           reason: input.reason,
           comment: input.comment || null,
-          zone: input.zone ?? null,
+          // A person without zone is followed by the « Hors zone » team
+          zone: input.zone || ZoneName.HZ,
         },
         { transaction }
       );

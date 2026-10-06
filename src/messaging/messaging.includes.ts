@@ -23,7 +23,7 @@ export interface MessagingConversationIncludesOptions {
   limit?: number;
 }
 
-const buildMessagesCursorWhere = (
+export const buildMessagesCursorWhere = (
   options: MessagingConversationIncludesOptions
 ): WhereOptions | undefined => {
   const { before, after } = options;

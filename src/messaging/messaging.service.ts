@@ -8,7 +8,10 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, Sequelize, Transaction } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
-import { SlackService } from 'src/external-services/slack/slack.service';
+import {
+  resolveReferentSlackUserIds,
+  SlackService,
+} from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
   slackChannels,
@@ -38,6 +41,8 @@ import { CreateMessageDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import {
+  mediaAttributes,
+  messageAttributes,
   userAttributes,
   userAttributesWithDeletedAt,
 } from './messaging.attributes';
@@ -51,6 +56,7 @@ import {
   ErrorMessagingRecipientNotEligible,
 } from './messaging.errors';
 import {
+  buildMessagesCursorWhere,
   messagingConversationIncludes,
   messagingMessageIncludes,
 } from './messaging.includes';
@@ -412,7 +418,9 @@ export class MessagingService {
   /**
    * Read only page of the messages of a conversation, for the moderation of
    * a reported conversation by an Entourage admin, who is not a participant:
-   * the 30 messages preceding `before`, or the 30 most recent ones. The caller
+   * the 30 messages preceding `before`, or the 30 most recent ones. Only the
+   * messages, their authors and the medias of this page are loaded. A
+   * deleted author is returned null, shown without identity. The caller
    * checks the conversation was reported. Null when it does not exist.
    */
   async getConversationMessagesForModeration(
@@ -420,30 +428,47 @@ export class MessagingService {
     before?: MessageCursor
   ) {
     const conversation = await this.conversationModel.findByPk(conversationId, {
-      include: messagingConversationIncludes({
-        before,
-        limit: this.DEFAULT_MESSAGES_PAGE_SIZE,
-      }),
+      attributes: ['id'],
     });
     if (!conversation) {
       return null;
     }
-    const conversationMedias =
-      await this.findMediasByConversationId(conversationId);
-    conversation.messages.forEach((message) => {
-      const messageMedias = conversationMedias.filter((media) =>
-        message.medias.map((m) => m.id).includes(media.id)
-      );
-      message.setDataValue('medias', messageMedias);
+    const cursorWhere = buildMessagesCursorWhere({ before });
+    const messages = await this.messageModel.findAll({
+      attributes: messageAttributes,
+      where: { conversationId, ...(cursorWhere ?? {}) },
+      include: [
+        {
+          model: User,
+          as: 'author',
+          paranoid: false,
+          attributes: userAttributesWithDeletedAt,
+        },
+        {
+          model: Media,
+          as: 'medias',
+          attributes: mediaAttributes,
+          through: { attributes: [] },
+        },
+      ],
+      order: [
+        ['createdAt', 'DESC'],
+        ['id', 'DESC'],
+      ],
+      limit: this.DEFAULT_MESSAGES_PAGE_SIZE,
     });
-    const messages = conversation.messages.map((message) => message.toJSON());
-    const oldest = conversation.messages[conversation.messages.length - 1];
+    await this.mediaService.attachSignedUrls(
+      messages.flatMap(({ medias }) => medias ?? [])
+    );
+    const oldest = messages[messages.length - 1];
     return {
-      messages,
+      messages: messages.map((message) => {
+        const { author, ...rest } = message.toJSON();
+        return { ...rest, author: author?.deletedAt ? null : author };
+      }),
       // Another page may exist only when this one is full
       nextCursor:
-        oldest &&
-        conversation.messages.length === this.DEFAULT_MESSAGES_PAGE_SIZE
+        oldest && messages.length === this.DEFAULT_MESSAGES_PAGE_SIZE
           ? encodeMessageCursor({ createdAt: oldest.createdAt, id: oldest.id })
           : null,
     };
@@ -702,24 +727,10 @@ export class MessagingService {
     reporterUser: User,
     participants: User[]
   ) {
-    const referentSlackEmails = [
-      ...new Set(
-        participants
-          .map((participant) => participant.staffContact?.slackEmail)
-          .filter(Boolean)
-      ),
-    ];
-    const referentSlackUserIds = [
-      ...new Set(
-        (
-          await Promise.all(
-            referentSlackEmails.map((email) =>
-              this.slackService.getUserIdByEmail(email)
-            )
-          )
-        ).filter(Boolean)
-      ),
-    ];
+    const referentSlackUserIds = await resolveReferentSlackUserIds(
+      participants,
+      (email) => this.slackService.getUserIdByEmail(email)
+    );
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,

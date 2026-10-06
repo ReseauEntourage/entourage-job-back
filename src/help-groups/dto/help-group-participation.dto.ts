@@ -1,4 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  IntersectionType,
+} from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -14,10 +18,8 @@ import {
 } from 'class-validator';
 import { PostReactionEmojis } from 'src/posts/models';
 import { PostDeletionReasons, PostTitleSources } from 'src/posts/posts.types';
-import {
-  REPORT_COMMENT_MAX_LENGTH,
-  ReportReasons,
-} from 'src/reports/reports.types';
+import { ReportContentDto } from 'src/reports/dto';
+import { trimString } from 'src/utils/transforms';
 
 export const DISCUSSION_TITLE_MAX_LENGTH = 120;
 export const MESSAGE_MAX_LENGTH = 5000;
@@ -26,20 +28,16 @@ export const DELETION_COMMENT_MAX_LENGTH = 500;
 // at most, plus the first one
 export const PREVIOUS_TITLES_MAX = 6;
 
-// Lengths are checked after trimming: a whitespace only text is empty
-const trim = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim() : value;
-
 export class CreateDiscussionDto {
   @ApiProperty()
-  @Transform(trim)
+  @Transform(trimString)
   @IsString()
   @MinLength(1)
   @MaxLength(DISCUSSION_TITLE_MAX_LENGTH)
   title: string;
 
   @ApiProperty()
-  @Transform(trim)
+  @Transform(trimString)
   @IsString()
   @MinLength(1)
   @MaxLength(MESSAGE_MAX_LENGTH)
@@ -59,7 +57,7 @@ export class CreateDiscussionDto {
 
 export class CreateReplyDto {
   @ApiProperty()
-  @Transform(trim)
+  @Transform(trimString)
   @IsString()
   @MinLength(1)
   @MaxLength(MESSAGE_MAX_LENGTH)
@@ -74,7 +72,7 @@ export class CreateReplyDto {
 export class UpdateDiscussionDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(trim)
+  @Transform(trimString)
   @IsString()
   @MinLength(1)
   @MaxLength(DISCUSSION_TITLE_MAX_LENGTH)
@@ -82,7 +80,7 @@ export class UpdateDiscussionDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(trim)
+  @Transform(trimString)
   @IsString()
   @MinLength(1)
   @MaxLength(MESSAGE_MAX_LENGTH)
@@ -91,7 +89,7 @@ export class UpdateDiscussionDto {
 
 export class UpdateReplyDto {
   @ApiProperty()
-  @Transform(trim)
+  @Transform(trimString)
   @IsString()
   @MinLength(1)
   @MaxLength(MESSAGE_MAX_LENGTH)
@@ -100,7 +98,7 @@ export class UpdateReplyDto {
 
 export class TitleSuggestionDto {
   @ApiProperty()
-  @Transform(trim)
+  @Transform(trimString)
   @IsString()
   @MinLength(1)
   @MaxLength(MESSAGE_MAX_LENGTH)
@@ -151,7 +149,7 @@ export class ModerationDeleteDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(trim)
+  @Transform(trimString)
   @IsString()
   @MaxLength(DELETION_COMMENT_MAX_LENGTH)
   comment?: string;
@@ -159,20 +157,13 @@ export class ModerationDeleteDto {
 
 /**
  * Report of the discussion or of one of its replies (exactly one target,
- * checked by the service). The comment is optional.
+ * checked by the service), with the motive and optional comment shared by
+ * every report.
  */
-export class ReportMessageDto extends RemoveReactionDto {
-  @ApiProperty({ enum: Object.values(ReportReasons) })
-  @IsIn(Object.values(ReportReasons))
-  reason: (typeof ReportReasons)[keyof typeof ReportReasons];
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Transform(trim)
-  @IsString()
-  @MaxLength(REPORT_COMMENT_MAX_LENGTH)
-  comment?: string;
-}
+export class ReportMessageDto extends IntersectionType(
+  RemoveReactionDto,
+  ReportContentDto
+) {}
 
 export class UpdateMembershipDto {
   @ApiProperty()

@@ -20,7 +20,6 @@ import {
   ReportTargetTypes,
 } from 'src/reports/reports.types';
 import { getReportTargetAdminUrl } from 'src/reports/reports.utils';
-import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { isEntourageAdmin } from 'src/users/users.utils';
 import { ReactionTargetDto, ReportMessageDto } from './dto';
@@ -112,14 +111,13 @@ export class HelpGroupsReportingService {
       throw new NotFoundException();
     }
 
-    // Deleted accounts included: their zone still resolves a referent, and
-    // the zone of the author is the zone of the report
-    const users = await this.usersService.findByIdsWithRelations(
-      [message.authorId, reader.id],
+    // The zone of the author is the zone of the report, deleted account
+    // included. Only this column is read before the report is saved
+    const author = await this.usersService.findOneWithAttributes(
+      message.authorId,
+      ['id', 'zone'],
       { paranoid: false }
     );
-    const author = users.find(({ id }) => id === message.authorId);
-    const reporter = users.find(({ id }) => id === reader.id);
 
     const model = (
       message.replyId ? this.postReplyModel : this.postModel
@@ -200,15 +198,13 @@ export class HelpGroupsReportingService {
       }
     }
 
-    this.sendAlerts(message, { author, reporter }, dto, isHidden).catch(
-      (error) => {
-        this.logger.error(
-          `[HelpGroupsReporting] Slack alert not sent (${message.target.targetType} ${message.id}): ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
-    );
+    this.sendAlerts(message, reader.id, dto, isHidden).catch((error) => {
+      this.logger.error(
+        `[HelpGroupsReporting] Slack alert not sent (${message.target.targetType} ${message.id}): ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    });
 
     return { id: report.id };
   }
@@ -337,10 +333,17 @@ export class HelpGroupsReportingService {
    */
   private async sendAlerts(
     message: ReportedMessage,
-    { author, reporter }: { author?: User; reporter?: User },
+    reporterId: string,
     dto: ReportMessageDto,
     isHidden: boolean
   ) {
+    // Deleted accounts included: their zone still resolves a referent
+    const users = await this.usersService.findByIdsWithRelations(
+      [message.authorId, reporterId],
+      { paranoid: false }
+    );
+    const author = users.find(({ id }) => id === message.authorId);
+    const reporter = users.find(({ id }) => id === reporterId);
     const messageUrl = this.messageUrl(message);
 
     const isReply = !!message.replyId;

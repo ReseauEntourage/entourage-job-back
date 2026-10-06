@@ -36,6 +36,7 @@ import {
 const LABEL_EXCERPT_MAX_LENGTH = 80;
 const DELETED_USER_LABEL = 'Utilisateur supprimé';
 const MISSING_TARGET_LABEL = 'Contenu introuvable';
+const DELETED_GROUP_LABEL = 'Groupe supprimé';
 
 const reportUserAttributes = [
   'id',
@@ -159,15 +160,48 @@ const toReportUser = (user?: User | null): ReportUser =>
       }
     : null;
 
-const userLabel = (user?: User | null) =>
-  user && !user.deletedAt
-    ? `${user.firstName} ${user.lastName}`
-    : DELETED_USER_LABEL;
+const reportUserLabel = (user: ReportUser) =>
+  user ? `${user.firstName} ${user.lastName}` : DELETED_USER_LABEL;
 
 const joinNames = (names: string[]) =>
   names.length > 1
     ? `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`
     : names.join('');
+
+const conversationLabel = (participants: ReportUser[]) =>
+  participants.length
+    ? `Conversation entre ${joinNames(participants.map(reportUserLabel))}`
+    : MISSING_TARGET_LABEL;
+
+const groupMessageLabel = (
+  groupName: string | undefined,
+  title: string | null,
+  content: string
+) =>
+  `${groupName ?? DELETED_GROUP_LABEL} — ${toExcerpt(
+    [title, content].filter(Boolean).join(' — ')
+  )}`;
+
+/**
+ * Label of a target from its context, so that the page of a target loads
+ * its rows once.
+ */
+const labelFromContext = (context: ReportTargetContext): string => {
+  switch (context.targetType) {
+    case ReportTargetTypes.CONVERSATION:
+      return conversationLabel(context.participants);
+    case ReportTargetTypes.USER_PROFILE:
+      return reportUserLabel(context.user);
+    default:
+      return context.message
+        ? groupMessageLabel(
+            context.group?.name,
+            context.message.title,
+            context.message.content
+          )
+        : MISSING_TARGET_LABEL;
+  }
+};
 
 /**
  * Administration of the reports, grouped by target: a profile reported five
@@ -200,10 +234,9 @@ export class ReportsAdminService {
   // ---------------------------------------------------------------------
 
   /**
-   * One row per target. A target belongs to every zone of its reports: the
-   * zone filter keeps it as soon as one of its reports holds that zone, so
-   * that an admin never misses a report of their zone. Targets with a report
-   * to handle first, then the most recently reported first.
+   * One row per target, filtered on type, status and zone (membership rule
+   * in `targetsCte`). Targets with a report to handle first, then the most
+   * recently reported first.
    */
   async findTargets(
     query: ReportTargetsQueryDto
@@ -233,7 +266,14 @@ export class ReportsAdminService {
       });
     }
     const rows = await this.reportModel.sequelize.query<TargetRow>(
-      `${this.targetsCte(query, replacements)}
+      `${this.targetsCte(
+        {
+          type: query.type,
+          zone: query.zone,
+          pendingOnly: query.status === ReportTargetStatuses.PENDING,
+        },
+        replacements
+      )}
        SELECT * FROM targets
        ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
        ORDER BY "isPending" DESC, "lastReportedAt" DESC, "targetType" DESC, "targetId" DESC
@@ -264,28 +304,38 @@ export class ReportsAdminService {
   }
 
   /**
-   * Number of distinct targets with a report to handle in the zone, with the
-   * same membership rule as the list. Every zone without one.
+   * Number of distinct targets with a report to handle in the zone (the
+   * zone of one of those reports), as the list. Every zone without one.
    */
   async countPendingTargets(zone?: ZoneName): Promise<{ count: number }> {
     const replacements: Record<string, unknown> = {};
     const [result] = await this.reportModel.sequelize.query<{
       count: string;
     }>(
-      `${this.targetsCte({ zone }, replacements)}
-       SELECT COUNT(*) AS count FROM targets WHERE "isPending"`,
+      `${this.targetsCte({ zone, pendingOnly: true }, replacements)}
+       SELECT COUNT(*) AS count FROM targets`,
       { replacements, type: QueryTypes.SELECT }
     );
     return { count: parseInt(result?.count ?? '0', 10) };
   }
 
   /**
-   * Targets grouped from their reports, filtered on type and zone. The
-   * dates are truncated to the millisecond so that the cursor, built from a
-   * JS date, compares exactly.
+   * Targets grouped from their reports, filtered on type and zone.
+   *
+   * Zone membership: a target with reports to handle belongs to the zones of
+   * those reports only, so that a closed report never keeps it in the list
+   * nor the badge of another zone; a handled target belongs to the zones of
+   * all its reports. `pendingOnly` keeps the targets to handle from the
+   * start, through the (status, zone, createdAt) index, before grouping.
+   * The dates are truncated to the millisecond so that the cursor, built
+   * from a JS date, compares exactly.
    */
   private targetsCte(
-    { type, zone }: Pick<ReportTargetsQueryDto, 'type' | 'zone'>,
+    {
+      type,
+      zone,
+      pendingOnly = false,
+    }: Pick<ReportTargetsQueryDto, 'type' | 'zone'> & { pendingOnly?: boolean },
     replacements: Record<string, unknown>
   ) {
     const where: string[] = [];
@@ -293,11 +343,23 @@ export class ReportsAdminService {
       where.push('"targetType" IN (:targetTypes)');
       replacements.targetTypes = ReportTargetTypesByFilter[type];
     }
-    let having = '';
     if (zone) {
-      having = 'HAVING bool_or("zone" = :zone)';
       replacements.zone = zone;
     }
+    if (pendingOnly) {
+      where.push(
+        `("targetType", "targetId") IN (
+          SELECT "targetType", "targetId" FROM "Reports"
+          WHERE "status" = 'PENDING'${zone ? ' AND "zone" = :zone' : ''}
+        )`
+      );
+    }
+    const having =
+      zone && !pendingOnly
+        ? `HAVING CASE WHEN bool_or("status" = 'PENDING')
+             THEN bool_or("status" = 'PENDING' AND "zone" = :zone)
+             ELSE bool_or("zone" = :zone) END`
+        : '';
     return `WITH targets AS (
       SELECT "targetType", "targetId",
         COUNT(*) FILTER (WHERE "status" = 'PENDING') AS "pendingCount",
@@ -305,7 +367,10 @@ export class ReportsAdminService {
         COUNT(*) FILTER (WHERE "status" = 'PENDING') > 0 AS "isPending",
         array_agg(DISTINCT "reason") AS "reasons",
         date_trunc('milliseconds', MAX("createdAt")) AS "lastReportedAt",
-        array_remove(array_agg(DISTINCT "zone"), NULL) AS "zones"
+        CASE WHEN bool_or("status" = 'PENDING')
+          THEN array_remove(array_agg(DISTINCT "zone") FILTER (WHERE "status" = 'PENDING'), NULL)
+          ELSE array_remove(array_agg(DISTINCT "zone"), NULL)
+        END AS "zones"
       FROM "Reports"
       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
       GROUP BY "targetType", "targetId"
@@ -330,87 +395,105 @@ export class ReportsAdminService {
    */
   private async resolveLabels(rows: ReportTarget[]) {
     const labels = new Map<string, string>();
+    const set = (target: ReportTarget, label: string) =>
+      labels.set(this.key(target), label);
 
-    const conversationIds = this.idsOf(rows, ReportTargetTypes.CONVERSATION);
-    if (conversationIds.length) {
-      const conversations = await this.conversationModel.findAll({
-        attributes: ['id'],
-        where: { id: conversationIds },
-        include: [
-          {
-            model: User,
-            as: 'participants',
-            attributes: reportUserAttributes,
-            paranoid: false,
-            through: { attributes: [] },
-          },
-        ],
-      });
-      conversations.forEach((conversation) =>
-        labels.set(
-          this.key({
-            targetType: ReportTargetTypes.CONVERSATION,
-            targetId: conversation.id,
-          }),
-          `Conversation entre ${joinNames(
-            conversation.participants.map((participant) =>
-              userLabel(participant)
-            )
-          )}`
-        )
-      );
+    // The three kinds of target are independent
+    await Promise.all([
+      this.labelConversations(
+        this.idsOf(rows, ReportTargetTypes.CONVERSATION),
+        set
+      ),
+      this.labelUsers(this.idsOf(rows, ReportTargetTypes.USER_PROFILE), set),
+      this.labelGroupMessages(
+        this.idsOf(rows, ReportTargetTypes.POST),
+        this.idsOf(rows, ReportTargetTypes.POST_REPLY),
+        set
+      ),
+    ]);
+    return labels;
+  }
+
+  private async labelConversations(
+    ids: string[],
+    set: (target: ReportTarget, label: string) => void
+  ) {
+    if (!ids.length) {
+      return;
     }
-
-    const userIds = this.idsOf(rows, ReportTargetTypes.USER_PROFILE);
-    if (userIds.length) {
-      const users = await this.userModel.findAll({
-        attributes: reportUserAttributes,
-        where: { id: userIds },
-        paranoid: false,
-      });
-      users.forEach((user) =>
-        labels.set(
-          this.key({
-            targetType: ReportTargetTypes.USER_PROFILE,
-            targetId: user.id,
-          }),
-          userLabel(user)
-        )
-      );
-    }
-
-    const replies = await this.findReplies(
-      this.idsOf(rows, ReportTargetTypes.POST_REPLY)
+    const conversations = await this.conversationModel.findAll({
+      attributes: ['id'],
+      where: { id: ids },
+      include: [
+        {
+          model: User,
+          as: 'participants',
+          attributes: reportUserAttributes,
+          paranoid: false,
+          through: { attributes: [] },
+        },
+      ],
+    });
+    conversations.forEach((conversation) =>
+      set(
+        {
+          targetType: ReportTargetTypes.CONVERSATION,
+          targetId: conversation.id,
+        },
+        conversationLabel(conversation.participants.map(toReportUser))
+      )
     );
+  }
+
+  private async labelUsers(
+    ids: string[],
+    set: (target: ReportTarget, label: string) => void
+  ) {
+    if (!ids.length) {
+      return;
+    }
+    const users = await this.userModel.findAll({
+      attributes: reportUserAttributes,
+      where: { id: ids },
+      paranoid: false,
+    });
+    users.forEach((user) =>
+      set(
+        { targetType: ReportTargetTypes.USER_PROFILE, targetId: user.id },
+        reportUserLabel(toReportUser(user))
+      )
+    );
+  }
+
+  private async labelGroupMessages(
+    postIds: string[],
+    replyIds: string[],
+    set: (target: ReportTarget, label: string) => void
+  ) {
+    if (!postIds.length && !replyIds.length) {
+      return;
+    }
+    const replies = await this.findReplies(replyIds);
     const posts = await this.findPosts([
-      ...this.idsOf(rows, ReportTargetTypes.POST),
+      ...postIds,
       ...replies.map(({ postId }) => postId),
     ]);
     const groups = await this.findGroupsByPostId(posts.map(({ id }) => id));
-    const groupLabel = (postId: string, text: string) =>
-      `${groups.get(postId)?.name ?? 'Groupe supprimé'} — ${toExcerpt(text)}`;
-    this.idsOf(rows, ReportTargetTypes.POST).forEach((postId) => {
+    postIds.forEach((postId) => {
       const post = posts.find(({ id }) => id === postId);
       if (post) {
-        labels.set(
-          this.key({ targetType: ReportTargetTypes.POST, targetId: postId }),
-          groupLabel(
-            post.id,
-            [post.title, post.content].filter(Boolean).join(' — ')
-          )
+        set(
+          { targetType: ReportTargetTypes.POST, targetId: postId },
+          groupMessageLabel(groups.get(post.id)?.name, post.title, post.content)
         );
       }
     });
     replies.forEach((reply) =>
-      labels.set(
-        this.key({
-          targetType: ReportTargetTypes.POST_REPLY,
-          targetId: reply.id,
-        }),
-        groupLabel(reply.postId, reply.content)
+      set(
+        { targetType: ReportTargetTypes.POST_REPLY, targetId: reply.id },
+        groupMessageLabel(groups.get(reply.postId)?.name, null, reply.content)
       )
     );
-    return labels;
   }
 
   // Deleted messages included: their reports stay readable
@@ -512,15 +595,13 @@ export class ReportsAdminService {
     if (!reports.length) {
       throw new NotFoundException();
     }
-    const [labels, context] = await Promise.all([
-      this.resolveLabels([target]),
-      this.resolveContext(target),
-    ]);
+    // The label is derived from the context, loaded once
+    const context = await this.resolveContext(target);
     const isPending = reports.some(({ status }) => status === 'PENDING');
     return {
       targetType: target.targetType,
       targetId: target.targetId,
-      label: labels.get(this.key(target)) ?? MISSING_TARGET_LABEL,
+      label: labelFromContext(context),
       status: isPending
         ? ReportTargetStatuses.PENDING
         : ReportTargetStatuses.RESOLVED,

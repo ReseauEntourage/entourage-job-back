@@ -282,6 +282,43 @@ describe('Reports - Admin', () => {
       ).toContain('Conversation entre');
     });
 
+    it('Should place a target to handle in the zones of its reports to handle only', async () => {
+      // Handled in Paris, then reported again in Lyon
+      await reportProfile(coach.user.id, candidate.user.id, {
+        zone: ZoneName.IDF,
+        status: ReportStatuses.RESOLVED,
+        resolution: ReportResolutions.MANUAL,
+      });
+      await reportProfile(coach.user.id, otherCandidate.user.id, {
+        zone: ZoneName.AURA,
+      });
+
+      const ids = async (query: string) =>
+        (await get(`/targets?${query}`)).body.items.map(
+          ({ targetId }: { targetId: string }) => targetId
+        );
+      expect(await ids(`status=PENDING&zone=${ZoneName.IDF}`)).toEqual([]);
+      expect(await ids(`zone=${ZoneName.IDF}`)).toEqual([]);
+      expect((await get(`/pending-count?zone=${ZoneName.IDF}`)).body).toEqual({
+        count: 0,
+      });
+      expect(await ids(`status=PENDING&zone=${ZoneName.AURA}`)).toEqual([
+        coach.user.id,
+      ]);
+      expect(
+        (await get(`/targets?zone=${ZoneName.AURA}`)).body.items[0]
+      ).toMatchObject({ zones: [ZoneName.AURA] });
+      expect((await get(`/pending-count?zone=${ZoneName.AURA}`)).body).toEqual({
+        count: 1,
+      });
+
+      // Once handled, the target belongs to the zones of all its reports
+      await resolve(ReportTargetTypes.USER_PROFILE, coach.user.id);
+      expect(await ids(`status=RESOLVED&zone=${ZoneName.IDF}`)).toEqual([
+        coach.user.id,
+      ]);
+    });
+
     it('Should filter on type, status and zone, and list the targets to handle first', async () => {
       const conversation = await createConversation([
         candidate.user.id,
@@ -410,6 +447,35 @@ describe('Reports - Admin', () => {
         ({ id }) => id
       );
       expect(new Set(ids).size).toBe(35);
+    });
+
+    it('Should return the messages of a deleted author without identity', async () => {
+      const conversation = await createConversation([
+        candidate.user.id,
+        coach.user.id,
+      ]);
+      await messagingHelper.createMessage(conversation.id, coach.user.id);
+      await messagingHelper.createMessage(conversation.id, candidate.user.id);
+      await reportFactory.create({
+        targetType: ReportTargetTypes.CONVERSATION,
+        targetId: conversation.id,
+        reporterId: candidate.user.id,
+      });
+      await userFactory.delete(coach.user.id);
+
+      const { messages } = (
+        await get(`/targets/CONVERSATION/${conversation.id}/messages`)
+      ).body;
+
+      const byAuthor = (authorId: string) =>
+        messages.find(
+          (message: { authorId: string }) => message.authorId === authorId
+        );
+      expect(byAuthor(coach.user.id).author).toBeNull();
+      expect(byAuthor(candidate.user.id).author).toMatchObject({
+        id: candidate.user.id,
+        firstName: candidate.user.firstName,
+      });
     });
 
     it('Should answer 404 for a conversation never reported, on its page as on its messages', async () => {

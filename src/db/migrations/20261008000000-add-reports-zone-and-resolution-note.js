@@ -49,6 +49,11 @@ module.exports = {
             AND r."zone" IS NULL`,
         { transaction }
       );
+      // No zone (author without one, or gone): followed by « Hors zone »
+      await queryInterface.sequelize.query(
+        `UPDATE "Reports" SET "zone" = 'HORS ZONE' WHERE "zone" IS NULL`,
+        { transaction }
+      );
     });
   },
 

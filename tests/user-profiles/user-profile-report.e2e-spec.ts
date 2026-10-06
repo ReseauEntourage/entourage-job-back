@@ -119,6 +119,17 @@ describe('User profiles - Report', () => {
     expect(response.body).toEqual({ id: reports[0].id });
   });
 
+  it('Should save the report of a person without zone in « Hors zone »', async () => {
+    const withoutZone = await usersHelper.createLoggedInUser({
+      role: UserRoles.COACH,
+      zone: null,
+    });
+
+    expect((await report(withoutZone.user.id)).status).toBe(201);
+    const [saved] = await reportModel.findAll();
+    expect(saved.zone).toBe(ZoneName.HZ);
+  });
+
   it('Should refuse the report of one’s own profile with a 403', async () => {
     const response = await report(reporter.user.id);
     expect(response.status).toBe(403);
