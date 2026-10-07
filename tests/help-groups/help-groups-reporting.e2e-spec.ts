@@ -9,7 +9,7 @@ import { HelpGroup } from 'src/help-groups/models';
 import { Post, PostReply } from 'src/posts/models';
 import { PostsService } from 'src/posts/posts.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import { Report } from 'src/reports/models';
+import { Report, ReportSlackMessage } from 'src/reports/models';
 import { ReportsService } from 'src/reports/reports.service';
 import {
   ReportReasons,
@@ -34,11 +34,11 @@ import { PostReplyFactory } from './post-reply.factory';
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
 // Resolves once `check` stops throwing: Slack alerts run after the response
-const waitFor = async (check: () => void, timeoutMs = 5000) => {
+const waitFor = async (check: () => void | Promise<void>, timeoutMs = 5000) => {
   const start = Date.now();
   for (;;) {
     try {
-      check();
+      await check();
       return;
     } catch (error) {
       if (Date.now() - start > timeoutMs) {
@@ -1031,6 +1031,200 @@ describe('Help groups - Reporting', () => {
         admin
       );
       expect(response.status).toBe(404);
+    });
+  });
+  describe('Slack action buttons', () => {
+    type SlackButton = {
+      action_id: string;
+      style?: string;
+      text: { text: string };
+      url: string;
+    };
+    // Buttons of the actions block of a posted Slack message
+    const buttonsOf = (call: number): SlackButton[] => {
+      const blocks = sendMessage.mock.calls[call][1] as {
+        type: string;
+        elements?: SlackButton[];
+      }[];
+      return blocks.find(({ type }) => type === 'actions')?.elements ?? [];
+    };
+    const slackMessageModel = () =>
+      app.get<typeof ReportSlackMessage>(getModelToken(ReportSlackMessage));
+
+    let markHandled: jest.SpyInstance;
+
+    beforeEach(async () => {
+      // No foreign key to Users: not emptied by the reset of the test DB
+      await slackMessageModel().truncate();
+      let ts = 0;
+      sendMessage.mockImplementation(async () => {
+        ts += 1;
+        return { ok: true, channel: 'C_MODERATION', ts: `100.${ts}` };
+      });
+      markHandled = jest
+        .spyOn(slackService, 'markModerationAlertHandled')
+        .mockResolvedValue();
+    });
+
+    it('Should offer to restore or delete the message, in two colours, on the report alert', async () => {
+      disableAutoHide();
+      await reportReply(member);
+      await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+      const buttons = buttonsOf(0);
+      const messageUrl = `${process.env.FRONT_URL}/backoffice/groupes/${group.slug}/discussions/${discussion.id}?replyId=${reply.id}`;
+      expect(buttons.map(({ text }) => text.text)).toEqual([
+        'Rétablir le message',
+        'Supprimer le message',
+        'Voir la fiche',
+      ]);
+      expect(buttons[0]).toMatchObject({
+        style: 'primary',
+        url: `${messageUrl}&moderation=restore`,
+      });
+      expect(buttons[1]).toMatchObject({
+        style: 'danger',
+        url: `${messageUrl}&moderation=delete`,
+      });
+      expect(buttons[2].style).toBeUndefined();
+    });
+
+    it('Should offer the same buttons on the priority alert of a hidden message', async () => {
+      await reportDiscussion(member);
+      await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(2));
+      const priority = [0, 1].find((call) =>
+        JSON.stringify(sendMessage.mock.calls[call][1]).includes('PRIORITAIRE')
+      );
+      expect(
+        buttonsOf(priority).map(({ text, url }) => [text.text, url])
+      ).toEqual([
+        [
+          'Rétablir le message',
+          `${process.env.FRONT_URL}/backoffice/groupes/${group.slug}/discussions/${discussion.id}?moderation=restore`,
+        ],
+        [
+          'Supprimer le message',
+          `${process.env.FRONT_URL}/backoffice/groupes/${group.slug}/discussions/${discussion.id}?moderation=delete`,
+        ],
+      ]);
+    });
+
+    it('Should mark the two alerts of a restored message as handled, naming the admin', async () => {
+      await reportReply(member);
+      await waitFor(async () =>
+        expect(await slackMessageModel().count()).toBe(2)
+      );
+      await api(
+        'post',
+        `/admin/help-groups/replies/${reply.id}/restore`,
+        admin
+      );
+      await waitFor(() => expect(markHandled).toHaveBeenCalledTimes(2));
+      const [[message, status]] = markHandled.mock.calls;
+      expect(message).toMatchObject({ channel: 'C_MODERATION' });
+      expect(status).toContain('✅ *Traité* par');
+      expect(status).toContain(
+        `${admin.user.firstName} ${admin.user.lastName.charAt(0)}.`
+      );
+      expect(status).toContain('message rétabli');
+      await waitFor(async () =>
+        expect(
+          await slackMessageModel().count({ where: { handledAt: null } })
+        ).toBe(0)
+      );
+    });
+
+    it('Should mark the alerts of a message deleted by an admin as handled', async () => {
+      await reportReply(member);
+      await waitFor(async () =>
+        expect(await slackMessageModel().count()).toBe(2)
+      );
+      await api('delete', `/admin/help-groups/replies/${reply.id}`, admin, {
+        reason: 'DISRESPECT',
+      });
+      await waitFor(() => expect(markHandled).toHaveBeenCalledTimes(2));
+      expect(markHandled.mock.calls[0][1]).toContain('message supprimé');
+    });
+
+    it('Should only mark the alerts of a new report, once a message restored earlier is handled again', async () => {
+      await reportReply(member);
+      await waitFor(async () =>
+        expect(await slackMessageModel().count()).toBe(2)
+      );
+      await api(
+        'post',
+        `/admin/help-groups/replies/${reply.id}/restore`,
+        admin
+      );
+      await waitFor(() => expect(markHandled).toHaveBeenCalledTimes(2));
+      const other = await createMember();
+      await reportReply(other);
+      await waitFor(async () =>
+        expect(await slackMessageModel().count()).toBe(4)
+      );
+      await api(
+        'post',
+        `/admin/help-groups/replies/${reply.id}/restore`,
+        admin
+      );
+      await waitFor(() => expect(markHandled).toHaveBeenCalledTimes(4));
+      const rewrittenTs = markHandled.mock.calls.map(([message]) => message.ts);
+      expect(new Set(rewrittenTs).size).toBe(4);
+    });
+
+    it('Should restore the message even when Slack fails to rewrite the alerts', async () => {
+      await reportReply(member);
+      await waitFor(async () =>
+        expect(await slackMessageModel().count()).toBe(2)
+      );
+      markHandled.mockRejectedValue(new Error('Slack down'));
+      const response = await api(
+        'post',
+        `/admin/help-groups/replies/${reply.id}/restore`,
+        admin
+      );
+      expect(response.status).toBe(204);
+      await waitFor(() => expect(markHandled).toHaveBeenCalledTimes(2));
+      // Not marked, so that a later decision tries again
+      expect(
+        await slackMessageModel().count({ where: { handledAt: null } })
+      ).toBe(2);
+    });
+
+    it('Should replace the action buttons by the status and keep « Voir la fiche »', async () => {
+      markHandled.mockRestore();
+      const update = jest.fn().mockResolvedValue({ ok: true });
+      Object.assign(slackService, { app: { client: { chat: { update } } } });
+      await slackService.markModerationAlertHandled(
+        {
+          channel: 'C_MODERATION',
+          ts: '100.1',
+          blocks: [
+            { type: 'section', text: { type: 'mrkdwn', text: 'Alerte' } },
+            {
+              type: 'actions',
+              elements: [
+                { type: 'button', action_id: 'moderation-restore-0' },
+                { type: 'button', action_id: 'moderation-delete-1' },
+                { type: 'button', action_id: 'report-target-2' },
+              ],
+            },
+          ] as never,
+        },
+        '✅ *Traité*'
+      );
+      const [{ channel, ts, blocks }] = update.mock.calls[0];
+      expect({ channel, ts }).toEqual({ channel: 'C_MODERATION', ts: '100.1' });
+      expect(blocks).toEqual([
+        { type: 'section', text: { type: 'mrkdwn', text: 'Alerte' } },
+        {
+          type: 'context',
+          elements: [{ type: 'mrkdwn', text: '✅ *Traité*' }],
+        },
+        {
+          type: 'actions',
+          elements: [{ type: 'button', action_id: 'report-target-2' }],
+        },
+      ]);
     });
   });
 });

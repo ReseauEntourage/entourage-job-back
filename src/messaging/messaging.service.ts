@@ -742,10 +742,14 @@ export class MessagingService {
       );
     const slackMessage =
       this.slackService.generateSlackBlockMsg(slackMsgConfig);
-    await this.slackService.sendMessage(
-      slackChannels.ENTOURAGE_PRO_MODERATION,
+    const sent = await this.slackService.postModerationAlert(
       slackMessage,
       'Conversation de la messagerie signalée'
+    );
+    // Kept to replace its action buttons once the conversation is handled
+    await this.reportsService.recordSlackAlert(
+      { targetType: ReportTargetTypes.CONVERSATION, targetId: conversation.id },
+      sent
     );
   }
 

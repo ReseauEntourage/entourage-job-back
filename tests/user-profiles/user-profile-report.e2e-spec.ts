@@ -5,7 +5,7 @@ import request from 'supertest';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
-import { Report } from 'src/reports/models';
+import { Report, ReportSlackMessage } from 'src/reports/models';
 import {
   ReportReasons,
   ReportStatuses,
@@ -211,6 +211,11 @@ describe('User profiles - Report', () => {
     expect(message).toContain(
       `${process.env.FRONT_URL}/backoffice/admin/signalements/USER_PROFILE/${reported.user.id}`
     );
+    // The action of an admin on a reported profile: closing it
+    expect(message).toContain('Marquer comme traité');
+    expect(message).toContain(
+      `${process.env.FRONT_URL}/backoffice/admin/signalements/USER_PROFILE/${reported.user.id}?action=resolve`
+    );
     expect(addToWorkQueue).not.toHaveBeenCalledWith(
       Jobs.SEND_MAIL,
       expect.anything()
@@ -225,5 +230,42 @@ describe('User profiles - Report', () => {
 
     expect(response.status).toBe(201);
     expect(await reportModel.count()).toBe(1);
+  });
+
+  it('Should mark the Slack alert as handled once an admin closes the profile', async () => {
+    const slackMessageModel = app.get<typeof ReportSlackMessage>(
+      getModelToken(ReportSlackMessage)
+    );
+    // No foreign key to Users: not emptied by the reset of the test DB
+    await slackMessageModel.truncate();
+    sendMessage.mockResolvedValue({
+      ok: true,
+      channel: 'C_MODERATION',
+      ts: '200.1',
+    });
+    const markHandled = jest
+      .spyOn(slackService, 'markModerationAlertHandled')
+      .mockResolvedValue();
+    const admin = await usersHelper.createLoggedInUser({
+      role: UserRoles.ADMIN,
+    });
+
+    expect((await report()).status).toBe(201);
+    expect(await slackMessageModel.count()).toBe(1);
+    const response = await request(server)
+      .post(`/admin/reports/targets/USER_PROFILE/${reported.user.id}/resolve`)
+      .set('authorization', `Bearer ${admin.token}`)
+      .send({});
+    expect(response.status).toBe(201);
+
+    const start = Date.now();
+    while (markHandled.mock.calls.length === 0 && Date.now() - start < 5000) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(markHandled).toHaveBeenCalledTimes(1);
+    const [[message, status]] = markHandled.mock.calls;
+    expect(message).toMatchObject({ channel: 'C_MODERATION', ts: '200.1' });
+    expect(status).toContain('✅ *Traité* par');
+    expect(status).toContain('marqué comme traité');
   });
 });
