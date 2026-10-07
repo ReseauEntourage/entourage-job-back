@@ -10,13 +10,16 @@ import {
   CheckinPerceivedBenefit,
 } from 'src/checkin/checkin.types';
 import { ConversationCheckin } from 'src/checkin/models/conversation-checkin.model';
-import { ReportTargetTypes } from 'src/reports/reports.types';
+import { ReportTarget, ReportTargetTypes } from 'src/reports/reports.types';
 import {
-  REPORT_TARGET_SLACK_ACTION_LABEL,
-  getReportTargetAdminUrl,
+  REPORT_TARGET_SLACK_ACTION_VALUE,
+  getGroupMessageModerationSlackActions,
+  getReportTargetSlackAction,
+  getResolveSlackAction,
 } from 'src/reports/reports.utils';
 import { User } from 'src/users/models';
 import {
+  SentSlackMessage,
   SlackBlockConfig,
   slackChannelEnvVars,
   slackChannels,
@@ -37,8 +40,8 @@ export interface HelpGroupMessageReport {
   messageUrl: string;
   reasonLabel: string;
   reporter: User;
-  // Page of the message in the reports admin tab
-  reportUrl: string;
+  // The reported message, for the page of its reports in the admin tab
+  target: ReportTarget;
 }
 
 export interface HelpGroupMessageAutoHidden {
@@ -134,6 +137,60 @@ export class SlackService implements OnModuleInit {
     });
   };
 
+  /**
+   * Posts a moderation alert and returns what is needed to rewrite it later,
+   * or null when Slack did not say where the message landed.
+   */
+  postModerationAlert = async (
+    blocks: (Block | KnownBlock)[],
+    message: string
+  ): Promise<SentSlackMessage | null> => {
+    const response = await this.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      blocks,
+      message
+    );
+    const channel = response?.channel;
+    if (!response?.ok || typeof channel !== 'string' || !response.ts) {
+      return null;
+    }
+    return { channel, ts: response.ts, blocks };
+  };
+
+  /**
+   * Once the reports of its target are handled, a moderation alert loses its
+   * action buttons for the given status. « Voir la fiche » stays.
+   */
+  markModerationAlertHandled = async (
+    message: SentSlackMessage,
+    status: string
+  ): Promise<void> => {
+    const blocks = message.blocks.flatMap((block) => {
+      if (block.type !== 'actions') {
+        return [block];
+      }
+      const elements = (
+        block as { elements: { action_id?: string }[] }
+      ).elements.filter(({ action_id }) =>
+        action_id?.startsWith(`${REPORT_TARGET_SLACK_ACTION_VALUE}-`)
+      );
+      const statusBlock = {
+        type: 'context',
+        elements: [{ type: 'mrkdwn', text: status }],
+      } as KnownBlock;
+      return elements.length > 0
+        ? [statusBlock, { ...block, elements } as KnownBlock]
+        : [statusBlock];
+    });
+    await this.app.client.chat.update({
+      channel: message.channel,
+      ts: message.ts,
+      blocks,
+      text: status,
+      token: process.env.SLACK_BOT_TOKEN,
+    });
+  };
+
   sendReplyMessage = async (
     channel: string,
     thread_ts: string,
@@ -163,12 +220,11 @@ export class SlackService implements OnModuleInit {
     userReported: User,
     reasonLabel: string,
     comment: string | null
-  ): Promise<void> => {
+  ): Promise<SentSlackMessage | null> => {
     const [slackStaffContactUserId] = await this.getReferentSlackUserIds([
       userReported,
     ]);
-    await this.sendMessage(
-      slackChannels.ENTOURAGE_PRO_MODERATION,
+    return this.postModerationAlert(
       await this.generateProfileReportedBlocks(
         userReporter,
         userReported,
@@ -202,9 +258,9 @@ export class SlackService implements OnModuleInit {
     isReply,
     messageUrl,
     reasonLabel,
-    reportUrl,
     reporter,
-  }: HelpGroupMessageReport): Promise<void> => {
+    target,
+  }: HelpGroupMessageReport): Promise<SentSlackMessage | null> => {
     const referentIds = await this.getReferentSlackUserIds([author, reporter]);
     const blocks = this.generateSlackBlockMsg({
       title: '🚨 Un message de groupe d’entraide a été signalé',
@@ -230,15 +286,11 @@ export class SlackService implements OnModuleInit {
         },
       ],
       actions: [
-        {
-          label: REPORT_TARGET_SLACK_ACTION_LABEL,
-          url: reportUrl,
-          value: 'report-target',
-        },
+        ...getGroupMessageModerationSlackActions(messageUrl),
+        getReportTargetSlackAction(target.targetType, target.targetId),
       ],
     });
-    await this.sendMessage(
-      slackChannels.ENTOURAGE_PRO_MODERATION,
+    return this.postModerationAlert(
       blocks,
       `Un message du groupe ${escapeSlackText(groupName)} a été signalé`
     );
@@ -254,7 +306,7 @@ export class SlackService implements OnModuleInit {
     isReply,
     messageUrl,
     reasonLabels,
-  }: HelpGroupMessageAutoHidden): Promise<void> => {
+  }: HelpGroupMessageAutoHidden): Promise<SentSlackMessage | null> => {
     const [referentId] = await this.getReferentSlackUserIds([author]);
     const blocks = this.generateSlackBlockMsg({
       title: '‼️ PRIORITAIRE — Message masqué automatiquement',
@@ -276,9 +328,9 @@ export class SlackService implements OnModuleInit {
             'Le message n’est plus visible des membres. Un admin peut le rétablir ou le supprimer depuis le groupe.',
         },
       ],
+      actions: getGroupMessageModerationSlackActions(messageUrl),
     });
-    await this.sendMessage(
-      slackChannels.ENTOURAGE_PRO_MODERATION,
+    return this.postModerationAlert(
       blocks,
       `PRIORITAIRE : un message du groupe ${escapeSlackText(groupName)} a été masqué automatiquement`
     );
@@ -404,14 +456,11 @@ export class SlackService implements OnModuleInit {
         },
       ],
       actions: [
-        {
-          label: REPORT_TARGET_SLACK_ACTION_LABEL,
-          url: getReportTargetAdminUrl(
-            ReportTargetTypes.USER_PROFILE,
-            userReported.id
-          ),
-          value: 'report-target',
-        },
+        getResolveSlackAction(ReportTargetTypes.USER_PROFILE, userReported.id),
+        getReportTargetSlackAction(
+          ReportTargetTypes.USER_PROFILE,
+          userReported.id
+        ),
       ],
     });
   };
@@ -687,6 +736,9 @@ export class SlackService implements OnModuleInit {
       type: 'actions',
       elements: actions.map((action, idx) => ({
         type: 'button',
+        // Identifies the button when the message is rewritten; unique in the
+        // message, as Slack requires
+        action_id: `${action.value}-${idx}`,
         text: {
           type: 'plain_text',
           text: action.label,
@@ -694,6 +746,7 @@ export class SlackService implements OnModuleInit {
         },
         value: `action-${idx}}`,
         url: action.url,
+        ...(action.style ? { style: action.style } : {}),
       })),
     };
   };

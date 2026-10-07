@@ -1573,7 +1573,7 @@ describe('MESSAGING', () => {
         jest.clearAllMocks();
         expect((await report()).status).toBe(409);
         expect(await reportModel.count()).toBe(1);
-        expect(SlackMocks.sendMessage).not.toHaveBeenCalled();
+        expect(SlackMocks.postModerationAlert).not.toHaveBeenCalled();
 
         await reportModel.update(
           { status: ReportStatuses.RESOLVED },
@@ -1606,6 +1606,11 @@ describe('MESSAGING', () => {
           .mock.calls[0];
         expect(slackMsgConfig.actions).toEqual([
           expect.objectContaining({
+            label: 'Marquer comme traité',
+            url: `${process.env.FRONT_URL}/backoffice/admin/signalements/CONVERSATION/${conversation.id}?action=resolve`,
+            style: 'primary',
+          }),
+          expect.objectContaining({
             label: 'Voir la fiche',
             url: `${process.env.FRONT_URL}/backoffice/admin/signalements/CONVERSATION/${conversation.id}`,
           }),
@@ -1615,12 +1620,12 @@ describe('MESSAGING', () => {
         );
         expect(contents).toContain('Raison du signalement : Arnaque');
         expect(contents).toContain('Commentaire : Offre frauduleuse');
-        expect(SlackMocks.sendMessage).toHaveBeenCalledTimes(1);
+        expect(SlackMocks.postModerationAlert).toHaveBeenCalledTimes(1);
         addToWorkQueue.mockRestore();
       });
 
       it('should save the report even when Slack fails', async () => {
-        (SlackMocks.sendMessage as jest.Mock).mockRejectedValueOnce(
+        (SlackMocks.postModerationAlert as jest.Mock).mockRejectedValueOnce(
           new Error('Slack down')
         );
         const conversation = await conversationFactory.create();

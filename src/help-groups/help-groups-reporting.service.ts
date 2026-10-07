@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Op, Transaction } from 'sequelize';
 import { PusherEvents } from 'src/external-services/pusher/pusher.types';
 import { SlackService } from 'src/external-services/slack/slack.service';
+import { SentSlackMessage } from 'src/external-services/slack/slack.types';
 import { Post, PostContext, PostReply } from 'src/posts/models';
 import { PostReader, PostsService } from 'src/posts/posts.service';
 import { ReportsService } from 'src/reports/reports.service';
@@ -19,7 +20,6 @@ import {
   ReportTarget,
   ReportTargetTypes,
 } from 'src/reports/reports.types';
-import { getReportTargetAdminUrl } from 'src/reports/reports.utils';
 import { UsersService } from 'src/users/users.service';
 import { isEntourageAdmin } from 'src/users/users.utils';
 import { ReactionTargetDto, ReportMessageDto } from './dto';
@@ -347,37 +347,41 @@ export class HelpGroupsReportingService {
     const messageUrl = this.messageUrl(message);
 
     const isReply = !!message.replyId;
-    const reportedAlert = this.slackService.sendHelpGroupMessageReported({
-      author,
-      reporter,
-      groupName: message.group.name,
-      isReply,
-      messageUrl,
-      excerpt: toExcerpt(
-        [message.title, message.content].filter(Boolean).join(' — ')
-      ),
-      reasonLabel: ReportReasonLabels[dto.reason],
-      comment: dto.comment || null,
-      reportUrl: getReportTargetAdminUrl(
-        message.target.targetType,
-        message.target.targetId
-      ),
-    });
+    // Kept to replace their action buttons once the message is handled
+    const record = (sent: SentSlackMessage | null) =>
+      this.reportsService.recordSlackAlert(message.target, sent);
+    const reportedAlert = this.slackService
+      .sendHelpGroupMessageReported({
+        author,
+        reporter,
+        groupName: message.group.name,
+        isReply,
+        messageUrl,
+        excerpt: toExcerpt(
+          [message.title, message.content].filter(Boolean).join(' — ')
+        ),
+        reasonLabel: ReportReasonLabels[dto.reason],
+        comment: dto.comment || null,
+        target: message.target,
+      })
+      .then(record);
     // Attempted whatever happens to the report alert: a hidden message must
     // always reach the moderation as a priority
     const autoHiddenAlert = isHidden
       ? this.reportsService
           .findPendingReasons(message.target.targetType, [message.id])
           .then((reasons) =>
-            this.slackService.sendHelpGroupMessageAutoHidden({
-              author,
-              groupName: message.group.name,
-              isReply,
-              messageUrl,
-              reasonLabels: (reasons[message.id] ?? [dto.reason]).map(
-                (reason: ReportReason) => ReportReasonLabels[reason]
-              ),
-            })
+            this.slackService
+              .sendHelpGroupMessageAutoHidden({
+                author,
+                groupName: message.group.name,
+                isReply,
+                messageUrl,
+                reasonLabels: (reasons[message.id] ?? [dto.reason]).map(
+                  (reason: ReportReason) => ReportReasonLabels[reason]
+                ),
+              })
+              .then(record)
           )
       : Promise.resolve();
 

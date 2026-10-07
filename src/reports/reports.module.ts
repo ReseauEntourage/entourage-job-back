@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Report } from './models';
+import { SlackModule } from 'src/external-services/slack/slack.module';
+import { User } from 'src/users/models';
+import { Report, ReportSlackMessage } from './models';
 import { ReportsService } from './reports.service';
 
 /**
@@ -8,7 +10,10 @@ import { ReportsService } from './reports.service';
  * messages today). Exposes no route.
  */
 @Module({
-  imports: [SequelizeModule.forFeature([Report])],
+  imports: [
+    SequelizeModule.forFeature([Report, ReportSlackMessage, User]),
+    SlackModule,
+  ],
   providers: [ReportsService],
   exports: [SequelizeModule, ReportsService],
 })

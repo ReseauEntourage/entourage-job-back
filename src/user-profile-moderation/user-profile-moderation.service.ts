@@ -59,11 +59,19 @@ export class UserProfileModerationService {
     });
 
     try {
-      await this.slackService.sendMessageUserReported(
+      const sent = await this.slackService.sendMessageUserReported(
         userReporter,
         userReported,
         ReportReasonLabels[reportAbuseDto.reason],
         reportAbuseDto.comment || null
+      );
+      // Kept to replace its action buttons once the profile is handled
+      await this.reportsService.recordSlackAlert(
+        {
+          targetType: ReportTargetTypes.USER_PROFILE,
+          targetId: userReported.id,
+        },
+        sent
       );
     } catch (error) {
       this.logger.error(

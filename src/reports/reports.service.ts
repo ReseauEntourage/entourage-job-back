@@ -1,8 +1,11 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { fn, col, Transaction, UniqueConstraintError } from 'sequelize';
+import { SlackService } from 'src/external-services/slack/slack.service';
+import { SentSlackMessage } from 'src/external-services/slack/slack.types';
+import { User } from 'src/users/models';
 import { ZoneName } from 'src/utils/types/zones.types';
-import { Report } from './models';
+import { Report, ReportSlackMessage } from './models';
 import {
   ReportReason,
   ReportResolution,
@@ -10,6 +13,7 @@ import {
   ReportTarget,
   ReportTargetType,
 } from './reports.types';
+import { REPORT_RESOLUTION_SLACK_LABELS } from './reports.utils';
 
 export const REPORT_ALREADY_PENDING = 'REPORT_ALREADY_PENDING';
 
@@ -50,15 +54,62 @@ export const getConversationReportZone = (
 };
 
 /**
+ * Status replacing the action buttons of a handled Slack alert, e.g.
+ * « ✅ Traité par Amina L. : message rétabli, le 7 oct. à 14:32 ». The date
+ * is formatted by Slack, in the timezone of each reader.
+ */
+export const formatSlackHandledStatus = (
+  resolution: ReportResolution,
+  admin: Pick<User, 'firstName' | 'lastName'> | null,
+  handledAt: Date
+): string => {
+  const by = admin
+    ? ` par ${admin.firstName} ${admin.lastName?.charAt(0) ?? ''}.`
+    : '';
+  const unix = Math.floor(handledAt.getTime() / 1000);
+  return `✅ *Traité*${by} : ${
+    REPORT_RESOLUTION_SLACK_LABELS[resolution]
+  }, le <!date^${unix}^{date_short} à {time}|${handledAt.toISOString()}>`;
+};
+
+/**
  * Generic storage of the reports. No route here: each domain owns its report
  * endpoint, which knows who may read (and so report) the target.
  */
 @Injectable()
 export class ReportsService {
+  private readonly logger = new Logger(ReportsService.name);
+
   constructor(
     @InjectModel(Report)
-    private reportModel: typeof Report
+    private reportModel: typeof Report,
+    @InjectModel(ReportSlackMessage)
+    private reportSlackMessageModel: typeof ReportSlackMessage,
+    @InjectModel(User)
+    private userModel: typeof User,
+    private slackService: SlackService
   ) {}
+
+  /**
+   * Keeps a Slack moderation alert about a target, so that its action
+   * buttons are replaced by a « Traité » status once its reports are
+   * handled. Nothing is kept when Slack did not say where it landed.
+   */
+  async recordSlackAlert(
+    target: ReportTarget,
+    message: SentSlackMessage | null
+  ): Promise<void> {
+    if (!message) {
+      return;
+    }
+    await this.reportSlackMessageModel.create({
+      targetType: target.targetType,
+      targetId: target.targetId,
+      channel: message.channel,
+      ts: message.ts,
+      blocks: message.blocks,
+    });
+  }
 
   /**
    * Throws `ReportAlreadyPendingError` (409) when the reporter already has a
@@ -164,6 +215,61 @@ export class ReportsService {
       },
       { where: { ...target, status: ReportStatuses.PENDING }, transaction }
     );
+    // Slack is only told once the decision is committed, and never makes it
+    // fail
+    const markAlerts = (): void => {
+      void this.markSlackAlertsHandled(target, resolution, resolvedById);
+    };
+    if (transaction) {
+      transaction.afterCommit(markAlerts);
+    } else {
+      markAlerts();
+    }
     return count;
+  }
+
+  /**
+   * Replaces the action buttons of the Slack alerts of the target, not yet
+   * handled, by a « Traité » status naming the admin and the decision.
+   */
+  async markSlackAlertsHandled(
+    target: Omit<ReportTarget, 'targetId'> & { targetId: string | string[] },
+    resolution: ReportResolution,
+    resolvedById: string
+  ): Promise<void> {
+    try {
+      const alerts = await this.reportSlackMessageModel.findAll({
+        where: { ...target, handledAt: null },
+      });
+      if (alerts.length === 0) {
+        return;
+      }
+      const admin = await this.userModel.findByPk(resolvedById, {
+        attributes: ['firstName', 'lastName'],
+        paranoid: false,
+      });
+      const status = formatSlackHandledStatus(resolution, admin, new Date());
+      for (const alert of alerts) {
+        try {
+          await this.slackService.markModerationAlertHandled(
+            { channel: alert.channel, ts: alert.ts, blocks: alert.blocks },
+            status
+          );
+          await alert.update({ handledAt: new Date() });
+        } catch (error) {
+          this.logger.error(
+            `Slack alert ${alert.ts} of the ${alert.targetType} ${alert.targetId} not marked as handled: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Slack alerts not marked as handled: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 }
