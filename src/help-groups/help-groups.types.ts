@@ -14,6 +14,24 @@ export interface HelpGroupContributor {
   initials: string;
 }
 
+/**
+ * A current member of a group, with the same minimal identity as the authors
+ * of the messages: never the full last name nor the email.
+ */
+export interface HelpGroupMember {
+  author: PostAuthor;
+  // The front builds the picture URL from the user id, as in the directory
+  hasPicture: boolean;
+  // Start of the current membership (ISO date)
+  joinedAt: string;
+}
+
+export interface HelpGroupMembersPage {
+  members: HelpGroupMember[];
+  // Members matching the filters, all pages included
+  total: number;
+}
+
 export interface HelpGroupCard {
   description: string;
   id: string;
@@ -67,8 +85,6 @@ export type HelpGroupViewerState =
 export interface HelpGroupViewerPermissions {
   // The charter is common to every group and accepted once per person
   charterAccepted: boolean;
-  // Member for less than 7 days who has not published in the group yet
-  showWelcomeInvite: boolean;
   state: HelpGroupViewerState;
 }
 

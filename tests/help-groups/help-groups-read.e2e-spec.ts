@@ -119,7 +119,6 @@ describe('Help groups - Read', () => {
         viewerPermissions: {
           state: 'mustJoin',
           charterAccepted: false,
-          showWelcomeInvite: false,
         },
       });
     });
@@ -813,6 +812,217 @@ describe('Help groups - Read', () => {
         expect(body).not.toContain('@example.com');
         expect(body).not.toMatch(/"(lastName|email)"/);
       }
+    });
+  });
+
+  describe('Members', () => {
+    let group: HelpGroup;
+
+    beforeEach(async () => {
+      group = await helpGroupFactory.create();
+    });
+
+    const membersPath = (query = '') =>
+      `${route}/${group.slug}/members${query ? `?${query}` : ''}`;
+
+    // Member who joined `minutes` after the reference date
+    const addMember = async (
+      minutes: number,
+      props: Partial<User> = {},
+      hasPicture = false
+    ) => {
+      const user = await createUser(props, hasPicture);
+      await helpGroupMembershipFactory.create({
+        groupId: group.id,
+        userId: user.id,
+        createdAt: at(minutes),
+      });
+      return user;
+    };
+
+    const memberIds = (body: { members: { author: PostAuthor }[] }) =>
+      body.members.map(({ author }) => author.id);
+
+    it('Should list the current members, most recently joined first', async () => {
+      const older = await addMember(0, { firstName: 'Amina' }, true);
+      const newer = await addMember(10);
+      const response = await get(membersPath());
+      expect(response.status).toBe(200);
+      expect(response.body.total).toBe(2);
+      expect(memberIds(response.body)).toEqual([newer.id, older.id]);
+      expect(response.body.members[1]).toEqual({
+        author: expect.objectContaining({
+          id: older.id,
+          firstName: 'Amina',
+          lastNameInitial: `${older.lastName.trim().charAt(0).toUpperCase()}.`,
+          roleLabel: 'Coach',
+          isDeleted: false,
+        }),
+        hasPicture: true,
+        joinedAt: at(0).toISOString(),
+      });
+      expect(response.body.members[0].hasPicture).toBe(false);
+    });
+
+    it('Should paginate by page number with the total of members', async () => {
+      const users = [];
+      for (let i = 0; i < 5; i += 1) {
+        users.push(await addMember(i));
+      }
+      const newestFirst = ids(users).reverse();
+
+      const firstPage = await get(membersPath('limit=2'));
+      expect(firstPage.body.total).toBe(5);
+      expect(memberIds(firstPage.body)).toEqual(newestFirst.slice(0, 2));
+
+      const lastPage = await get(membersPath('limit=2&page=3'));
+      expect(lastPage.body.total).toBe(5);
+      expect(memberIds(lastPage.body)).toEqual(newestFirst.slice(4));
+
+      const beyond = await get(membersPath('limit=2&page=4'));
+      expect(beyond.body).toEqual({ members: [], total: 5 });
+    });
+
+    it('Should give 20 members by default and at most 50', async () => {
+      await Promise.all(Array.from({ length: 52 }, (_, i) => addMember(i)));
+      expect((await get(membersPath())).body.members).toHaveLength(20);
+      const capped = (await get(membersPath('limit=100'))).body;
+      expect(capped.members).toHaveLength(50);
+      expect(capped.total).toBe(52);
+    });
+
+    it.each(['page=0', 'page=abc', 'limit=0', 'limit=2abc'])(
+      'Should return 400 for an invalid pagination (%s)',
+      async (query) => {
+        expect((await get(membersPath(query))).status).toBe(400);
+      }
+    );
+
+    it('Should search on the first name only, case insensitively and trimmed', async () => {
+      const amina = await addMember(0, {
+        firstName: 'Amina',
+        lastName: 'Durand',
+      });
+      const samir = await addMember(1, {
+        firstName: 'Samir',
+        lastName: 'Amidou',
+      });
+      const kamil = await addMember(2, { firstName: 'Kamil' });
+
+      const response = await get(membersPath('search=%20AMIN%20'));
+      expect(response.body.total).toBe(1);
+      expect(memberIds(response.body)).toEqual([amina.id]);
+
+      // The last name is never searched
+      expect(memberIds((await get(membersPath('search=Amid'))).body)).toEqual(
+        []
+      );
+
+      // An empty search is ignored
+      expect(memberIds((await get(membersPath('search=%20'))).body)).toEqual([
+        kamil.id,
+        samir.id,
+        amina.id,
+      ]);
+    });
+
+    it('Should match the LIKE wildcards literally', async () => {
+      await addMember(0, { firstName: 'Amina' });
+      expect((await get(membersPath('search=%25'))).body.total).toBe(0);
+      expect((await get(membersPath('search=_'))).body.total).toBe(0);
+    });
+
+    it('Should filter by role', async () => {
+      const coach = await addMember(0, { role: UserRoles.COACH });
+      const candidate = await addMember(1, { role: UserRoles.CANDIDATE });
+      const staff = await addMember(2, { role: UserRoles.ADMIN });
+
+      const coaches = await get(
+        membersPath(`role=${encodeURIComponent(UserRoles.COACH)}`)
+      );
+      expect(coaches.body.total).toBe(1);
+      expect(memberIds(coaches.body)).toEqual([coach.id]);
+
+      expect(
+        memberIds((await get(membersPath(`role=${UserRoles.CANDIDATE}`))).body)
+      ).toEqual([candidate.id]);
+
+      const admins = (await get(membersPath(`role=${UserRoles.ADMIN}`))).body;
+      expect(memberIds(admins)).toEqual([staff.id]);
+      expect(admins.members[0].author.roleLabel).toBe('Équipe Entourage');
+    });
+
+    it('Should return 400 for an unknown role', async () => {
+      expect((await get(membersPath('role=Inconnu'))).status).toBe(400);
+      expect((await get(membersPath('role=coach'))).status).toBe(400);
+    });
+
+    it('Should exclude left memberships and deleted accounts', async () => {
+      const current = await addMember(0);
+      const left = await createUser();
+      await helpGroupMembershipFactory.create({
+        groupId: group.id,
+        userId: left.id,
+        createdAt: at(1),
+        leftAt: at(2),
+      });
+      const deleted = await addMember(3);
+      await userFactory.delete(deleted.id);
+      // A member of another group only
+      const otherGroup = await helpGroupFactory.create();
+      const outsider = await createUser();
+      await helpGroupMembershipFactory.create({
+        groupId: otherGroup.id,
+        userId: outsider.id,
+      });
+
+      const response = await get(membersPath());
+      expect(response.body.total).toBe(1);
+      expect(memberIds(response.body)).toEqual([current.id]);
+    });
+
+    it('Should never expose a full last name nor an email', async () => {
+      await addMember(0, {
+        firstName: 'Julien',
+        lastName: 'Patronymelong',
+        email: 'julien.patronymelong@example.com',
+      });
+      const body = JSON.stringify((await get(membersPath())).body);
+      expect(body).toContain('Julien');
+      expect(body).not.toContain('Patronymelong');
+      expect(body).not.toContain('@example.com');
+      expect(body).not.toMatch(/"(lastName|email)"/);
+    });
+
+    it('Should open the list to a non member', async () => {
+      const member = await addMember(0);
+      const response = await get(membersPath());
+      expect(response.status).toBe(200);
+      expect(memberIds(response.body)).toEqual([member.id]);
+    });
+
+    it.each([
+      ['unpublished', { publishedAt: null }],
+      ['deleted', { deletedAt: new Date() }],
+    ])(
+      'Should return 404 to a non admin for an %s group',
+      async (_label, props) => {
+        group = await helpGroupFactory.create(props);
+        expect((await get(membersPath())).status).toBe(404);
+      }
+    );
+
+    it('Should let an admin list the members of an unpublished group', async () => {
+      group = await helpGroupFactory.create({ publishedAt: null });
+      const member = await addMember(0);
+      const response = await get(membersPath(), admin);
+      expect(response.status).toBe(200);
+      expect(memberIds(response.body)).toEqual([member.id]);
+    });
+
+    it('Should return 404 for an unknown slug and 401 when not logged in', async () => {
+      expect((await get(`${route}/inconnu/members`)).status).toBe(404);
+      expect((await request(server).get(membersPath())).status).toBe(401);
     });
   });
 });

@@ -7,10 +7,14 @@ import {
   PostsService,
   Page,
 } from 'src/posts/posts.service';
-import { decodePostCursor, encodePostCursor } from 'src/posts/posts.utils';
+import {
+  decodePostCursor,
+  encodePostCursor,
+  toPostAuthor,
+} from 'src/posts/posts.utils';
 import { ReportsService } from 'src/reports/reports.service';
 import { ReportTargetTypes } from 'src/reports/reports.types';
-import { UserRole } from 'src/users/users.types';
+import { OnboardingStatus, UserRole } from 'src/users/users.types';
 import { isEntourageAdmin } from 'src/users/users.utils';
 import { HelpGroupsWriteGuardService } from './help-groups-write-guard.service';
 import {
@@ -18,6 +22,7 @@ import {
   HelpGroupContributor,
   HelpGroupDiscussionItem,
   HelpGroupDiscussionView,
+  HelpGroupMembersPage,
   HelpGroupPage,
   HelpGroupReplyView,
 } from './help-groups.types';
@@ -30,6 +35,18 @@ export interface HelpGroupReader {
   id: string;
   role: UserRole;
 }
+
+export interface HelpGroupMembersQuery {
+  limit: number;
+  page: number;
+  role?: UserRole;
+  // First name only: searching the full name would reveal a last name the
+  // interface never shows
+  search?: string;
+}
+
+// Escapes the LIKE wildcards so that a search is matched literally
+const escapeLikePattern = (value: string) => value.replace(/[\\%_]/g, '\\$&');
 
 @Injectable()
 export class HelpGroupsService {
@@ -291,6 +308,69 @@ export class HelpGroupsService {
       emailsEnabled: membership ? membership.emailsEnabled : null,
       isPublished: group.publishedAt !== null,
       viewerPermissions,
+    };
+  }
+
+  /**
+   * Current members of a visible group (same access rule as the group page),
+   * most recently joined first, paginated by page number. Left memberships
+   * and deleted accounts are excluded.
+   */
+  async findMembers(
+    slug: string,
+    reader: HelpGroupReader,
+    { page, limit, search, role }: HelpGroupMembersQuery
+  ): Promise<HelpGroupMembersPage> {
+    const group = await this.findVisibleGroupBySlug(slug, reader);
+    const trimmedSearch = search?.trim();
+    const replacements = {
+      groupId: group.id,
+      search: trimmedSearch ? `%${escapeLikePattern(trimmedSearch)}%` : null,
+      role: role ?? null,
+      limit,
+      offset: (page - 1) * limit,
+    };
+    const from = `FROM "HelpGroupMemberships" m
+       JOIN "Users" u ON u."id" = m."userId" AND u."deletedAt" IS NULL`;
+    const where = `WHERE m."groupId" = :groupId AND m."leftAt" IS NULL
+       ${replacements.search ? `AND u."firstName" ILIKE :search` : ''}
+       ${replacements.role ? `AND u."role" = :role` : ''}`;
+
+    const [rows, [{ total }]] = await Promise.all([
+      this.helpGroupModel.sequelize.query<{
+        id: string;
+        firstName: string;
+        lastName: string;
+        role: UserRole;
+        onboardingStatus: OnboardingStatus;
+        elearningCompletedAt: Date | null;
+        hasPicture: boolean;
+        joinedAt: Date;
+      }>(
+        `SELECT u."id", u."firstName", u."lastName", u."role",
+                u."onboardingStatus", u."elearningCompletedAt",
+                COALESCE(up."hasPicture", false) AS "hasPicture",
+                m."createdAt" AS "joinedAt"
+         ${from}
+         LEFT JOIN "UserProfiles" up ON up."userId" = u."id"
+         ${where}
+         ORDER BY m."createdAt" DESC, m."id" DESC
+         LIMIT :limit OFFSET :offset`,
+        { replacements, type: QueryTypes.SELECT }
+      ),
+      this.helpGroupModel.sequelize.query<{ total: string }>(
+        `SELECT COUNT(*) AS "total" ${from} ${where}`,
+        { replacements, type: QueryTypes.SELECT }
+      ),
+    ]);
+
+    return {
+      members: rows.map((row) => ({
+        author: toPostAuthor({ ...row, deletedAt: null }, reader.role),
+        hasPicture: row.hasPicture,
+        joinedAt: new Date(row.joinedAt).toISOString(),
+      })),
+      total: parseInt(total, 10),
     };
   }
 
