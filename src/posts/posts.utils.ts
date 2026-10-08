@@ -84,7 +84,7 @@ export type PostAuthorSource = Pick<
   | 'onboardingStatus'
   | 'elearningCompletedAt'
 > & {
-  userProfile?: { department?: string | null } | null;
+  userProfile?: { department?: string | null; hasPicture?: boolean } | null;
 };
 
 /**
@@ -103,6 +103,7 @@ export const toPostAuthor = (
       firstName: null,
       lastNameInitial: null,
       roleLabel: null,
+      hasPicture: false,
       isAdmin: false,
       isDeleted: true,
       profileLinkable: false,
@@ -120,6 +121,7 @@ export const toPostAuthor = (
       ? `${author.lastName.trim().charAt(0).toUpperCase()}.`
       : null,
     roleLabel: RoleLabels[author.role] ?? null,
+    hasPicture: !!author.userProfile?.hasPicture,
     isAdmin: isEntourageAdmin(author.role),
     isDeleted: false,
     profileLinkable,

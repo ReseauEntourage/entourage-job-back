@@ -528,6 +528,7 @@ describe('Help groups - Read', () => {
           firstName: 'Julien',
           lastNameInitial: 'P.',
           roleLabel: 'Candidat',
+          hasPicture: false,
           isAdmin: false,
           isDeleted: false,
           profileLinkable: true,
@@ -586,10 +587,13 @@ describe('Help groups - Read', () => {
         { authorId: reader.user.id },
         group.id
       );
-      const coach = await createUser({
-        firstName: 'Amina',
-        lastName: 'Lefèvre',
-      });
+      const coach = await createUser(
+        {
+          firstName: 'Amina',
+          lastName: 'Lefèvre',
+        },
+        true
+      );
       const referer = await createUser({ role: UserRoles.REFERER });
       for (const [i, authorId] of [
         coach.id,
@@ -614,6 +618,8 @@ describe('Help groups - Read', () => {
           firstName: 'Amina',
           lastNameInitial: 'L.',
           roleLabel: 'Coach',
+          // The avatar shows the profile picture when there is one
+          hasPicture: true,
           isAdmin: false,
           isDeleted: false,
           profileLinkable: true,
@@ -666,6 +672,7 @@ describe('Help groups - Read', () => {
         firstName: null as string | null,
         lastNameInitial: null as string | null,
         roleLabel: null as string | null,
+        hasPicture: false,
         isAdmin: false,
         isDeleted: true,
         profileLinkable: false,
@@ -856,6 +863,7 @@ describe('Help groups - Read', () => {
           firstName: 'Amina',
           lastNameInitial: `${older.lastName.trim().charAt(0).toUpperCase()}.`,
           roleLabel: 'Coach',
+          hasPicture: true,
           isDeleted: false,
         }),
         hasPicture: true,

@@ -4,6 +4,8 @@ export interface PostAuthor {
   // Only filled for the author card of a discussion, when the profile is linkable
   department?: string | null;
   firstName: string | null;
+  // Profile picture: the front builds its URL from the user id
+  hasPicture: boolean;
   id: string | null;
   // Entourage admin: their links open without the external link warning
   isAdmin: boolean;

@@ -366,7 +366,14 @@ export class HelpGroupsService {
 
     return {
       members: rows.map((row) => ({
-        author: toPostAuthor({ ...row, deletedAt: null }, reader.role),
+        author: toPostAuthor(
+          {
+            ...row,
+            deletedAt: null,
+            userProfile: { hasPicture: row.hasPicture },
+          },
+          reader.role
+        ),
         hasPicture: row.hasPicture,
         joinedAt: new Date(row.joinedAt).toISOString(),
       })),

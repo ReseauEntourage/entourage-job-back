@@ -114,16 +114,17 @@ export class PostsService {
       attributes: postAuthorAttributes,
       paranoid: false,
       required: false,
-      include: withLocation
-        ? [
-            {
-              model: UserProfile,
-              as: 'userProfile',
-              attributes: ['department'],
-              required: false,
-            },
-          ]
-        : [],
+      // The picture flag for the avatar, the department for the author card
+      include: [
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: withLocation
+            ? ['department', 'hasPicture']
+            : ['hasPicture'],
+          required: false,
+        },
+      ],
     };
   }
 
