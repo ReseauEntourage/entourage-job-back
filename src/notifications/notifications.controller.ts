@@ -50,4 +50,10 @@ export class NotificationsController {
   ) {
     await this.notificationsService.markSeen(userId, dto.messageIds);
   }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('seen-all')
+  async markAllSeen(@UserPayload('id') userId: string) {
+    await this.notificationsService.markAllSeen(userId);
+  }
 }

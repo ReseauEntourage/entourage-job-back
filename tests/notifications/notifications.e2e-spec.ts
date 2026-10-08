@@ -367,6 +367,40 @@ describe('Notifications center', () => {
       expect(await unseenCount()).toBe(0);
     });
 
+    it('Should mark seen every notification of the user at once, and signal the bell', async () => {
+      const first = await notifyReply(amina);
+      await notifyReply(thomas);
+      expect(await unseenCount()).toBe(1);
+      sendEvent.mockClear();
+
+      const response = await post('/notifications/seen-all', julien, {});
+      expect(response.status).toBe(204);
+
+      const row = await notificationModel.findByPk(first.notificationId);
+      expect(row.seenAt).toBeTruthy();
+      expect(row.events.every(({ seenAt }) => !!seenAt)).toBe(true);
+      expect(await unseenCount()).toBe(0);
+      expect(sendEvent).toHaveBeenCalledWith(
+        `private-user-${julien.user.id}`,
+        'notifications-changed',
+        {}
+      );
+    });
+
+    it('Should leave the notifications of the others unseen when marking all seen, and signal nothing when there is nothing to mark', async () => {
+      await notifyReply(amina);
+      sendEvent.mockClear();
+      const response = await post('/notifications/seen-all', thomas, {});
+      expect(response.status).toBe(204);
+      expect(sendEvent).not.toHaveBeenCalled();
+      expect(await unseenCount()).toBe(1);
+    });
+
+    it('Should refuse a logged out request to mark all seen', async () => {
+      const response = await request(server).post('/notifications/seen-all');
+      expect(response.status).toBe(401);
+    });
+
     it('Should refuse a malformed seen body', async () => {
       expect(
         (await post('/notifications/seen', julien, { messageIds: ['nope'] }))

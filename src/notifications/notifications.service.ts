@@ -275,6 +275,36 @@ export class NotificationsService {
     return changed;
   }
 
+  /**
+   * Marks seen every unseen notification of the recipient, whatever the
+   * content displayed: the explicit « Tout marquer comme lu » of the bell.
+   * Returns true when something changed.
+   */
+  async markAllSeen(userId: string): Promise<boolean> {
+    const changed = await this.transaction(async (transaction) => {
+      const notifications = await this.notificationModel.findAll({
+        where: { userId, seenAt: null },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      const now = new Date().toISOString();
+      for (const notification of notifications) {
+        const events = notification.events.map((event) =>
+          event.seenAt ? event : { ...event, seenAt: now }
+        );
+        await notification.update(
+          { events, seenAt: new Date(now) },
+          { transaction }
+        );
+      }
+      return notifications.length > 0;
+    });
+    if (changed) {
+      this.notifyChanged([userId]);
+    }
+    return changed;
+  }
+
   // ---------------------------------------------------------------------
   // Emails of the producers
   // ---------------------------------------------------------------------
