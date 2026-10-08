@@ -4,8 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import moment from 'moment';
-import { Op, QueryTypes, Transaction } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import { User } from 'src/users/models';
 import { isEntourageAdmin } from 'src/users/users.utils';
 import {
@@ -14,9 +13,6 @@ import {
   HelpGroupViewerStates,
 } from './help-groups.types';
 import { HelpGroup, HelpGroupMembership } from './models';
-
-// Days during which a new member is invited to introduce themselves
-const WELCOME_INVITE_DAYS = 7;
 
 const writerAttributes = [
   'id',
@@ -138,54 +134,6 @@ export class HelpGroupsWriteGuardService {
     return {
       state,
       charterAccepted: !!user.helpGroupsCharterAcceptedAt,
-      // Never in an admin preview of an unpublished group, where no write
-      // is possible
-      showWelcomeInvite:
-        state === HelpGroupViewerStates.CAN_WRITE &&
-        group.publishedAt !== null &&
-        (await this.isWelcomeInviteDue(group.id, membership)),
     };
-  }
-
-  /**
-   * A member is invited to introduce themselves during the first days of
-   * their current membership, until they publish a discussion or a reply in
-   * the group (deleted ones included: they did speak).
-   */
-  private async isWelcomeInviteDue(
-    groupId: string,
-    membership: HelpGroupMembership
-  ): Promise<boolean> {
-    if (
-      moment(membership.createdAt).isBefore(
-        moment().subtract(WELCOME_INVITE_DAYS, 'days')
-      )
-    ) {
-      return false;
-    }
-    const [{ hasPublished }] = await this.helpGroupModel.sequelize.query<{
-      hasPublished: boolean;
-    }>(
-      `SELECT EXISTS (
-         SELECT 1 FROM "PostContexts" pc
-         JOIN "Posts" p ON p."id" = pc."postId"
-         WHERE pc."helpGroupId" = :groupId AND p."authorId" = :userId
-           AND p."createdAt" >= :since
-         UNION ALL
-         SELECT 1 FROM "PostContexts" pc
-         JOIN "PostReplies" r ON r."postId" = pc."postId"
-         WHERE pc."helpGroupId" = :groupId AND r."authorId" = :userId
-           AND r."createdAt" >= :since
-       ) AS "hasPublished"`,
-      {
-        replacements: {
-          groupId,
-          userId: membership.userId,
-          since: membership.createdAt,
-        },
-        type: QueryTypes.SELECT,
-      }
-    );
-    return !hasPublished;
   }
 }
