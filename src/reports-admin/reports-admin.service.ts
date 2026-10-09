@@ -90,6 +90,8 @@ export type ReportTargetContext =
         content: string;
         createdAt: Date;
         discussionId: string;
+        discussionTitle: string;
+        isEdited: boolean;
         replyId: string | null;
         state: GroupMessageState;
         title: string | null;
@@ -508,6 +510,7 @@ export class ReportsAdminService {
         'title',
         'content',
         'hiddenAt',
+        'editedAt',
         'createdAt',
         'deletedAt',
       ],
@@ -527,6 +530,7 @@ export class ReportsAdminService {
         'authorId',
         'content',
         'hiddenAt',
+        'editedAt',
         'createdAt',
         'deletedAt',
       ],
@@ -701,6 +705,8 @@ export class ReportsAdminService {
         : null,
       message: {
         discussionId: post.id,
+        discussionTitle: post.title,
+        isEdited: !!message.editedAt,
         replyId: isReply ? message.id : null,
         title: isReply ? null : post.title,
         content: message.content,

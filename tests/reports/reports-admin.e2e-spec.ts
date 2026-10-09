@@ -525,6 +525,8 @@ describe('Reports - Admin', () => {
         group: { id: group.id, name: group.name, slug: group.slug },
         message: {
           discussionId: discussion.id,
+          discussionTitle: discussion.title,
+          isEdited: false,
           replyId: reply.id,
           content: 'Une réponse signalée',
           state: 'VISIBLE',
