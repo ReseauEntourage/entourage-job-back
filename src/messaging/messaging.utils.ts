@@ -1,5 +1,12 @@
 import { isUUID } from 'class-validator';
+import { escapeSlackText } from 'src/external-services/slack/slack.service';
 import { SlackBlockConfig } from 'src/external-services/slack/slack.types';
+import { ReportTargetTypes } from 'src/reports/reports.types';
+import {
+  REPORT_TARGET_SLACK_ACTION_LABEL,
+  REPORT_TARGET_SLACK_ACTION_VALUE,
+  getResolveSlackAction,
+} from 'src/reports/reports.utils';
 import { User } from 'src/users/models';
 import {
   ErrorMessagingInvalidCursor,
@@ -50,10 +57,11 @@ export const decodeMessageCursor = (rawCursor: string): MessageCursor => {
 
 export const generateSlackMsgConfigConversationReported = (
   conversation: Conversation,
-  reason: string,
-  comment: string,
+  reasonLabel: string,
+  comment: string | null,
   reporterUser: User,
-  referentSlackUserIds: string[]
+  referentSlackUserIds: string[],
+  reportUrl: string
 ): SlackBlockConfig => {
   return {
     title: '🚨 Une conversation a été signalée',
@@ -81,10 +89,18 @@ export const generateSlackMsgConfigConversationReported = (
           .join(', ')}`,
       },
       {
-        content: `Raison du signalement : ${reason}`,
+        content: `Raison du signalement : ${reasonLabel}`,
       },
       {
-        content: `Commentaire : ${comment}`,
+        content: `Commentaire : ${comment ? escapeSlackText(comment) : 'Aucun commentaire'}`,
+      },
+    ],
+    actions: [
+      getResolveSlackAction(ReportTargetTypes.CONVERSATION, conversation.id),
+      {
+        label: REPORT_TARGET_SLACK_ACTION_LABEL,
+        url: reportUrl,
+        value: REPORT_TARGET_SLACK_ACTION_VALUE,
       },
     ],
   };

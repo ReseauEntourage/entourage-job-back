@@ -17,14 +17,18 @@ import { ContractsModule } from 'src/contracts/contracts.module';
 import { CurrentUserModule } from 'src/current-user/current-user.module';
 import { ElearningModule } from 'src/elearning/elearning.module';
 import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
+import { HelpGroupsModule } from 'src/help-groups/help-groups.module';
 import { LanguagesModule } from 'src/languages/languages.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { PassionsModule } from 'src/passions/passions.module';
+import { PostsModule } from 'src/posts/posts.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import { ReadDocumentsModule } from 'src/read-documents/read-documents.module';
 import { RecruitementAlertsModule } from 'src/recruitement-alerts/recruitement-alerts.module';
 import { RedisModule } from 'src/redis/redis.module';
+import { ReportsAdminModule } from 'src/reports-admin/reports-admin.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
 import { SkillsModule } from 'src/skills/skills.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
@@ -41,6 +45,7 @@ import { ContractsTestingModule } from './contracts/contracts-testing.module';
 import { DatabaseHelper } from './database.helper';
 import { ElearningTestingModule } from './elearning/elearning-testing.module';
 import { ExternalCvsTestingModule } from './external-cvs/external-cvs-testing.module';
+import { HelpGroupsTestingModule } from './help-groups/help-groups-testing.module';
 import { LanguagesTestingModule } from './languages/languages-testing.module';
 import { MessagingTestingModule } from './messaging/messaging-testing.module';
 import { NudgesTestingModule } from './nudges/nudges-testing.module';
@@ -48,6 +53,7 @@ import { OrganizationsTestingModule } from './organizations/organizations-testin
 import { PublicCVsTestingModule } from './public-cvs/public-cvs-testing.module';
 import { QueuesTestingModule } from './queues/queues-testing.module';
 import { RecruitementAlertsTestingModule } from './recruitement-alerts/recruitement-alerts-testing.module';
+import { ReportsTestingModule } from './reports/reports-testing.module';
 import { UserCreationTestingModule } from './user-creation/user-creation-testing.module';
 import { UserDeletionTestingModule } from './user-deletion/user-deletion-testing.module';
 import { UserProfilesTestingModule } from './user-profiles/user-profiles-testing.module';
@@ -88,6 +94,10 @@ import { UsersTestingModule } from './users/users-testing.module';
     ContactsModule,
     OrganizationsModule,
     MessagingModule,
+    PostsModule,
+    NotificationsModule,
+    HelpGroupsModule,
+    ReportsAdminModule,
     CheckinModule,
     ReadDocumentsModule,
     UsersCreationModule,
@@ -113,6 +123,8 @@ import { UsersTestingModule } from './users/users-testing.module';
     UserProfilesTestingModule,
     ContactsTestingModule,
     MessagingTestingModule,
+    HelpGroupsTestingModule,
+    ReportsTestingModule,
     QueuesTestingModule,
     CompaniesTestingModule,
     ElearningTestingModule,

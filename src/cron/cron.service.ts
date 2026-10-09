@@ -540,4 +540,49 @@ export class CronService {
       status: 'processing',
     };
   }
+
+  /**
+   * Every Monday at 9 AM, Paris time (the server runs in UTC).
+   * It will create a job to send the weekly digest of the help groups.
+   */
+  @Cron('0 9 * * 1', { timeZone: 'Europe/Paris' })
+  async sendHelpGroupsWeeklyDigest() {
+    this.logger.log('Cron job started: sendHelpGroupsWeeklyDigest');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.SEND_HELP_GROUPS_WEEKLY_DIGEST,
+      {}
+    );
+
+    this.logger.log(
+      `Job SEND_HELP_GROUPS_WEEKLY_DIGEST created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
+  /**
+   * This method is called every day at 3 AM.
+   * It will create a job to delete the notifications not updated for more
+   * than 30 days.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async purgeExpiredNotifications() {
+    this.logger.log('Cron job started: purgeExpiredNotifications');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PURGE_EXPIRED_NOTIFICATIONS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PURGE_EXPIRED_NOTIFICATIONS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
 }

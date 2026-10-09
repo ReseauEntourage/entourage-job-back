@@ -6,6 +6,7 @@ import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { VonageService } from 'src/external-services/vonage/vonage.service';
+import { HelpGroupsNotificationEmailsService } from 'src/help-groups/help-groups-notification-emails.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import {
   BulkSendStaffMessagingMessageJob,
@@ -15,6 +16,7 @@ import {
   NewsletterSubscriptionJob,
   OnOnboardingCompletedJob,
   Queues,
+  SendHelpGroupNotificationEmailJob,
   SendMailJob,
   SendSmsJob,
   SendStaffMessagingMessageJob,
@@ -39,7 +41,8 @@ export class WorkQueueProcessor extends WorkerHost {
     private userProfilesService: UserProfilesService,
     private messagingService: MessagingService,
     private userProfileRecommendationsService: UserProfileRecommendationsService,
-    private slackService: SlackService
+    private slackService: SlackService,
+    private helpGroupNotificationEmailsService: HelpGroupsNotificationEmailsService
   ) {
     super();
   }
@@ -79,6 +82,10 @@ export class WorkQueueProcessor extends WorkerHost {
       case Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE:
         return this.processBulkSendStaffMessagingMessage(
           job as Job<BulkSendStaffMessagingMessageJob>
+        );
+      case Jobs.SEND_HELP_GROUP_NOTIFICATION_EMAIL:
+        return this.helpGroupNotificationEmailsService.sendNotificationEmail(
+          (job as Job<SendHelpGroupNotificationEmailJob>).data
         );
       case Jobs.ON_ONBOARDING_COMPLETED:
         return this.processOnOnboardingCompleted(

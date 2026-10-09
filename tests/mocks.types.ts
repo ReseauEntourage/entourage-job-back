@@ -107,6 +107,8 @@ export const MailjetMock: ProviderMock<MailjetService> = {
 
 export const SlackMocks: ProviderMock<SlackService> = {
   sendMessage: jest.fn(),
+  postModerationAlert: jest.fn(),
+  markModerationAlertHandled: jest.fn(),
   generateSlackBlockMsg: jest.fn(),
   sendMessageUserReported: jest.fn(),
   generateProfileReportedBlocks: jest.fn(),
@@ -119,6 +121,8 @@ export const SlackMocks: ProviderMock<SlackService> = {
   sendAdminNewRefererNotification: jest.fn(),
   sendAdminNewReferingNotification: jest.fn(),
   sendCheckinContactRequestAlert: jest.fn(),
+  sendHelpGroupMessageReported: jest.fn(),
+  sendHelpGroupMessageAutoHidden: jest.fn(),
   onModuleInit: jest.fn(),
   warnOnMissingChannelConfig: jest.fn(),
 } as const;

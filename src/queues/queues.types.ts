@@ -30,6 +30,7 @@ export const Jobs = {
   ON_ONBOARDING_COMPLETED: 'on_onboarding_completed',
   SEND_STAFF_MESSAGING_MESSAGE: 'send_staff_messaging_message',
   BULK_SEND_STAFF_MESSAGING_MESSAGE: 'bulk_send_staff_messaging_message',
+  SEND_HELP_GROUP_NOTIFICATION_EMAIL: 'send_help_group_notification_email',
 
   // Jobs related to cron tasks
   SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING:
@@ -78,6 +79,8 @@ export const Jobs = {
     'send_unverified_account_relaunch_mails',
   BACKFILL_SALESFORCE_APP_ID: 'backfill_salesforce_app_id',
   MANUAL_LINK_SALESFORCE_CONTACT: 'manual_link_salesforce_contact',
+  SEND_HELP_GROUPS_WEEKLY_DIGEST: 'send_help_groups_weekly_digest',
+  PURGE_EXPIRED_NOTIFICATIONS: 'purge_expired_notifications',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -101,6 +104,7 @@ type JobsData = {
   [Jobs.ON_ONBOARDING_COMPLETED]: OnOnboardingCompletedJob;
   [Jobs.SEND_STAFF_MESSAGING_MESSAGE]: SendStaffMessagingMessageJob;
   [Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE]: BulkSendStaffMessagingMessageJob;
+  [Jobs.SEND_HELP_GROUP_NOTIFICATION_EMAIL]: SendHelpGroupNotificationEmailJob;
 
   // Cron tasks jobs
   [Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING]: SendReminderToUserNotCompletedOnboardingJob;
@@ -136,6 +140,8 @@ type JobsData = {
   [Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS]: SendUnverifiedAccountRelaunchMailsJob;
   [Jobs.BACKFILL_SALESFORCE_APP_ID]: BackfillSalesforceAppIdJob;
   [Jobs.MANUAL_LINK_SALESFORCE_CONTACT]: ManualLinkSalesforceContactJob;
+  [Jobs.SEND_HELP_GROUPS_WEEKLY_DIGEST]: SendHelpGroupsWeeklyDigestJob;
+  [Jobs.PURGE_EXPIRED_NOTIFICATIONS]: PurgeExpiredNotificationsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -205,6 +211,19 @@ export interface SendStaffMessagingMessageJob {
   addresseeEmail: string;
   message: string;
 }
+
+/**
+ * Immediate email of a help group notification event, delayed so that an
+ * event seen in the meantime on the platform is not emailed.
+ */
+export interface SendHelpGroupNotificationEmailJob {
+  eventId: string;
+  notificationId: string;
+}
+
+export type SendHelpGroupsWeeklyDigestJob = Record<string, never>;
+
+export type PurgeExpiredNotificationsJob = Record<string, never>;
 
 export interface BulkSendStaffMessagingMessageJob {
   messages: SendStaffMessagingMessageJob[];
