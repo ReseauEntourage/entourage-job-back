@@ -82,6 +82,9 @@ export class UserProfileNudgesService {
     await this.userProfileNudgeModel.destroy({
       where: {
         userProfileId: userProfileToUpdate.id,
+        // Only custom nudges: list nudges (nudgeId set) are handled by
+        // updateNudgesByUserProfileId
+        nudgeId: null,
         id: {
           [Op.notIn]: customNudges
             .filter((customNudge) => !!customNudge.id)
@@ -99,6 +102,7 @@ export class UserProfileNudgesService {
           const existingCustomNudge = await this.userProfileNudgeModel.findOne({
             where: {
               userProfileId: userProfileToUpdate.id,
+              nudgeId: null,
               id: customNudge.id,
             },
           });
