@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import sequelize, { Op } from 'sequelize';
+import sequelize, { Op, WhereOptions } from 'sequelize';
 import { Nudge } from 'src/nudge/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfileNudge } from 'src/user-profiles/models/user-profile-nudge.model';
@@ -73,23 +73,29 @@ export class UserProfileNudgesService {
     });
   }
 
+  // Custom nudges are the rows without a reference nudge: list nudges
+  // (nudgeId set) are handled by updateNudgesByUserProfileId
+  private customNudgesScope(userProfileId: string): WhereOptions {
+    return { userProfileId, nudgeId: null };
+  }
+
   async updateCustomNudgesByUserProfileId(
     userProfileToUpdate: UserProfile,
     customNudges: Partial<UserProfileNudge>[],
     t: sequelize.Transaction
   ): Promise<void> {
     // Remove the custom nudges that don't exist anymore
+    const keptCustomNudgeIds = customNudges
+      .filter((customNudge) => !!customNudge.id)
+      .map((customNudge) => customNudge.id);
     await this.userProfileNudgeModel.destroy({
       where: {
-        userProfileId: userProfileToUpdate.id,
-        // Only custom nudges: list nudges (nudgeId set) are handled by
-        // updateNudgesByUserProfileId
-        nudgeId: null,
-        id: {
-          [Op.notIn]: customNudges
-            .filter((customNudge) => !!customNudge.id)
-            .map((customNudge) => customNudge.id),
-        },
+        ...this.customNudgesScope(userProfileToUpdate.id),
+        // An empty notIn would be dropped by Sequelize: skip it explicitly
+        // so that an empty list removes every custom nudge
+        ...(keptCustomNudgeIds.length > 0
+          ? { id: { [Op.notIn]: keptCustomNudgeIds } }
+          : {}),
       },
       individualHooks: true,
       transaction: t,
@@ -101,8 +107,7 @@ export class UserProfileNudgesService {
         .map(async (customNudge) => {
           const existingCustomNudge = await this.userProfileNudgeModel.findOne({
             where: {
-              userProfileId: userProfileToUpdate.id,
-              nudgeId: null,
+              ...this.customNudgesScope(userProfileToUpdate.id),
               id: customNudge.id,
             },
           });

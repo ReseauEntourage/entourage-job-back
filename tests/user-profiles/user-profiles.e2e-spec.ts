@@ -2117,9 +2117,12 @@ describe('UserProfiles', () => {
             response.body.nudges.map((nudge) => nudge.id).sort();
 
           beforeEach(async () => {
-            // Reset both kinds of nudges, then start from a known state
-            await putProfile({ nudges: [], customNudges: [] });
-            await putProfile({ nudges: [{ id: nudgeTips.id }] });
+            // Start from a known state: one list nudge, no custom nudge
+            const response = await putProfile({
+              nudges: [{ id: nudgeTips.id }],
+              customNudges: [],
+            });
+            expect(response.status).toBe(200);
           });
 
           it('Should keep the list nudges when adding customNudges', async () => {
