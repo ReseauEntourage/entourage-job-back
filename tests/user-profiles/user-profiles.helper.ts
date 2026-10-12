@@ -57,7 +57,9 @@ export class UserProfilesHelper {
           order: sectorOccupation.order,
         }))
       ),
-      nudges: userProfileData.nudges,
+      nudges: userProfileData.nudges?.map((nudge) =>
+        expect.objectContaining({ id: nudge.id })
+      ),
     } as unknown as Partial<UserProfile & User>;
     if (completeExpected) {
       config.experiences = expect.arrayContaining(

@@ -755,6 +755,7 @@ export class MailsService {
         reco2: formattedRecommendedProfiles[1] || null,
         reco3: formattedRecommendedProfiles[2] || null,
         nbReco: formattedRecommendedProfiles.length,
+        staffContact: user.staffContact,
       },
     });
   }
@@ -985,6 +986,7 @@ export class MailsService {
         expireAt: expireAt.toLocaleDateString('fr-FR'),
         conversationCount: stats.conversationCount,
         responseRate: stats.responseRate,
+        staffContact: user.staffContact,
         goalAchieved: stats.goalAchieved ? 'true' : 'false',
       },
     });
@@ -1011,6 +1013,7 @@ export class MailsService {
         siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
         conversationCount: stats.conversationCount,
         responseRate: stats.responseRate,
+        staffContact: user.staffContact,
       },
     });
   }
