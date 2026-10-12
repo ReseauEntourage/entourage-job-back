@@ -227,16 +227,12 @@ describe('ProfileGeneration - presentation', () => {
             sectorOccupations: [
               { businessSectorId: businessSector.id, order: 1 },
             ],
+            nudges: [{ id: nudgeTips.id }],
             customNudges: [{ content: 'Coup de pouce libre secret' }],
             interests: [{ name: 'Centre intérêt secret', order: 0 }],
           },
         }
       );
-      // Saved separately: updating custom nudges in the same call would also
-      // remove the reference nudges.
-      await userProfilesService.updateByUserId(coach.user.id, {
-        nudges: [{ id: nudgeTips.id }],
-      });
       const company = await companyFactory.create({ name: 'Logistique SA' });
       await companiesHelper.linkCompanyToUser({
         userId: coach.user.id,
