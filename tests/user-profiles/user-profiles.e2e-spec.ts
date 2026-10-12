@@ -24,6 +24,7 @@ import {
   UserProfileEmbedding,
   UserProfileEmbeddingType,
 } from 'src/user-profiles/models/user-profile-embedding.model';
+import { UserProfileNudge } from 'src/user-profiles/models/user-profile-nudge.model';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
@@ -2202,6 +2203,15 @@ describe('UserProfiles', () => {
 
             expect(response.status).toBe(200);
             expect(nudgeIdsOf(response)).toEqual([nudgeCv.id]);
+            // The API response deduplicates joined rows: count the rows
+            expect(
+              await UserProfileNudge.count({
+                where: {
+                  userProfileId: loggedInCandidate.user.userProfile.id,
+                  nudgeId: nudgeCv.id,
+                },
+              })
+            ).toBe(1);
           });
 
           it('Should keep the custom nudges when updating the list nudges', async () => {
