@@ -39,9 +39,14 @@ export class UserProfileNudgesService {
   ): Promise<void> {
     const currentNudges = userProfileToUpdate.get('nudges');
 
+    // The same nudge sent twice would be created twice by the parallel map
+    const uniqueNudges = nudges.filter(
+      (nudge, index) => nudges.findIndex(({ id }) => id === nudge.id) === index
+    );
+
     // Create or update userProfileNudge
     await Promise.all(
-      nudges.map(async (nudge) => {
+      uniqueNudges.map(async (nudge) => {
         const existingNudge = currentNudges.find(
           (existingNudge) => existingNudge.id === nudge.id
         );

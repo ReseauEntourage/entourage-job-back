@@ -2195,6 +2195,15 @@ describe('UserProfiles', () => {
             ]);
           });
 
+          it('Should save a list nudge once when it is sent twice', async () => {
+            const response = await putProfile({
+              nudges: [{ id: nudgeCv.id }, { id: nudgeCv.id }],
+            });
+
+            expect(response.status).toBe(200);
+            expect(nudgeIdsOf(response)).toEqual([nudgeCv.id]);
+          });
+
           it('Should keep the custom nudges when updating the list nudges', async () => {
             await putProfile({ customNudges: [{ content: 'Libre' }] });
             const response = await putProfile({
