@@ -18,6 +18,8 @@ import { HelpGroupsNotificationsService } from './help-groups-notifications.serv
 import {
   HelpGroupNotificationEmailKind,
   HelpGroupNotificationEmailKinds,
+  HelpGroupNotificationEmailReactionTarget,
+  HelpGroupNotificationEmailReactionTargets,
 } from './help-groups.types';
 
 const HOUR_IN_MS = 60 * 60 * 1000;
@@ -66,6 +68,8 @@ export const helpGroupEmailsSettingsUrl = (
  *    the group is no longer visible;
  * 5. the person turned off the emails of the group.
  */
+const DELETED_AUTHOR_LABEL = 'Utilisateur supprimé';
+
 @Injectable()
 export class HelpGroupsNotificationEmailsService {
   private readonly logger = new Logger(
@@ -140,16 +144,18 @@ export class HelpGroupsNotificationEmailsService {
     if (!content) {
       return skip('content no longer visible');
     }
-    const [recipient, actorFirstNames] = await Promise.all([
+    const [recipient, firstNames] = await Promise.all([
       this.userModel.findByPk(notification.userId, {
         attributes: recipientAttributes,
       }),
-      this.helpGroupsNotifications.findFirstNames([event.actorId]),
+      this.helpGroupsNotifications.findFirstNames(
+        [event.actorId, content.discussionAuthorId].filter(Boolean)
+      ),
     ]);
     if (!recipient) {
       return skip('account deleted');
     }
-    if (!actorFirstNames.has(event.actorId)) {
+    if (!firstNames.has(event.actorId)) {
       return skip('actor account deleted');
     }
 
@@ -175,10 +181,13 @@ export class HelpGroupsNotificationEmailsService {
       ]);
       await this.mailsService.sendHelpGroupNotification(recipient, {
         kind: content.kind,
-        actorFirstName: actorFirstNames.get(event.actorId),
+        actorFirstName: firstNames.get(event.actorId),
+        discussionAuthorFirstName:
+          firstNames.get(content.discussionAuthorId) ?? DELETED_AUTHOR_LABEL,
         discussionTitle: content.discussionTitle,
         groupName: group.name,
         excerpt: content.excerpt,
+        reactionTarget: content.reactionTarget,
         discussionUrl: helpGroupDiscussionUrl(
           group.slug,
           content.discussionId,
@@ -208,10 +217,12 @@ export class HelpGroupsNotificationEmailsService {
     eventId: string,
     recipientId: string
   ): Promise<{
+    discussionAuthorId: string | null;
     discussionId: string;
     discussionTitle: string | null;
     excerpt: string | null;
     kind: HelpGroupNotificationEmailKind;
+    reactionTarget: HelpGroupNotificationEmailReactionTarget | null;
     replyId: string | null;
   } | null> {
     if (type === NotificationTypes.HELP_GROUP_REPLY) {
@@ -229,9 +240,11 @@ export class HelpGroupsNotificationEmailsService {
           discussion.authorId === recipientId
             ? HelpGroupNotificationEmailKinds.REPLY_TO_AUTHOR
             : HelpGroupNotificationEmailKinds.REPLY_TO_PARTICIPANT,
+        discussionAuthorId: discussion.authorId,
         discussionId: discussion.id,
         discussionTitle: discussion.title,
         excerpt: toExcerpt(reply.content, HELP_GROUP_EMAIL_EXCERPT_MAX_LENGTH),
+        reactionTarget: null,
         replyId: reply.id,
       };
     }
@@ -258,9 +271,13 @@ export class HelpGroupsNotificationEmailsService {
       }
       return {
         kind: HelpGroupNotificationEmailKinds.REACTION,
+        discussionAuthorId: discussion.authorId,
         discussionId,
         discussionTitle: discussion.title,
         excerpt: null,
+        reactionTarget: isReply
+          ? HelpGroupNotificationEmailReactionTargets.REPLY
+          : HelpGroupNotificationEmailReactionTargets.DISCUSSION,
         replyId: isReply ? subjectId : null,
       };
     }

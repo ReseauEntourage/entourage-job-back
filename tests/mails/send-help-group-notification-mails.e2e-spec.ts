@@ -2,6 +2,7 @@ import { MailjetTemplates } from 'src/external-services/mailjet/mailjet.types';
 import {
   HelpGroupNotificationEmailKind,
   HelpGroupNotificationEmailKinds,
+  HelpGroupNotificationEmailReactionTargets,
 } from 'src/help-groups/help-groups.types';
 import { MailsService } from 'src/mails/mails.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -24,12 +25,18 @@ describe('MailsService - help groups notifications', () => {
     firstName: 'Julien',
     role: UserRoles.CANDIDATE,
     zone: ZoneName.IDF,
-  } as User;
+    staffContact: { name: 'Équipe', email: 'staff@example.com' },
+  } as unknown as User;
 
   const notification = (kind: HelpGroupNotificationEmailKind) => ({
     kind,
     actorFirstName: 'Amina',
+    discussionAuthorFirstName: 'Karim',
     discussionTitle: 'Trou dans le CV',
+    reactionTarget:
+      kind === HelpGroupNotificationEmailKinds.REACTION
+        ? HelpGroupNotificationEmailReactionTargets.REPLY
+        : null,
     groupName: 'Refaire un CV',
     excerpt: 'Parle de ton bénévolat.',
     discussionUrl: 'https://front/discussion',
@@ -65,6 +72,15 @@ describe('MailsService - help groups notifications', () => {
             subject,
             kind,
             actorFirstName: 'Amina',
+            discussionAuthorFirstName: 'Karim',
+            reactionTarget:
+              kind === HelpGroupNotificationEmailKinds.REACTION
+                ? HelpGroupNotificationEmailReactionTargets.REPLY
+                : '',
+            staffContact: {
+              name: 'Équipe',
+              email: 'staff@example.com',
+            },
             discussionTitle: 'Trou dans le CV',
             groupName: 'Refaire un CV',
             excerpt: 'Parle de ton bénévolat.',

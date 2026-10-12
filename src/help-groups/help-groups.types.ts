@@ -175,8 +175,19 @@ export const HelpGroupNotificationEmailKinds = {
 export type HelpGroupNotificationEmailKind =
   (typeof HelpGroupNotificationEmailKinds)[keyof typeof HelpGroupNotificationEmailKinds];
 
+// What a reaction targets: the discussion itself or one of its replies
+export const HelpGroupNotificationEmailReactionTargets = {
+  DISCUSSION: 'DISCUSSION',
+  REPLY: 'REPLY',
+} as const;
+
+export type HelpGroupNotificationEmailReactionTarget =
+  (typeof HelpGroupNotificationEmailReactionTargets)[keyof typeof HelpGroupNotificationEmailReactionTargets];
+
 export interface HelpGroupNotificationEmail {
   actorFirstName: string;
+  // First name of the author of the discussion, or "Utilisateur supprimé"
+  discussionAuthorFirstName: string;
   discussionTitle: string | null;
   // Links opening the content and the emails setting without logging in
   discussionUrl: string;
@@ -184,6 +195,8 @@ export interface HelpGroupNotificationEmail {
   excerpt: string | null;
   groupName: string;
   kind: HelpGroupNotificationEmailKind;
+  // Only set for a reaction
+  reactionTarget: HelpGroupNotificationEmailReactionTarget | null;
   settingsUrl: string;
 }
 

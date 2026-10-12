@@ -357,7 +357,10 @@ export class MailsService {
         firstName: addressee.firstName,
         subject,
         kind: email.kind,
+        // The template tests it against "" for the replies
+        reactionTarget: email.reactionTarget ?? '',
         actorFirstName: actor,
+        discussionAuthorFirstName: email.discussionAuthorFirstName,
         discussionTitle: email.discussionTitle,
         groupName: email.groupName,
         excerpt: email.excerpt,
@@ -366,6 +369,7 @@ export class MailsService {
         settingsUrl: email.settingsUrl,
         zone: getZoneDisplayLabel(addressee.zone),
         role: getRoleString(addressee),
+        staffContact: addressee.staffContact,
       },
     });
   }
@@ -392,6 +396,7 @@ export class MailsService {
           'Vous recevez cet email parce que vous êtes membre de ces groupes d’entraide.',
         zone: getZoneDisplayLabel(addressee.zone),
         role: getRoleString(addressee),
+        staffContact: addressee.staffContact,
       },
     });
   }
