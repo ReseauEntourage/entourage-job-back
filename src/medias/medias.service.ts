@@ -7,6 +7,10 @@ import { mediaAttributes } from 'src/messaging/messaging.attributes';
 import { Conversation, Message } from 'src/messaging/models';
 import { Media } from './models';
 
+// A coach may read a message for a while before opening its attachment, and the
+// URL is signed when the conversation is loaded: 60s is far too short.
+export const MESSAGING_MEDIA_SIGNED_URL_TTL_SECONDS = 60 * 60;
+
 @Injectable()
 export class MediasService {
   constructor(
@@ -56,7 +60,8 @@ export class MediasService {
         media.signedUrl = await this.s3Service.getSignedUrl(
           media.s3Key,
           media.mimeType,
-          'inline' // Permit to display the file directly in the browser
+          'inline', // Permit to display the file directly in the browser
+          MESSAGING_MEDIA_SIGNED_URL_TTL_SECONDS
         );
       })
     );
