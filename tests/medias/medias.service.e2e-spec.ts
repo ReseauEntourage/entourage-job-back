@@ -1,12 +1,12 @@
 import {
   MediasService,
-  MESSAGING_MEDIA_SIGNED_URL_TTL_SECONDS,
+  MEDIA_SIGNED_URL_TTL_SECONDS,
 } from 'src/medias/medias.service';
 import { Media } from 'src/medias/models';
 
 // Pure unit test (no database): MediasService only needs a stubbed S3Service.
 describe('MediasService.attachSignedUrls', () => {
-  it('should sign messaging medias for one hour', async () => {
+  it('should sign medias for one hour', async () => {
     const getSignedUrl = jest.fn(async () => 'signed-url');
     const service = new MediasService({} as never, { getSignedUrl } as never);
     const media = {
@@ -16,7 +16,7 @@ describe('MediasService.attachSignedUrls', () => {
 
     await service.attachSignedUrls([media]);
 
-    expect(MESSAGING_MEDIA_SIGNED_URL_TTL_SECONDS).toBe(3600);
+    expect(MEDIA_SIGNED_URL_TTL_SECONDS).toBe(3600);
     expect(getSignedUrl).toHaveBeenCalledWith(
       'key.pdf',
       'application/pdf',
