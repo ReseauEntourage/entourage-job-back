@@ -363,6 +363,14 @@ export class GamificationService {
         }
 
         const user = await this.usersService.findOne(achievement.userId);
+        if (!user) {
+          this.logger.error(
+            `[processExpired] User "${achievement.userId}" not found for achievement "${achievement.id}" — marking inactive to prevent infinite retries`
+          );
+          await achievement.update({ active: false });
+          return 'skipped' as const;
+        }
+
         const baseContext = {
           achievementId: achievement.id,
           userId: achievement.userId,
