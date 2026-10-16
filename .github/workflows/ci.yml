@@ -65,10 +65,12 @@ jobs:
     env:
       CI: true
       NODE_ENV: test
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
+      # Not a secret: points at the postgres service container below. Hardcoded so
+      # Dependabot PRs (which can't read Actions secrets) get a valid URL.
+      DATABASE_URL: postgres://entourage_pro:entourage_pro@localhost:5432/entourage_pro
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-jwt-secret' }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN || 'xoxb-ci-test' }}
+      SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET || 'ci-test-signing-secret' }}
       OPENAI_API_KEY: ''
       SHORTIO_DOMAIN: test.short.io
       SHORTIO_API_KEY: test_api_key
