@@ -78,7 +78,7 @@
     "ioredis": "^5.6.1",
     "jsforce": "^1.11.0",
     "lodash": "^4.17.21",
-    "moment": "^2.29.4",
+    "moment": "^2.31.0",
     "moment-timezone": "^0.5.43",
     "multer": "2.3.0",
     "node-mailjet": "^6.0.4",
@@ -102,7 +102,7 @@
     "voyageai": "^0.2.1"
   },
   "devDependencies": {
-    "@faker-js/faker": "^7.0.0",
+    "@faker-js/faker": "^8.4.1",
     "@nestjs/cli": "^11.0.12",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.28",

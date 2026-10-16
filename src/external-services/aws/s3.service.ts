@@ -10,6 +10,9 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 
+// Default validity of a signed URL, in seconds
+export const DEFAULT_SIGNED_URL_TTL_SECONDS = 60;
+
 export interface S3File {
   key: string;
   publicUrl: string | null;
@@ -108,7 +111,8 @@ export class S3Service {
   async getSignedUrl(
     key: string,
     contentType: string,
-    contentDisposition = 'attachment'
+    contentDisposition = 'attachment',
+    expiresInSeconds = DEFAULT_SIGNED_URL_TTL_SECONDS
   ) {
     const getObjectCommand = new GetObjectCommand({
       Bucket: process.env.AWSS3_BUCKET_NAME,
@@ -118,7 +122,7 @@ export class S3Service {
     });
 
     return await s3GetSignedUrl(this.s3, getObjectCommand, {
-      expiresIn: 60,
+      expiresIn: expiresInSeconds,
     });
   }
 

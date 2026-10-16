@@ -123,8 +123,8 @@ importers:
         specifier: ^4.17.21
         version: 4.18.1
       moment:
-        specifier: ^2.29.4
-        version: 2.30.1
+        specifier: ^2.31.0
+        version: 2.31.0
       moment-timezone:
         specifier: ^0.5.43
         version: 0.5.48
@@ -190,8 +190,8 @@ importers:
         version: 0.2.1
     devDependencies:
       '@faker-js/faker':
-        specifier: ^7.0.0
-        version: 7.6.0
+        specifier: ^8.4.1
+        version: 8.4.1
       '@nestjs/cli':
         specifier: ^11.0.12
         version: 11.0.24(@types/node@24.13.3)(prettier@3.9.6)(uglify-js@3.19.3)
@@ -699,9 +699,9 @@ packages:
     resolution: {integrity: sha512-+CNAzxglkrpNf/kKywqQfk74QjtceuOE7Qm+AF8miRvPF/wmmK5+OJOgVh3AVTT3RP2mH3+FOaxlE5v72owk0A==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@faker-js/faker@7.6.0':
-    resolution: {integrity: sha512-XK6BTq1NDMo9Xqw/YkYyGjSsg44fbNwYRx7QK2CuoQgyy+f1rrTDHoExVM5PsyXCtfl2vs2vVJ0MN0yN6LppRw==}
-    engines: {node: '>=14.0.0', npm: '>=6.0.0'}
+  '@faker-js/faker@8.4.1':
+    resolution: {integrity: sha512-XQ3cU+Q8Uqmrbf2e0cIC/QN43sTBSC8KF12u29Mb47tWrt2hAgBXSgpZMj4Ao8Uk0iJcU99QsOCaIL8934obCg==}
+    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0, npm: '>=6.14.13'}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -4074,8 +4074,8 @@ packages:
   moment-timezone@0.5.48:
     resolution: {integrity: sha512-f22b8LV1gbTO2ms2j2z13MuPogNoh5UzxL3nzNAYKGraILnbGc9NEE6dyiiiLv46DGRb8A4kg8UKWLjPthxBHw==}
 
-  moment@2.30.1:
-    resolution: {integrity: sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==}
+  moment@2.31.0:
+    resolution: {integrity: sha512-0acOTfMiWOheYS4eoWb80yYMb/JLvVv9SHbs2PehaDzfUG0Bw855SKyk0IKTnPGa5+U2bmi3W68l1+sGLX/pvw==}
 
   ms@2.0.0:
     resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
@@ -6119,7 +6119,7 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@faker-js/faker@7.6.0': {}
+  '@faker-js/faker@8.4.1': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -10036,9 +10036,9 @@ snapshots:
 
   moment-timezone@0.5.48:
     dependencies:
-      moment: 2.30.1
+      moment: 2.31.0
 
-  moment@2.30.1: {}
+  moment@2.31.0: {}
 
   ms@2.0.0: {}
 
@@ -10784,7 +10784,7 @@ snapshots:
       dottie: 2.0.7
       inflection: 1.13.4
       lodash: 4.18.1
-      moment: 2.30.1
+      moment: 2.31.0
       moment-timezone: 0.5.48
       pg-connection-string: 2.14.0
       retry-as-promised: 7.1.1
