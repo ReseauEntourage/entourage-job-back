@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import { getModelToken } from '@nestjs/sequelize';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { UsersHelper, LoggedInUser } from '../users/users.helper';
@@ -12,9 +13,13 @@ import {
   ConversationType,
 } from 'src/messaging/models/conversation.model';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
+import { Report } from 'src/reports/models';
+import { ReportStatuses, ReportTargetTypes } from 'src/reports/reports.types';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { SlackMocks } from 'tests/mocks.types';
@@ -41,6 +46,12 @@ describe('MESSAGING', () => {
   let loggedInReferer: LoggedInUser;
   let loggedInOtherCandidate: LoggedInUser;
   let messagingService: MessagingService;
+  let queuesService: QueuesService;
+  let reportModel: typeof Report;
+  let userModel: typeof User;
+
+  const setZone = (loggedInUser: LoggedInUser, zone: ZoneName) =>
+    userModel.update({ zone }, { where: { id: loggedInUser.user.id } });
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -56,6 +67,9 @@ describe('MESSAGING', () => {
     server = app.getHttpServer();
 
     messagingService = app.get(MessagingService);
+    queuesService = app.get(QueuesService);
+    reportModel = app.get(getModelToken(Report));
+    userModel = app.get(getModelToken(User));
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
@@ -1449,7 +1463,7 @@ describe('MESSAGING', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should return 400 if the comment is not provided', async () => {
+    it('should 201 when the comment is not provided', async () => {
       const conversation = await conversationFactory.create();
 
       await messagingHelper.associationParticipantsToConversation(
@@ -1465,7 +1479,169 @@ describe('MESSAGING', () => {
             reason: 'SPAM',
           });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(201);
+    });
+
+    it('should return 400 if the reason is missing or not in the list', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+      const report = (body: object) =>
+        request(server)
+          .post(`/messaging/conversations/${conversation.id}/report`)
+          .set('authorization', `Bearer ${loggedInCandidate.token}`)
+          .send(body);
+
+      expect((await report({ comment: 'Sans motif' })).status).toBe(400);
+      expect((await report({ reason: 'Motif libre' })).status).toBe(400);
+      expect(
+        (await report({ reason: 'SPAM', comment: 'a'.repeat(1001) })).status
+      ).toBe(400);
+      expect(await reportModel.count()).toBe(0);
+    });
+
+    describe('Storage', () => {
+      it('should save the report with the zone of the other participant of a conversation between two people', async () => {
+        await setZone(loggedInCandidate, ZoneName.IDF);
+        await setZone(loggedInCoach, ZoneName.AURA);
+        const conversation = await conversationFactory.create();
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [loggedInCandidate.user.id, loggedInCoach.user.id]
+        );
+
+        const response = await request(server)
+          .post(`/messaging/conversations/${conversation.id}/report`)
+          .set('authorization', `Bearer ${loggedInCandidate.token}`)
+          .send({ reason: 'INSULTS', comment: '  Propos insultants  ' });
+
+        expect(response.status).toBe(201);
+        const reports = await reportModel.findAll();
+        expect(reports).toHaveLength(1);
+        expect(reports[0]).toMatchObject({
+          targetType: ReportTargetTypes.CONVERSATION,
+          targetId: conversation.id,
+          reporterId: loggedInCandidate.user.id,
+          reason: 'INSULTS',
+          comment: 'Propos insultants',
+          status: ReportStatuses.PENDING,
+          zone: ZoneName.AURA,
+        });
+        expect(response.body).toEqual({ id: reports[0].id });
+      });
+
+      it('should save the report of a group conversation with the zone of the reporter', async () => {
+        await setZone(loggedInCandidate, ZoneName.NORD);
+        await setZone(loggedInCoach, ZoneName.AURA);
+        const conversation = await conversationFactory.create({
+          type: ConversationType.GROUP,
+        });
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [
+            loggedInCandidate.user.id,
+            loggedInCoach.user.id,
+            loggedInOtherCandidate.user.id,
+          ]
+        );
+
+        const response = await request(server)
+          .post(`/messaging/conversations/${conversation.id}/report`)
+          .set('authorization', `Bearer ${loggedInCandidate.token}`)
+          .send({ reason: 'SPAM' });
+
+        expect(response.status).toBe(201);
+        const [report] = await reportModel.findAll();
+        expect(report.zone).toBe(ZoneName.NORD);
+      });
+
+      it('should refuse a second report while the first is still to handle with a 409, then accept it once handled', async () => {
+        const conversation = await conversationFactory.create();
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [loggedInCandidate.user.id, loggedInCoach.user.id]
+        );
+        const report = () =>
+          request(server)
+            .post(`/messaging/conversations/${conversation.id}/report`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send({ reason: 'SPAM' });
+
+        expect((await report()).status).toBe(201);
+        jest.clearAllMocks();
+        expect((await report()).status).toBe(409);
+        expect(await reportModel.count()).toBe(1);
+        expect(SlackMocks.postModerationAlert).not.toHaveBeenCalled();
+
+        await reportModel.update(
+          { status: ReportStatuses.RESOLVED },
+          { where: {} }
+        );
+        expect((await report()).status).toBe(201);
+        expect(await reportModel.count()).toBe(2);
+      });
+
+      it('should send no email, and alert Slack with a link to the page of the report', async () => {
+        const addToWorkQueue = jest.spyOn(queuesService, 'addToWorkQueue');
+        jest.clearAllMocks();
+        const conversation = await conversationFactory.create();
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [loggedInCandidate.user.id, loggedInCoach.user.id]
+        );
+
+        const response = await request(server)
+          .post(`/messaging/conversations/${conversation.id}/report`)
+          .set('authorization', `Bearer ${loggedInCandidate.token}`)
+          .send({ reason: 'FRAUD', comment: 'Offre frauduleuse' });
+
+        expect(response.status).toBe(201);
+        expect(addToWorkQueue).not.toHaveBeenCalledWith(
+          Jobs.SEND_MAIL,
+          expect.anything()
+        );
+        const [slackMsgConfig] = (SlackMocks.generateSlackBlockMsg as jest.Mock)
+          .mock.calls[0];
+        expect(slackMsgConfig.actions).toEqual([
+          expect.objectContaining({
+            label: 'Marquer comme traité',
+            url: `${process.env.FRONT_URL}/backoffice/admin/signalements/CONVERSATION/${conversation.id}?action=resolve`,
+            style: 'primary',
+          }),
+          expect.objectContaining({
+            label: 'Voir la fiche',
+            url: `${process.env.FRONT_URL}/backoffice/admin/signalements/CONVERSATION/${conversation.id}`,
+          }),
+        ]);
+        const contents = slackMsgConfig.msgParts.map(
+          ({ content }: { content: string }) => content
+        );
+        expect(contents).toContain('Raison du signalement : Arnaque');
+        expect(contents).toContain('Commentaire : Offre frauduleuse');
+        expect(SlackMocks.postModerationAlert).toHaveBeenCalledTimes(1);
+        addToWorkQueue.mockRestore();
+      });
+
+      it('should save the report even when Slack fails', async () => {
+        (SlackMocks.postModerationAlert as jest.Mock).mockRejectedValueOnce(
+          new Error('Slack down')
+        );
+        const conversation = await conversationFactory.create();
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [loggedInCandidate.user.id, loggedInCoach.user.id]
+        );
+
+        const response = await request(server)
+          .post(`/messaging/conversations/${conversation.id}/report`)
+          .set('authorization', `Bearer ${loggedInCandidate.token}`)
+          .send({ reason: 'SPAM' });
+
+        expect(response.status).toBe(201);
+        expect(await reportModel.count()).toBe(1);
+      });
     });
 
     describe('Slack referents tagging', () => {

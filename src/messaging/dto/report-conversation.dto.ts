@@ -1,12 +1,3 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { ReportContentDto } from 'src/reports/dto';
 
-export class ReportConversationDto {
-  @ApiProperty()
-  @IsString()
-  reason: string;
-
-  @ApiProperty()
-  @IsString()
-  comment: string;
-}
+export class ReportConversationDto extends ReportContentDto {}

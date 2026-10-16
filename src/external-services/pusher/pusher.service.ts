@@ -19,4 +19,12 @@ export class PusherService {
   async sendEvent<T>(channel: string, event: PusherEvent, data: T) {
     return this.pusher.trigger(channel, event, data);
   }
+
+  /**
+   * Signs a subscription to a private channel. The caller is responsible for
+   * checking that the user may read the channel.
+   */
+  authorizeChannel(socketId: string, channelName: string) {
+    return this.pusher.authorizeChannel(socketId, channelName);
+  }
 }
