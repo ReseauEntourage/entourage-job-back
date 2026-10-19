@@ -542,19 +542,20 @@ export class CronService {
   }
 
   /**
-   * Every Monday at 9 AM, Paris time (the server runs in UTC).
-   * It will create a job to send the weekly digest of the help groups.
+   * Every day at 6 PM, Paris time (the server runs in UTC).
+   * It will create a job to send the daily email of the new help group
+   * discussions.
    */
-  @Cron('0 9 * * 1', { timeZone: 'Europe/Paris' })
-  async sendHelpGroupsWeeklyDigest() {
-    this.logger.log('Cron job started: sendHelpGroupsWeeklyDigest');
+  @Cron('0 18 * * *', { timeZone: 'Europe/Paris' })
+  async sendHelpGroupsDailyDigest() {
+    this.logger.log('Cron job started: sendHelpGroupsDailyDigest');
     const job = await this.queuesService.addToCronTasksQueue(
-      Jobs.SEND_HELP_GROUPS_WEEKLY_DIGEST,
+      Jobs.SEND_HELP_GROUPS_DAILY_DIGEST,
       {}
     );
 
     this.logger.log(
-      `Job SEND_HELP_GROUPS_WEEKLY_DIGEST created (Job ID: ${job.id})`
+      `Job SEND_HELP_GROUPS_DAILY_DIGEST created (Job ID: ${job.id})`
     );
 
     return {

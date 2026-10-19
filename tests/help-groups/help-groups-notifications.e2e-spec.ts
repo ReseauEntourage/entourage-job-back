@@ -34,11 +34,8 @@ import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
 import { DiscussionFactory } from './discussion.factory';
 import { HelpGroupMembershipFactory } from './help-group-membership.factory';
 import { HelpGroupFactory } from './help-group.factory';
-import { PostReplyFactory } from './post-reply.factory';
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 describe('Help groups - Notifications', () => {
   let app: INestApplication;
@@ -50,7 +47,6 @@ describe('Help groups - Notifications', () => {
   let helpGroupFactory: HelpGroupFactory;
   let membershipFactory: HelpGroupMembershipFactory;
   let discussionFactory: DiscussionFactory;
-  let postReplyFactory: PostReplyFactory;
   let notificationsService: NotificationsService;
   let emailsService: HelpGroupsNotificationEmailsService;
   let digestService: HelpGroupsDigestService;
@@ -60,6 +56,7 @@ describe('Help groups - Notifications', () => {
   let postModel: typeof Post;
   let userModel: typeof User;
   let postReactionModel: typeof PostReaction;
+  let helpGroupModel: typeof HelpGroup;
 
   const sendEvent = jest.fn();
   let addToWorkQueue: jest.SpyInstance;
@@ -91,7 +88,6 @@ describe('Help groups - Notifications', () => {
     helpGroupFactory = moduleFixture.get(HelpGroupFactory);
     membershipFactory = moduleFixture.get(HelpGroupMembershipFactory);
     discussionFactory = moduleFixture.get(DiscussionFactory);
-    postReplyFactory = moduleFixture.get(PostReplyFactory);
     notificationsService = moduleFixture.get(NotificationsService);
     emailsService = moduleFixture.get(HelpGroupsNotificationEmailsService);
     digestService = moduleFixture.get(HelpGroupsDigestService);
@@ -101,6 +97,7 @@ describe('Help groups - Notifications', () => {
     postModel = moduleFixture.get(getModelToken(Post));
     userModel = moduleFixture.get(getModelToken(User));
     postReactionModel = moduleFixture.get(getModelToken(PostReaction));
+    helpGroupModel = moduleFixture.get(getModelToken(HelpGroup));
   });
 
   afterAll(async () => {
@@ -123,7 +120,7 @@ describe('Help groups - Notifications', () => {
     );
     jest.replaceProperty(
       MailjetTemplates,
-      'HELP_GROUPS_WEEKLY_DIGEST',
+      'HELP_GROUPS_DAILY_DISCUSSIONS',
       9000002 as never
     );
     // Only reports, never hides, unless a test says otherwise
@@ -188,6 +185,24 @@ describe('Help groups - Notifications', () => {
     user: LoggedInUser,
     target: { discussionId?: string; replyId?: string }
   ) => api('delete', `${discussionPath()}/reactions`, user, { target });
+
+  const openDiscussion = async (
+    user: LoggedInUser,
+    props: { title?: string; content?: string } = {},
+    target: HelpGroup = group
+  ) => {
+    const response = await api(
+      'post',
+      `${route}/${target.slug}/discussions`,
+      user,
+      {
+        title: props.title ?? 'Refaire mon CV',
+        content: props.content ?? 'Je cherche des conseils pour mon CV.',
+      }
+    );
+    expect(response.status).toBe(201);
+    return response.body as { id: string };
+  };
 
   const notificationsOf = (user: LoggedInUser) =>
     notificationModel.findAll({ where: { userId: user.user.id } });
@@ -657,13 +672,76 @@ describe('Help groups - Notifications', () => {
     });
   });
 
-  describe('Weekly digest', () => {
-    const lastWeek = (days = 3) => new Date(Date.now() - days * DAY_IN_MS);
+  describe('New discussions', () => {
+    it('Should notify the other members in the bell, naming the author and the group, and queue no immediate email', async () => {
+      await openDiscussion(amina);
+      const items = await bell(julien);
+      expect(items).toEqual([
+        expect.objectContaining({
+          label: 'Amina a ouvert une discussion dans « Refaire un CV »',
+          seen: false,
+          destination: expect.objectContaining({ replyId: null }),
+        }),
+      ]);
+      expect((await bell(thomas)).map(({ label }) => label)).toEqual([
+        'Amina a ouvert une discussion dans « Refaire un CV »',
+      ]);
+      expect(await bell(amina)).toHaveLength(0);
+      expect(emailJobs()).toHaveLength(0);
+    });
 
+    it('Should keep notifying in the bell a member who turned the emails of the group off', async () => {
+      await membershipModel.update(
+        { emailsEnabled: false },
+        { where: { userId: julien.user.id } }
+      );
+      await openDiscussion(amina);
+      expect(await bell(julien)).toHaveLength(1);
+    });
+
+    it('Should notify neither a former member nor a deleted account', async () => {
+      await membershipModel.update(
+        { leftAt: new Date() },
+        { where: { userId: julien.user.id } }
+      );
+      await userModel.destroy({ where: { id: thomas.user.id } });
+      await openDiscussion(amina);
+      expect(await notificationsOf(julien)).toHaveLength(0);
+      expect(await notificationsOf(thomas)).toHaveLength(0);
+    });
+
+    it('Should notify nobody in a group the person did not join', async () => {
+      const outsider = await usersHelper.createLoggedInUser({
+        role: UserRoles.COACH,
+        helpGroupsCharterAcceptedAt: new Date(),
+      });
+      await openDiscussion(amina);
+      expect(await notificationsOf(outsider)).toHaveLength(0);
+    });
+
+    it('Should become seen once the discussion is displayed', async () => {
+      const opened = await openDiscussion(amina);
+      await notificationsService.markSeen(julien.user.id, [opened.id]);
+      expect((await bell(julien))[0].seen).toBe(true);
+    });
+
+    it('Should remove the notification of a discussion hidden after reports', async () => {
+      process.env.HELP_GROUPS_AUTO_HIDE_THRESHOLD = '1';
+      const opened = await openDiscussion(amina);
+      expect(await notificationsOf(julien)).toHaveLength(1);
+      await api('post', `${discussionPath(opened.id)}/reports`, thomas, {
+        target: { discussionId: opened.id },
+        reason: ReportReasons.SPAM,
+      });
+      expect(await notificationsOf(julien)).toHaveLength(0);
+    });
+  });
+
+  describe('Daily email of the new discussions', () => {
     const digestMails = () =>
       sentMails().filter(
         ({ templateId }) =>
-          templateId === MailjetTemplates.HELP_GROUPS_WEEKLY_DIGEST
+          templateId === MailjetTemplates.HELP_GROUPS_DAILY_DISCUSSIONS
       );
 
     const digestOf = (user: LoggedInUser) =>
@@ -672,39 +750,26 @@ describe('Help groups - Notifications', () => {
     type DigestVariables = {
       groups: {
         name: string;
-        discussions: { title: string; authorFirstName: string }[];
+        settingsUrl: string;
+        discussions: {
+          title: string;
+          authorFirstName: string;
+          excerpt: string;
+          url: string;
+        }[];
       }[];
       groupsUrl: string | null;
+      reason: string;
     };
 
-    beforeEach(async () => {
-      // The discussion of the outer setup is out of the period
-      await postModel.update(
-        { createdAt: lastWeek(10), lastActivityAt: lastWeek(10) },
-        { where: { id: discussion.id }, silent: true }
-      );
-    });
-
-    const createDiscussion = (
-      authorId: string,
-      props: Partial<Post> = {},
-      groupId = group.id
-    ) =>
-      discussionFactory.create(
-        {
-          authorId,
-          createdAt: lastWeek(),
-          lastActivityAt: lastWeek(),
-          ...props,
-        },
-        groupId
-      );
-
-    it('Should present a discussion of the week where the person did not write', async () => {
-      await createDiscussion(thomas.user.id, { title: 'Lettre de motivation' });
-      await digestService.sendWeeklyDigests();
+    it('Should send one email naming the author and the group when there is a single new discussion', async () => {
+      await openDiscussion(amina, { title: 'Lettre de motivation' });
+      const result = await digestService.sendDailyDigests();
+      expect(result).toEqual({ sent: 2, skipped: 0, failed: 0 });
       const mail = digestOf(julien);
-      expect(mail.subject).toBe('Cette semaine dans vos groupes');
+      expect(mail.subject).toBe(
+        'Amina a ouvert une discussion dans « Refaire un CV »'
+      );
       const variables = mail.variables as DigestVariables;
       expect(variables.groups).toEqual([
         expect.objectContaining({
@@ -712,129 +777,159 @@ describe('Help groups - Notifications', () => {
           discussions: [
             expect.objectContaining({
               title: 'Lettre de motivation',
-              authorFirstName: 'Thomas',
+              authorFirstName: 'Amina',
+              excerpt: 'Je cherche des conseils pour mon CV.',
+              url: expect.stringContaining('autologinToken='),
             }),
           ],
         }),
       ]);
+      expect(variables.groups[0].settingsUrl).toContain('emails=1');
       expect(variables.groupsUrl).toBeNull();
-      // The author of the discussion wrote in it: nothing for them
-      expect(digestOf(thomas)).toBeUndefined();
+      expect(variables.reason).toContain('Vous recevez cet email');
+      expect(digestOf(amina)).toBeUndefined();
     });
 
-    it('Should exclude a discussion where the person replied, even with a deleted reply', async () => {
-      const other = await createDiscussion(thomas.user.id);
-      await postReplyFactory.create({
-        postId: other.id,
-        authorId: julien.user.id,
-        createdAt: lastWeek(2),
-        deletedAt: new Date(),
-      });
-      await digestService.sendWeeklyDigests();
-      expect(digestOf(julien)).toBeUndefined();
+    it('Should cut the beginning of a long message at a word, 160 characters at most', async () => {
+      await openDiscussion(amina, { content: 'mot '.repeat(100) });
+      await digestService.sendDailyDigests();
+      const { excerpt } = (digestOf(julien).variables as DigestVariables)
+        .groups[0].discussions[0];
+      expect(excerpt.length).toBeLessThanOrEqual(160);
+      expect(excerpt.endsWith('mot…')).toBe(true);
     });
 
-    it('Should present an old discussion with a visible reply of the week', async () => {
-      await postReplyFactory.create({
-        postId: discussion.id,
-        authorId: thomas.user.id,
-        createdAt: lastWeek(1),
-      });
-      await digestService.sendWeeklyDigests();
-      expect(digestOf(amina)).toBeDefined();
-      // Julien wrote the discussion
-      expect(digestOf(julien)).toBeUndefined();
-    });
-
-    it('Should exclude the groups not joined and the groups whose emails are turned off', async () => {
-      const otherGroup = await helpGroupFactory.create({ name: 'Entretiens' });
-      await createDiscussion(thomas.user.id, {}, otherGroup.id);
-      await digestService.sendWeeklyDigests();
-      expect(digestOf(julien)).toBeUndefined();
-
-      await createDiscussion(thomas.user.id, {
-        createdAt: lastWeek(1),
-        lastActivityAt: lastWeek(1),
-      });
-      await membershipModel.update(
-        { emailsEnabled: false },
-        { where: { userId: julien.user.id } }
-      );
-      // A new week for both: their first digest covers the last 7 days
-      await userModel.update(
-        { helpGroupsDigestSentAt: null },
-        { where: { id: [julien.user.id, amina.user.id] } }
-      );
-      addToWorkQueue.mockClear();
-      await digestService.sendWeeklyDigests();
-      expect(digestOf(julien)).toBeUndefined();
-      expect(digestOf(amina)).toBeDefined();
-    });
-
-    it('Should send nothing on a calm week, and exclude deleted or hidden discussions', async () => {
-      await createDiscussion(thomas.user.id, { deletedAt: new Date() });
-      await createDiscussion(thomas.user.id, { hiddenAt: new Date() });
-      await digestService.sendWeeklyDigests();
-      expect(digestMails()).toHaveLength(0);
-    });
-
-    it('Should present the discussions by group', async () => {
+    it('Should group several discussions in one email, the group of the most recent first', async () => {
       const otherGroup = await helpGroupFactory.create({ name: 'Entretiens' });
       await membershipFactory.create({
         groupId: otherGroup.id,
         userId: julien.user.id,
       });
-      await createDiscussion(thomas.user.id, { title: 'CV' });
-      await createDiscussion(
-        thomas.user.id,
-        { title: 'Entretien' },
-        otherGroup.id
+      await membershipFactory.create({
+        groupId: otherGroup.id,
+        userId: amina.user.id,
+      });
+      const first = await openDiscussion(amina, { title: 'CV 1' });
+      await openDiscussion(amina, { title: 'Entretien 1' }, otherGroup);
+      const last = await openDiscussion(amina, { title: 'CV 2' });
+      await postModel.update(
+        { createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000) },
+        { where: { id: first.id }, silent: true }
       );
-      await digestService.sendWeeklyDigests();
-      const variables = digestOf(julien).variables as DigestVariables;
-      expect(variables.groups.map(({ name }) => name).sort()).toEqual([
-        'Entretiens',
+      await postModel.update(
+        { createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+        {
+          where: { title: 'Entretien 1' },
+          silent: true,
+        }
+      );
+      await postModel.update(
+        { createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000) },
+        { where: { id: last.id }, silent: true }
+      );
+      await digestService.sendDailyDigests();
+      const mail = digestOf(julien);
+      expect(mail.subject).toBe('Nouvelles discussions dans vos groupes');
+      const { groups } = mail.variables as DigestVariables;
+      expect(groups.map(({ name }) => name)).toEqual([
         'Refaire un CV',
+        'Entretiens',
+      ]);
+      expect(groups[0].discussions.map(({ title }) => title)).toEqual([
+        'CV 2',
+        'CV 1',
       ]);
     });
 
-    it('Should present the ten most recently active discussions and a link to the groups beyond', async () => {
-      for (let i = 0; i < 15; i += 1) {
-        const at = new Date(Date.now() - (i + 1) * 60 * 60 * 1000);
-        await createDiscussion(thomas.user.id, {
-          title: `Discussion ${i}`,
-          createdAt: at,
-          lastActivityAt: at,
-        });
+    it('Should present ten discussions at most and a link to the groups beyond', async () => {
+      for (let i = 0; i < 12; i += 1) {
+        await openDiscussion(amina, { title: `Discussion ${i}` });
       }
-      await digestService.sendWeeklyDigests();
+      await digestService.sendDailyDigests();
       const variables = digestOf(julien).variables as DigestVariables;
-      const titles = variables.groups.flatMap(({ discussions }) =>
-        discussions.map(({ title }) => title)
-      );
-      expect(titles).toEqual(
-        Array.from({ length: 10 }, (_, i) => `Discussion ${i}`)
-      );
+      expect(variables.groups[0].discussions).toHaveLength(10);
       expect(variables.groupsUrl).toContain(
         '/backoffice/groupes?autologinToken='
       );
+      // The two others are not repeated the next day
+      addToWorkQueue.mockClear();
+      await digestService.sendDailyDigests();
+      expect(digestMails()).toHaveLength(0);
     });
 
-    it('Should not send the same activity twice, a second run the same day sending nothing', async () => {
-      await createDiscussion(thomas.user.id);
-      await digestService.sendWeeklyDigests();
+    it('Should not repeat a discussion already presented, nor send when nothing is new', async () => {
+      await openDiscussion(amina);
+      await digestService.sendDailyDigests();
       expect(digestOf(julien)).toBeDefined();
       addToWorkQueue.mockClear();
-      await digestService.sendWeeklyDigests();
-      expect(digestMails()).toHaveLength(0);
-      const user = await userModel.findByPk(julien.user.id, {
-        attributes: ['helpGroupsDigestSentAt'],
+      expect(await digestService.sendDailyDigests()).toEqual({
+        sent: 0,
+        skipped: 0,
+        failed: 0,
       });
-      expect(user.helpGroupsDigestSentAt).toBeTruthy();
+      expect(digestMails()).toHaveLength(0);
+      await openDiscussion(thomas, { title: 'Nouvelle' });
+      await digestService.sendDailyDigests();
+      const variables = digestOf(julien).variables as DigestVariables;
+      expect(variables.groups[0].discussions.map(({ title }) => title)).toEqual(
+        ['Nouvelle']
+      );
+    });
+
+    it('Should leave out a discussion already seen on the screen', async () => {
+      const opened = await openDiscussion(amina);
+      await notificationsService.markSeen(julien.user.id, [opened.id]);
+      await digestService.sendDailyDigests();
+      expect(digestOf(julien)).toBeUndefined();
+      expect(digestOf(thomas)).toBeDefined();
+    });
+
+    it('Should send nothing for the group whose emails are turned off, the bell staying', async () => {
+      await membershipModel.update(
+        { emailsEnabled: false },
+        { where: { userId: julien.user.id } }
+      );
+      await openDiscussion(amina);
+      await digestService.sendDailyDigests();
+      expect(digestOf(julien)).toBeUndefined();
+      expect(await bell(julien)).toHaveLength(1);
+      expect(digestOf(thomas)).toBeDefined();
+    });
+
+    it('Should leave out a group left or no longer published, a deleted or hidden discussion and a deleted author', async () => {
+      const hiddenGroup = await helpGroupFactory.create({ name: 'Masqué' });
+      await membershipFactory.create({
+        groupId: hiddenGroup.id,
+        userId: julien.user.id,
+      });
+      await membershipFactory.create({
+        groupId: hiddenGroup.id,
+        userId: amina.user.id,
+      });
+      await openDiscussion(amina, {}, hiddenGroup);
+      await helpGroupModel.update(
+        { publishedAt: null },
+        { where: { id: hiddenGroup.id } }
+      );
+      const deleted = await openDiscussion(amina, { title: 'Supprimée' });
+      await postModel.destroy({ where: { id: deleted.id } });
+      const hidden = await openDiscussion(amina, { title: 'Masquée' });
+      await postModel.update(
+        { hiddenAt: new Date() },
+        { where: { id: hidden.id }, silent: true }
+      );
+      await openDiscussion(thomas, { title: 'Auteur supprimé' });
+      await userModel.destroy({ where: { id: thomas.user.id } });
+      await membershipModel.update(
+        { leftAt: new Date() },
+        { where: { userId: julien.user.id, groupId: group.id } }
+      );
+      await digestService.sendDailyDigests();
+      expect(digestOf(julien)).toBeUndefined();
     });
 
     it('Should send nothing while another run is in progress, the next run sending it', async () => {
-      await createDiscussion(thomas.user.id);
+      await openDiscussion(amina);
       const { sequelize } = userModel;
       // Another run holds the lock until its transaction ends
       let release: () => void;
@@ -850,21 +945,18 @@ describe('Help groups - Notifications', () => {
         await released;
       });
       await locked;
-      const skipped = await digestService.sendWeeklyDigests();
+      const skipped = await digestService.sendDailyDigests();
       release();
       await otherRun;
       expect(skipped).toEqual({ sent: 0, skipped: 0, failed: 0 });
       expect(digestMails()).toHaveLength(0);
 
-      await digestService.sendWeeklyDigests();
+      await digestService.sendDailyDigests();
       expect(digestOf(julien)).toBeDefined();
     });
 
-    it('Should put the previous date back when the digest cannot be queued, the next run sending it', async () => {
-      await createDiscussion(thomas.user.id);
-      const before = await userModel.findByPk(julien.user.id, {
-        attributes: ['helpGroupsDigestSentAt'],
-      });
+    it('Should give the discussions back when the email cannot be queued, the next run sending it', async () => {
+      await openDiscussion(amina);
       addToWorkQueue.mockImplementation(async (type, data) => {
         if (
           type === Jobs.SEND_MAIL &&
@@ -874,61 +966,28 @@ describe('Help groups - Notifications', () => {
         }
         return { id: 'mock-job-id' };
       });
-      const failed = await digestService.sendWeeklyDigests();
+      const failed = await digestService.sendDailyDigests();
       expect(failed.failed).toBe(1);
-      const after = await userModel.findByPk(julien.user.id, {
-        attributes: ['helpGroupsDigestSentAt'],
-      });
-      expect(after.helpGroupsDigestSentAt).toEqual(
-        before.helpGroupsDigestSentAt
-      );
+      const [row] = await notificationsOf(julien);
+      expect(row.events[0].emailedAt ?? null).toBeNull();
 
       addToWorkQueue.mockReset();
       addToWorkQueue.mockResolvedValue({ id: 'mock-job-id' });
-      await digestService.sendWeeklyDigests();
+      await digestService.sendDailyDigests();
       expect(digestOf(julien)).toBeDefined();
     });
 
-    it('Should send no digest, and keep the activity due, while the Mailjet template is not configured', async () => {
-      await createDiscussion(thomas.user.id);
+    it('Should send nothing, and keep the discussions due, while the Mailjet template is not configured', async () => {
+      await openDiscussion(amina);
       jest.replaceProperty(
         MailjetTemplates,
-        'HELP_GROUPS_WEEKLY_DIGEST',
+        'HELP_GROUPS_DAILY_DISCUSSIONS',
         0 as never
       );
-      await digestService.sendWeeklyDigests();
+      await digestService.sendDailyDigests();
       expect(digestMails()).toHaveLength(0);
-      const user = await userModel.findByPk(julien.user.id, {
-        attributes: ['helpGroupsDigestSentAt'],
-      });
-      expect(user.helpGroupsDigestSentAt).toBeNull();
-    });
-
-    it('Should leave the activity of the last minutes to the next digest', async () => {
-      // Its write may still be uncommitted when the digest runs
-      const recent = new Date(Date.now() - 60 * 1000);
-      await createDiscussion(thomas.user.id, {
-        createdAt: recent,
-        lastActivityAt: recent,
-      });
-      await digestService.sendWeeklyDigests();
-      expect(digestOf(julien)).toBeUndefined();
-      const user = await userModel.findByPk(julien.user.id, {
-        attributes: ['helpGroupsDigestSentAt'],
-      });
-      expect(user.helpGroupsDigestSentAt.getTime()).toBeLessThan(
-        recent.getTime()
-      );
-    });
-
-    it('Should name a deleted author "Utilisateur supprimé"', async () => {
-      await createDiscussion(thomas.user.id);
-      await userModel.destroy({ where: { id: thomas.user.id } });
-      await digestService.sendWeeklyDigests();
-      const variables = digestOf(julien).variables as DigestVariables;
-      expect(variables.groups[0].discussions[0].authorFirstName).toBe(
-        'Utilisateur supprimé'
-      );
+      const [row] = await notificationsOf(julien);
+      expect(row.events[0].emailedAt ?? null).toBeNull();
     });
   });
 });

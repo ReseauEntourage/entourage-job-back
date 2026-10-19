@@ -67,6 +67,8 @@ interface ReactedMessage {
  * - a reply notifies the author of the discussion and the authors of its
  *   visible replies (one row per discussion and recipient);
  * - a new reaction notifies the author of the message (one row per message);
+ * - a new discussion notifies the active members of its group, in the bell
+ *   only: its email is the daily one, sent by `HelpGroupsDigestService`;
  * - a deleted or hidden message removes its events, a restored message
  *   creates none.
  * The author of the action, a former member, a deleted account and the
@@ -100,6 +102,7 @@ export class HelpGroupsNotificationsService
       [
         NotificationTypes.HELP_GROUP_REPLY,
         NotificationTypes.HELP_GROUP_REACTION,
+        NotificationTypes.HELP_GROUP_DISCUSSION,
       ],
       this
     );
@@ -179,6 +182,55 @@ export class HelpGroupsNotificationsService
   // ---------------------------------------------------------------------
   // Events
   // ---------------------------------------------------------------------
+
+  /**
+   * A new discussion notifies the other active members of its group, whether
+   * or not they turned the emails of the group off. No email is queued: the
+   * daily email of the discussions picks the event up.
+   */
+  async onDiscussionCreated(input: {
+    discussion: { authorId: string; createdAt: Date; id: string };
+    groupId: string;
+  }): Promise<void> {
+    const { discussion, groupId } = input;
+    await this.safely(`discussion ${discussion.id}`, async () => {
+      if (!(await this.findReadableGroup(groupId))) {
+        return;
+      }
+      const memberships = await this.helpGroupMembershipModel.findAll({
+        attributes: ['userId'],
+        where: { groupId, leftAt: null },
+        include: [
+          // paranoid by default: deleted accounts are excluded
+          { model: User, as: 'user', attributes: ['id'], required: true },
+        ],
+      });
+      const recipients = memberships
+        .map(({ userId }) => userId)
+        .filter((userId) => userId !== discussion.authorId);
+      for (const userId of recipients) {
+        // Each recipient on their own: a failure never deprives the others
+        await this.safely(
+          `discussion ${discussion.id} for ${userId}`,
+          async () => {
+            await this.notificationsService.upsertEvent({
+              userId,
+              type: NotificationTypes.HELP_GROUP_DISCUSSION,
+              subjectType: NotificationSubjectTypes.POST,
+              subjectId: discussion.id,
+              groupId,
+              event: {
+                actorId: discussion.authorId,
+                eventId: discussion.id,
+                at: discussion.createdAt,
+              },
+            });
+          }
+        );
+      }
+      this.notificationsService.notifyChanged(recipients);
+    });
+  }
 
   async onReplyCreated(input: {
     discussion: { authorId: string; id: string };
@@ -447,6 +499,9 @@ export class HelpGroupsNotificationsService
     const reactionRows = rows.filter(
       ({ type }) => type === NotificationTypes.HELP_GROUP_REACTION
     );
+    const discussionRows = rows.filter(
+      ({ type }) => type === NotificationTypes.HELP_GROUP_DISCUSSION
+    );
     // Replies: the events of reply rows, and the reacted replies
     const replies = await this.findVisibleReplies([
       ...replyRows.flatMap(({ events }) => events.map((e) => e.eventId)),
@@ -461,6 +516,7 @@ export class HelpGroupsNotificationsService
       Array.from(
         new Set([
           ...replyRows.map(({ subjectId }) => subjectId),
+          ...discussionRows.map(({ subjectId }) => subjectId),
           ...reactionRows.map(({ subjectType, subjectId }) =>
             subjectType === NotificationSubjectTypes.POST
               ? subjectId
@@ -486,11 +542,13 @@ export class HelpGroupsNotificationsService
         return;
       }
       const isReply = row.type === NotificationTypes.HELP_GROUP_REPLY;
-      const discussionId = isReply
-        ? row.subjectId
-        : row.subjectType === NotificationSubjectTypes.POST
+      const isDiscussion = row.type === NotificationTypes.HELP_GROUP_DISCUSSION;
+      const discussionId =
+        isReply || isDiscussion
           ? row.subjectId
-          : replies.get(row.subjectId)?.postId;
+          : row.subjectType === NotificationSubjectTypes.POST
+            ? row.subjectId
+            : replies.get(row.subjectId)?.postId;
       const discussion = discussions.get(discussionId);
       if (!discussion) {
         return;
@@ -499,9 +557,11 @@ export class HelpGroupsNotificationsService
       const events = sortEvents(row.events).filter(
         (event) =>
           firstNames.has(event.actorId) &&
-          (isReply
-            ? replies.has(event.eventId)
-            : reactionIds.has(event.eventId))
+          // A discussion event is the visible discussion itself
+          (isDiscussion ||
+            (isReply
+              ? replies.has(event.eventId)
+              : reactionIds.has(event.eventId)))
       );
       if (events.length === 0) {
         return;
@@ -512,7 +572,12 @@ export class HelpGroupsNotificationsService
       let label: string;
       let replyId: string | null;
       let excerpt: string | null = null;
-      if (isReply) {
+      if (isDiscussion) {
+        label = `${formatActorNames(names)} a ouvert une discussion dans « ${
+          group.name
+        } »`;
+        replyId = null;
+      } else if (isReply) {
         label = `${formatActorNames(names)} ${
           discussion.authorId === recipientId
             ? isPlural

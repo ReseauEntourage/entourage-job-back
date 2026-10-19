@@ -1,9 +1,9 @@
 import { buildCronTasksProcessor } from 'tests/queues/build-cron-tasks-processor.helper';
 
 describe('CronTasksProcessor - help groups notifications', () => {
-  it('Should send the weekly digests and report the result to Slack', async () => {
+  it('Should send the daily emails and report the result to Slack', async () => {
     const helpGroupsDigestService = {
-      sendWeeklyDigests: jest
+      sendDailyDigests: jest
         .fn()
         .mockResolvedValue({ sent: 2, skipped: 3, failed: 0 }),
     };
@@ -15,14 +15,14 @@ describe('CronTasksProcessor - help groups notifications', () => {
       cronTasksSlackReporterService: cronTasksSlackReporterService as never,
     });
 
-    const result = await processor.sendHelpGroupsWeeklyDigest();
+    const result = await processor.sendHelpGroupsDailyDigest();
 
     expect(result).toContain('2 sent');
     expect(
       cronTasksSlackReporterService.sendCronTaskResultToSlack
     ).toHaveBeenCalledWith(
       true,
-      expect.stringContaining('weekly digest'),
+      expect.stringContaining('daily discussions email'),
       { total: 5, success: 5, failure: 0 },
       []
     );

@@ -44,3 +44,25 @@ export const toExcerpt = (text: string, maxLength = EXCERPT_MAX_LENGTH) => {
     ? `${flat.slice(0, maxLength).trimEnd()}…`
     : flat;
 };
+
+export const WORD_EXCERPT_MAX_LENGTH = 160;
+
+/**
+ * Beginning of a text, cut at a word, with an ellipsis only when it is
+ * truncated. The ellipsis counts in the length: the result never exceeds
+ * `maxLength` characters.
+ */
+export const toWordExcerpt = (
+  text: string,
+  maxLength = WORD_EXCERPT_MAX_LENGTH
+) => {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  if (flat.length <= maxLength) {
+    return flat;
+  }
+  const room = flat.slice(0, maxLength - 1);
+  // Cut at the last space when the next character would split a word
+  const lastSpace = flat[maxLength - 1] === ' ' ? -1 : room.lastIndexOf(' ');
+  const cut = lastSpace > 0 ? room.slice(0, lastSpace) : room;
+  return `${cut.trimEnd()}…`;
+};

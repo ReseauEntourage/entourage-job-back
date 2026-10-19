@@ -200,20 +200,23 @@ export interface HelpGroupNotificationEmail {
   settingsUrl: string;
 }
 
-// Discussions shown at most in a weekly digest
+// Discussions shown at most in the daily email
 export const HELP_GROUPS_DIGEST_MAX_DISCUSSIONS = 10;
 
-export interface HelpGroupsWeeklyDigestEmail {
+export interface HelpGroupsDailyDigestEmail {
   groups: {
     discussions: {
-      // First name of the author, or "Utilisateur supprimé"
       authorFirstName: string;
+      // Beginning of the message, empty when there is none to show
+      excerpt: string;
       title: string | null;
       url: string;
     }[];
     name: string;
     settingsUrl: string;
   }[];
-  // Link to the groups list, only when more discussions were active
+  // Link to the groups list, only when more discussions were new
   groupsUrl: string | null;
+  // One discussion: the name of its author and group; several: a generic one
+  subject: string;
 }

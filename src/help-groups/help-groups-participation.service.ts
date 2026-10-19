@@ -252,6 +252,14 @@ export class HelpGroupsParticipationService {
       return created;
     });
 
+    await this.notifications.onDiscussionCreated({
+      groupId: group.id,
+      discussion: {
+        id: post.id,
+        authorId: post.authorId,
+        createdAt: post.createdAt,
+      },
+    });
     this.moderationAlert.checkMessage({
       author: user,
       group,
