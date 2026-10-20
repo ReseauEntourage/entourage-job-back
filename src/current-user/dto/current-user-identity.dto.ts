@@ -25,10 +25,13 @@ export type CurrentUserIdentityDto = Pick<User, CurrentUserIdentityUserKeys> & {
   hasPassword: boolean;
 };
 
-// linkedinAccessToken and password are fetched but not exposed in the DTO — only
-// hasLinkedinLinked and hasPassword are returned
+// linkedinAccessToken, linkedinTokenExpiresAt and password are fetched but not
+// exposed in the DTO — only hasLinkedinLinked and hasPassword are returned
 export const CurrentUserIdentityAttributes: (
-  CurrentUserIdentityUserKeys | 'linkedinAccessToken' | 'password'
+  | CurrentUserIdentityUserKeys
+  | 'linkedinAccessToken'
+  | 'linkedinTokenExpiresAt'
+  | 'password'
 )[] = [
   'id',
   'firstName',
@@ -47,8 +50,16 @@ export const CurrentUserIdentityAttributes: (
   'onboardingWebinarSkippedAt',
   'elearningCompletedAt',
   'linkedinAccessToken',
+  'linkedinTokenExpiresAt',
   'password',
 ];
+
+// An expired token is no longer usable (no refresh token is issued), so the
+// account is reported as not linked to let the front restart the OAuth flow
+const hasValidLinkedinToken = (user: User): boolean =>
+  !!user.linkedinAccessToken &&
+  (!user.linkedinTokenExpiresAt ||
+    new Date(user.linkedinTokenExpiresAt) > new Date());
 
 export const generateCurrentUserIdentityDto = (
   user: User
@@ -72,6 +83,6 @@ export const generateCurrentUserIdentityDto = (
   betaFeatures: Object.fromEntries(
     (user.featureFlags ?? []).map((f) => [f.featureKey, f.enabled])
   ) as Record<FeatureKey, boolean>,
-  hasLinkedinLinked: !!user.linkedinAccessToken,
+  hasLinkedinLinked: hasValidLinkedinToken(user),
   hasPassword: !!user.password,
 });
