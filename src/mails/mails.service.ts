@@ -7,7 +7,7 @@ import { MailjetTemplates } from 'src/external-services/mailjet/mailjet.types';
 import {
   HelpGroupNotificationEmail,
   HelpGroupNotificationEmailKinds,
-  HelpGroupsWeeklyDigestEmail,
+  HelpGroupsDailyDigestEmail,
 } from 'src/help-groups/help-groups.types';
 import { Conversation, Message } from 'src/messaging/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -375,23 +375,29 @@ export class MailsService {
   }
 
   /**
-   * Weekly digest of the help groups activity. Links are built by the caller,
-   * as for `sendHelpGroupNotification`.
+   * Daily email of the new discussions of the help groups. Links and subject
+   * are built by the caller, as for `sendHelpGroupNotification`.
    */
-  async sendHelpGroupsWeeklyDigest(
+  async sendHelpGroupsDailyDigest(
     addressee: User,
-    digest: HelpGroupsWeeklyDigestEmail
+    digest: HelpGroupsDailyDigestEmail
   ) {
-    const subject = 'Cette semaine dans vos groupes';
+    const { subject } = digest;
+    // Mailjet rejects a variable set to null (400): a null value is left out
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addressee.email,
       subject,
-      templateId: MailjetTemplates.HELP_GROUPS_WEEKLY_DIGEST,
+      templateId: MailjetTemplates.HELP_GROUPS_DAILY_DISCUSSIONS,
       variables: {
         firstName: addressee.firstName,
         subject,
-        groups: digest.groups,
-        groupsUrl: digest.groupsUrl,
+        groups: digest.groups.map((group) => ({
+          ...group,
+          discussions: group.discussions.map((discussion) =>
+            _.omitBy(discussion, _.isNull)
+          ),
+        })),
+        ...(digest.groupsUrl ? { groupsUrl: digest.groupsUrl } : {}),
         reason:
           'Vous recevez cet email parce que vous êtes membre de ces groupes d’entraide.',
         zone: getZoneDisplayLabel(addressee.zone),

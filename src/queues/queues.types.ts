@@ -79,7 +79,7 @@ export const Jobs = {
     'send_unverified_account_relaunch_mails',
   BACKFILL_SALESFORCE_APP_ID: 'backfill_salesforce_app_id',
   MANUAL_LINK_SALESFORCE_CONTACT: 'manual_link_salesforce_contact',
-  SEND_HELP_GROUPS_WEEKLY_DIGEST: 'send_help_groups_weekly_digest',
+  SEND_HELP_GROUPS_DAILY_DIGEST: 'send_help_groups_daily_digest',
   PURGE_EXPIRED_NOTIFICATIONS: 'purge_expired_notifications',
 
   // Jobs related to embedding queue
@@ -140,7 +140,7 @@ type JobsData = {
   [Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS]: SendUnverifiedAccountRelaunchMailsJob;
   [Jobs.BACKFILL_SALESFORCE_APP_ID]: BackfillSalesforceAppIdJob;
   [Jobs.MANUAL_LINK_SALESFORCE_CONTACT]: ManualLinkSalesforceContactJob;
-  [Jobs.SEND_HELP_GROUPS_WEEKLY_DIGEST]: SendHelpGroupsWeeklyDigestJob;
+  [Jobs.SEND_HELP_GROUPS_DAILY_DIGEST]: SendHelpGroupsDailyDigestJob;
   [Jobs.PURGE_EXPIRED_NOTIFICATIONS]: PurgeExpiredNotificationsJob;
 
   // Embedding queue jobs
@@ -221,7 +221,7 @@ export interface SendHelpGroupNotificationEmailJob {
   notificationId: string;
 }
 
-export type SendHelpGroupsWeeklyDigestJob = Record<string, never>;
+export type SendHelpGroupsDailyDigestJob = Record<string, never>;
 
 export type PurgeExpiredNotificationsJob = Record<string, never>;
 

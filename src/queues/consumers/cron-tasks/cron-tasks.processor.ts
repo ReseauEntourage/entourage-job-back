@@ -140,8 +140,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.manualLinkSalesforceContact(
           job.data as ManualLinkSalesforceContactJob
         );
-      case Jobs.SEND_HELP_GROUPS_WEEKLY_DIGEST:
-        return this.sendHelpGroupsWeeklyDigest();
+      case Jobs.SEND_HELP_GROUPS_DAILY_DIGEST:
+        return this.sendHelpGroupsDailyDigest();
       case Jobs.PURGE_EXPIRED_NOTIFICATIONS:
         return this.purgeExpiredNotifications();
       default:
@@ -153,16 +153,16 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   /**
-   * Weekly digest of the help groups, on Monday at 9 am (Paris). Each person
-   * is handled in their own transaction: a failure is reported, never
+   * Daily email of the new help group discussions, at 6 pm (Paris). Each
+   * person is handled in their own transaction: a failure is reported, never
    * blocks the others.
    */
-  async sendHelpGroupsWeeklyDigest() {
+  async sendHelpGroupsDailyDigest() {
     const { sent, skipped, failed } =
-      await this.helpGroupsDigestService.sendWeeklyDigests();
+      await this.helpGroupsDigestService.sendDailyDigests();
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       failed === 0,
-      '📬 Help groups weekly digest',
+      '📬 Help groups daily discussions email',
       {
         total: sent + skipped + failed,
         success: sent + skipped,
@@ -170,7 +170,7 @@ export class CronTasksProcessor extends WorkerHost {
       },
       []
     );
-    return `Help groups weekly digest: ${sent} sent, ${skipped} without activity, ${failed} failed`;
+    return `Help groups daily discussions email: ${sent} sent, ${skipped} without new discussion, ${failed} failed`;
   }
 
   async purgeExpiredNotifications() {

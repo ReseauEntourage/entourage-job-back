@@ -8,6 +8,9 @@ export const NotificationTypes = {
   HELP_GROUP_REPLY: 'HELP_GROUP_REPLY',
   // Subject: the reacted message (POST or POST_REPLY); events: its reactions
   HELP_GROUP_REACTION: 'HELP_GROUP_REACTION',
+  // Subject: the discussion (POST); event: the discussion itself, opened by
+  // someone else in one of the groups of the recipient
+  HELP_GROUP_DISCUSSION: 'HELP_GROUP_DISCUSSION',
 } as const;
 
 export type NotificationType =
@@ -41,6 +44,7 @@ export const NotificationSeenCoverageByType: {
 } = {
   [NotificationTypes.HELP_GROUP_REPLY]: NotificationSeenCoverages.EVENT,
   [NotificationTypes.HELP_GROUP_REACTION]: NotificationSeenCoverages.SUBJECT,
+  [NotificationTypes.HELP_GROUP_DISCUSSION]: NotificationSeenCoverages.EVENT,
 };
 
 /**

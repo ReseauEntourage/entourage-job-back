@@ -93,14 +93,19 @@ describe('MailsService - help groups notifications', () => {
     }
   );
 
-  it('Should send a weekly digest of two groups', async () => {
+  it('Should send the daily email of two groups', async () => {
     const { mailsService, queuesService } = buildService();
     const groups = [
       {
         name: 'Refaire un CV',
         settingsUrl: 'https://front/cv',
         discussions: [
-          { title: 'Trou dans le CV', authorFirstName: 'Thomas', url: 'u1' },
+          {
+            title: 'Trou dans le CV',
+            authorFirstName: 'Thomas',
+            excerpt: 'Je ne sais pas comment expliquer.',
+            url: 'u1',
+          },
         ],
       },
       {
@@ -109,26 +114,56 @@ describe('MailsService - help groups notifications', () => {
         discussions: [
           {
             title: 'Questions pièges',
-            authorFirstName: 'Utilisateur supprimé',
+            authorFirstName: 'Amina',
+            excerpt: '',
             url: 'u2',
           },
         ],
       },
     ];
-    await mailsService.sendHelpGroupsWeeklyDigest(addressee, {
+    await mailsService.sendHelpGroupsDailyDigest(addressee, {
+      subject: 'Nouvelles discussions dans vos groupes',
       groups,
       groupsUrl: null,
     });
     expect(queuesService.addToWorkQueue).toHaveBeenCalledWith(Jobs.SEND_MAIL, {
       toEmail: 'julien@example.com',
-      subject: 'Cette semaine dans vos groupes',
-      templateId: MailjetTemplates.HELP_GROUPS_WEEKLY_DIGEST,
+      subject: 'Nouvelles discussions dans vos groupes',
+      templateId: MailjetTemplates.HELP_GROUPS_DAILY_DISCUSSIONS,
       variables: expect.objectContaining({
         firstName: 'Julien',
         groups,
-        groupsUrl: null,
         reason: expect.stringMatching(/^Vous recevez cet email parce que/),
       }),
     });
+  });
+
+  it('Should leave out of the daily email the variables Mailjet would reject as null', async () => {
+    const { mailsService, queuesService } = buildService();
+    await mailsService.sendHelpGroupsDailyDigest(addressee, {
+      subject: 'Nouvelles discussions dans vos groupes',
+      groups: [
+        {
+          name: 'Refaire un CV',
+          settingsUrl: 'https://front/cv',
+          discussions: [
+            {
+              title: null,
+              authorFirstName: 'Thomas',
+              excerpt: 'Bonjour',
+              url: 'u1',
+            },
+          ],
+        },
+      ],
+      groupsUrl: null,
+    });
+    const [, job] = queuesService.addToWorkQueue.mock.calls[0];
+    const { variables } = job as { variables: Record<string, unknown> };
+    expect(variables).not.toHaveProperty('groupsUrl');
+    expect(JSON.stringify(variables)).not.toContain('null');
+    expect(
+      (variables.groups as { discussions: object[] }[])[0].discussions[0]
+    ).not.toHaveProperty('title');
   });
 });

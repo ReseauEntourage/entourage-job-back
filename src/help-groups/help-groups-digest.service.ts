@@ -7,6 +7,8 @@ import {
   MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
+import { NotificationTypes } from 'src/notifications/notifications.types';
+import { toWordExcerpt } from 'src/notifications/notifications.utils';
 import { User } from 'src/users/models';
 import {
   HELP_GROUPS_EMAIL_AUTOLOGIN_EXPIRATION_MS,
@@ -16,37 +18,32 @@ import {
 } from './help-groups-notification-emails.service';
 import {
   HELP_GROUPS_DIGEST_MAX_DISCUSSIONS,
-  HelpGroupsWeeklyDigestEmail,
+  HelpGroupsDailyDigestEmail,
 } from './help-groups.types';
 
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
-
-// Lower bound of the first digest of a person
-export const HELP_GROUPS_DIGEST_DEFAULT_PERIOD_DAYS = 7;
-
-/**
- * The digest stops this long before the moment it runs: a discussion or a
- * reply dated just before, whose write is not committed yet, would otherwise
- * be missed by this digest and skipped by the next one. Recent activity is
- * left to the next digest.
- */
-export const HELP_GROUPS_DIGEST_SETTLE_DELAY_MS = 5 * 60 * 1000;
-
 // Key of the lock that keeps the runs of the digest from overlapping
-export const HELP_GROUPS_DIGEST_LOCK_KEY = 'help-groups-weekly-digest';
+export const HELP_GROUPS_DIGEST_LOCK_KEY = 'help-groups-daily-digest';
 
 // People handled per batch, so that a run stays within the worker limits
 export const HELP_GROUPS_DIGEST_BATCH_SIZE = 200;
 
-const DELETED_AUTHOR_LABEL = 'Utilisateur supprimé';
+export const HELP_GROUPS_DIGEST_PLURAL_SUBJECT =
+  'Nouvelles discussions dans vos groupes';
+
+// "Unseen and not yet emailed" event of a notification row
+const PENDING_EVENT_SQL = `EXISTS (
+  SELECT 1 FROM jsonb_array_elements(n."events") AS e
+  WHERE e->>'seenAt' IS NULL AND e->>'emailedAt' IS NULL
+)`;
 
 interface DigestDiscussionRow {
-  authorDeletedAt: Date | null;
-  authorFirstName: string | null;
+  authorFirstName: string;
+  content: string | null;
   groupId: string;
   groupName: string;
   groupSlug: string;
   id: string;
+  notificationId: string;
   title: string | null;
 }
 
@@ -57,12 +54,12 @@ export interface HelpGroupsDigestResult {
 }
 
 /**
- * Weekly digest of the help groups, on Monday at 9 am (Paris): the activity
- * since the previous digest of the person (or the last 7 days) in the
- * discussions of the groups they joined with emails enabled, where they
- * published neither the discussion nor a reply. The real time notifications
- * cover the others. Never sent empty, never twice for the same activity:
- * `helpGroupsDigestSentAt` is moved in the same transaction.
+ * Daily email of the new discussions of the help groups, at 6 pm (Paris):
+ * the `HELP_GROUP_DISCUSSION` events of the person that they neither saw on
+ * the screen nor received by email yet, in the groups they are still an
+ * active member of with emails enabled. Never sent empty, never twice for
+ * the same discussion: the events are marked as emailed in the same
+ * transaction that selects them.
  */
 @Injectable()
 export class HelpGroupsDigestService {
@@ -75,23 +72,23 @@ export class HelpGroupsDigestService {
     private mailsService: MailsService
   ) {}
 
-  async sendWeeklyDigests(): Promise<HelpGroupsDigestResult> {
+  async sendDailyDigests(): Promise<HelpGroupsDigestResult> {
     const result: HelpGroupsDigestResult = { sent: 0, skipped: 0, failed: 0 };
-    // Until its Mailjet template exists, no digest is sent and the activity
-    // stays due for the first run that can send it
+    // Until its Mailjet template exists, no email is sent and the events stay
+    // due for the first run that can send them
     if (
-      !isMailjetTemplateConfigured(MailjetTemplates.HELP_GROUPS_WEEKLY_DIGEST)
+      !isMailjetTemplateConfigured(
+        MailjetTemplates.HELP_GROUPS_DAILY_DISCUSSIONS
+      )
     ) {
       this.logger.warn(
-        '[HelpGroupsDigest] HELP_GROUPS_WEEKLY_DIGEST template not configured: no digest sent'
+        '[HelpGroupsDigest] HELP_GROUPS_DAILY_DISCUSSIONS template not configured: no email sent'
       );
       return result;
     }
     // One run at a time, whatever started it (several workers, a retry, a
-    // manual run): a run that queues a digest after another run moved the
-    // date again could otherwise neither put it back nor send it. The lock
-    // is held by a transaction that stays open for the whole run, and is
-    // released with it, even if the worker dies.
+    // manual run). The lock is held by a transaction that stays open for the
+    // whole run, and is released with it, even if the worker dies.
     return this.userModel.sequelize.transaction(async (lockTransaction) => {
       const [{ locked }] = await this.userModel.sequelize.query<{
         locked: boolean;
@@ -102,7 +99,7 @@ export class HelpGroupsDigestService {
       });
       if (!locked) {
         this.logger.warn(
-          '[HelpGroupsDigest] another run is in progress: no digest sent'
+          '[HelpGroupsDigest] another run is in progress: no email sent'
         );
         return result;
       }
@@ -131,22 +128,23 @@ export class HelpGroupsDigestService {
   }
 
   /**
-   * Non deleted people with at least one active membership with emails
-   * enabled in a published group, by batches on their id.
+   * People with at least one new discussion not seen nor emailed yet, by
+   * batches on their id. Whether it can still be sent is checked per person.
    */
   private async findRecipientIds(after: string | null): Promise<string[]> {
     const rows = await this.userModel.sequelize.query<{ userId: string }>(
-      `SELECT DISTINCT m."userId"
-       FROM "HelpGroupMemberships" m
-       JOIN "Users" u ON u."id" = m."userId" AND u."deletedAt" IS NULL
-       JOIN "HelpGroups" g ON g."id" = m."groupId" AND g."deletedAt" IS NULL
-         AND g."publishedAt" IS NOT NULL
-       WHERE m."leftAt" IS NULL AND m."emailsEnabled" = true
-         ${after ? 'AND m."userId" > :after' : ''}
-       ORDER BY m."userId"
+      `SELECT DISTINCT n."userId"
+       FROM "Notifications" n
+       WHERE n."type" = :type AND ${PENDING_EVENT_SQL}
+         ${after ? 'AND n."userId" > :after' : ''}
+       ORDER BY n."userId"
        LIMIT :limit`,
       {
-        replacements: { after, limit: HELP_GROUPS_DIGEST_BATCH_SIZE },
+        replacements: {
+          type: NotificationTypes.HELP_GROUP_DISCUSSION,
+          after,
+          limit: HELP_GROUPS_DIGEST_BATCH_SIZE,
+        },
         type: QueryTypes.SELECT,
       }
     );
@@ -154,20 +152,19 @@ export class HelpGroupsDigestService {
   }
 
   /**
-   * The digest of a person, sent within a run of `sendWeeklyDigests`, which
-   * keeps two runs from overlapping. Its content and the move of
-   * `helpGroupsDigestSentAt` are committed in their own transaction, the
-   * user row being locked so that a concurrent run waits and then finds no
-   * activity left. The email is queued after the commit: should the queue
-   * fail, the previous date is put back, so that the activity is sent by
-   * the next run. A digest is thus never queued twice.
-   * Returns true when an email was queued.
+   * The email of a person, sent within a run of `sendDailyDigests`, which
+   * keeps two runs from overlapping. Its content and the marking of the
+   * events as emailed are committed in their own transaction, the user row
+   * being locked so that a concurrent run waits and then finds nothing left.
+   * The email is queued after the commit: should the queue fail, the events
+   * are given back, so that the next run sends them. An email is thus never
+   * queued twice. Returns true when an email was queued.
    */
   async sendDigest(userId: string): Promise<boolean> {
     const prepared = await this.userModel.sequelize.transaction(
       async (transaction) => {
         const user = await this.userModel.findByPk(userId, {
-          attributes: [...recipientAttributes, 'helpGroupsDigestSentAt'],
+          attributes: recipientAttributes,
           transaction,
           // Not FOR UPDATE: the autologin tokens created meanwhile reference
           // this row, which needs a key share lock on it
@@ -176,96 +173,70 @@ export class HelpGroupsDigestService {
         if (!user) {
           return null;
         }
-        const previousSentAt = user.helpGroupsDigestSentAt;
-        // Upper bound of the activity, and the next lower bound
-        const now = new Date(Date.now() - HELP_GROUPS_DIGEST_SETTLE_DELAY_MS);
-        const since =
-          previousSentAt ??
-          new Date(
-            now.getTime() - HELP_GROUPS_DIGEST_DEFAULT_PERIOD_DAYS * DAY_IN_MS
-          );
         const discussions = await this.findDigestDiscussions(
           user.id,
-          since,
-          now,
           transaction
         );
-        const email =
-          discussions.length > 0
-            ? await this.toDigestEmail(user.id, discussions)
-            : null;
-        await this.userModel.update(
-          { helpGroupsDigestSentAt: now },
-          { where: { id: user.id }, transaction }
+        if (discussions.length === 0) {
+          return null;
+        }
+        const emailedAt = new Date().toISOString();
+        await this.markEmailed(
+          discussions.map(({ notificationId }) => notificationId),
+          emailedAt,
+          transaction
         );
-        return email ? { user, email, previousSentAt, now } : null;
+        return {
+          user,
+          emailedAt,
+          notificationIds: discussions.map(
+            ({ notificationId }) => notificationId
+          ),
+          email: await this.toDigestEmail(user.id, discussions),
+        };
       }
     );
     if (!prepared) {
       return false;
     }
-    const { user, email, previousSentAt, now } = prepared;
+    const { user, email, emailedAt, notificationIds } = prepared;
     try {
-      await this.mailsService.sendHelpGroupsWeeklyDigest(user, email);
+      await this.mailsService.sendHelpGroupsDailyDigest(user, email);
     } catch (error) {
-      // Only if no other run moved it since
-      await this.userModel.update(
-        { helpGroupsDigestSentAt: previousSentAt },
-        { where: { id: user.id, helpGroupsDigestSentAt: now } }
-      );
+      await this.releaseEmailed(notificationIds, emailedAt);
       throw error;
     }
     return true;
   }
 
   /**
-   * Visible discussions of the groups of the person (active membership,
-   * emails enabled, published group) published or with a visible reply in
-   * `(since, now]`, where the person published neither the discussion nor a
-   * reply (deleted ones included: they took part). The most recently active
-   * first, one more than shown to know whether there are others.
+   * Visible discussions announced by an event not seen nor emailed yet, in
+   * a published group the person is still an active member of with emails
+   * enabled, by an author whose account still exists. The most recent first.
    */
   private async findDigestDiscussions(
     userId: string,
-    since: Date,
-    now: Date,
     transaction: Transaction
   ): Promise<DigestDiscussionRow[]> {
     return this.userModel.sequelize.query<DigestDiscussionRow>(
-      `SELECT p."id", p."title", g."id" AS "groupId", g."name" AS "groupName",
-              g."slug" AS "groupSlug", a."firstName" AS "authorFirstName",
-              a."deletedAt" AS "authorDeletedAt"
-       FROM "HelpGroupMemberships" m
-       JOIN "HelpGroups" g ON g."id" = m."groupId" AND g."deletedAt" IS NULL
+      `SELECT n."id" AS "notificationId", p."id", p."title", p."content",
+              g."id" AS "groupId", g."name" AS "groupName",
+              g."slug" AS "groupSlug", a."firstName" AS "authorFirstName"
+       FROM "Notifications" n
+       JOIN "HelpGroups" g ON g."id" = n."groupId" AND g."deletedAt" IS NULL
          AND g."publishedAt" IS NOT NULL
-       JOIN "PostContexts" pc ON pc."helpGroupId" = g."id"
-       JOIN "Posts" p ON p."id" = pc."postId" AND p."deletedAt" IS NULL
-         AND p."hiddenAt" IS NULL
-       LEFT JOIN "Users" a ON a."id" = p."authorId"
-       WHERE m."userId" = :userId AND m."leftAt" IS NULL
+       JOIN "HelpGroupMemberships" m ON m."groupId" = g."id"
+         AND m."userId" = n."userId" AND m."leftAt" IS NULL
          AND m."emailsEnabled" = true
-         AND p."authorId" <> :userId
-         AND NOT EXISTS (
-           SELECT 1 FROM "PostReplies" own
-           WHERE own."postId" = p."id" AND own."authorId" = :userId
-         )
-         AND (
-           (p."createdAt" > :since AND p."createdAt" <= :now)
-           OR EXISTS (
-             SELECT 1 FROM "PostReplies" r
-             WHERE r."postId" = p."id" AND r."deletedAt" IS NULL
-               AND r."hiddenAt" IS NULL
-               AND r."createdAt" > :since AND r."createdAt" <= :now
-           )
-         )
-       ORDER BY p."lastActivityAt" DESC, p."id" DESC
-       LIMIT :limit`,
+       JOIN "Posts" p ON p."id" = n."subjectId" AND p."deletedAt" IS NULL
+         AND p."hiddenAt" IS NULL
+       JOIN "Users" a ON a."id" = p."authorId" AND a."deletedAt" IS NULL
+       WHERE n."userId" = :userId AND n."type" = :type AND ${PENDING_EVENT_SQL}
+       ORDER BY p."createdAt" DESC, p."id" DESC`,
       {
         replacements: {
           userId,
-          since,
-          now,
-          limit: HELP_GROUPS_DIGEST_MAX_DISCUSSIONS + 1,
+          type: NotificationTypes.HELP_GROUP_DISCUSSION,
         },
         type: QueryTypes.SELECT,
         transaction,
@@ -273,14 +244,49 @@ export class HelpGroupsDigestService {
     );
   }
 
+  private async markEmailed(
+    notificationIds: string[],
+    emailedAt: string,
+    transaction: Transaction
+  ) {
+    await this.userModel.sequelize.query(
+      `UPDATE "Notifications" n SET "events" = (
+         SELECT jsonb_agg(
+           CASE WHEN e->>'seenAt' IS NULL AND e->>'emailedAt' IS NULL
+             THEN e || jsonb_build_object('emailedAt', CAST(:emailedAt AS text))
+             ELSE e END
+           ORDER BY ord)
+         FROM jsonb_array_elements(n."events") WITH ORDINALITY AS t(e, ord)
+       ), "updatedAt" = NOW()
+       WHERE n."id" IN (:ids)`,
+      { replacements: { ids: notificationIds, emailedAt }, transaction }
+    );
+  }
+
+  // Gives back the events marked by a run whose email could not be queued
+  private async releaseEmailed(notificationIds: string[], emailedAt: string) {
+    await this.userModel.sequelize.query(
+      `UPDATE "Notifications" n SET "events" = (
+         SELECT jsonb_agg(
+           CASE WHEN e->>'emailedAt' = :emailedAt
+             THEN e || '{"emailedAt": null}'::jsonb ELSE e END
+           ORDER BY ord)
+         FROM jsonb_array_elements(n."events") WITH ORDINALITY AS t(e, ord)
+       ), "updatedAt" = NOW()
+       WHERE n."id" IN (:ids)`,
+      { replacements: { ids: notificationIds, emailedAt } }
+    );
+  }
+
   /**
    * Discussions grouped by group, in the order of their most recent
-   * activity, with an autologin token per link (they are single use).
+   * discussion, with an autologin token per link (they are single use).
+   * Ten discussions at most; the others are reached by the groups list.
    */
   private async toDigestEmail(
     userId: string,
     rows: DigestDiscussionRow[]
-  ): Promise<HelpGroupsWeeklyDigestEmail> {
+  ): Promise<HelpGroupsDailyDigestEmail> {
     const token = () =>
       this.authService.generateAutologinToken(
         userId,
@@ -289,7 +295,7 @@ export class HelpGroupsDigestService {
     const hasMore = rows.length > HELP_GROUPS_DIGEST_MAX_DISCUSSIONS;
     const shown = rows.slice(0, HELP_GROUPS_DIGEST_MAX_DISCUSSIONS);
 
-    const groups: HelpGroupsWeeklyDigestEmail['groups'] = [];
+    const groups: HelpGroupsDailyDigestEmail['groups'] = [];
     const groupIndexes = new Map<string, number>();
     for (const row of shown) {
       if (!groupIndexes.has(row.groupId)) {
@@ -302,14 +308,16 @@ export class HelpGroupsDigestService {
       }
       groups[groupIndexes.get(row.groupId)].discussions.push({
         title: row.title,
-        authorFirstName:
-          !row.authorFirstName || row.authorDeletedAt
-            ? DELETED_AUTHOR_LABEL
-            : row.authorFirstName,
+        authorFirstName: row.authorFirstName,
+        excerpt: toWordExcerpt(row.content ?? ''),
         url: helpGroupDiscussionUrl(row.groupSlug, row.id, await token()),
       });
     }
     return {
+      subject:
+        rows.length === 1
+          ? `${rows[0].authorFirstName} a ouvert une discussion dans « ${rows[0].groupName} »`
+          : HELP_GROUPS_DIGEST_PLURAL_SUBJECT,
       groups,
       groupsUrl: hasMore
         ? `${process.env.FRONT_URL}/backoffice/groupes?autologinToken=${encodeURIComponent(
