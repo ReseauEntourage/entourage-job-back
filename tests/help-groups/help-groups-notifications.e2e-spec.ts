@@ -758,7 +758,7 @@ describe('Help groups - Notifications', () => {
           url: string;
         }[];
       }[];
-      groupsUrl: string | null;
+      groupsUrl?: string;
       reason: string;
     };
 
@@ -785,7 +785,7 @@ describe('Help groups - Notifications', () => {
         }),
       ]);
       expect(variables.groups[0].settingsUrl).toContain('emails=1');
-      expect(variables.groupsUrl).toBeNull();
+      expect(variables).not.toHaveProperty('groupsUrl');
       expect(variables.reason).toContain('Vous recevez cet email');
       expect(digestOf(amina)).toBeUndefined();
     });

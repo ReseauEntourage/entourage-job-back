@@ -133,9 +133,37 @@ describe('MailsService - help groups notifications', () => {
       variables: expect.objectContaining({
         firstName: 'Julien',
         groups,
-        groupsUrl: null,
         reason: expect.stringMatching(/^Vous recevez cet email parce que/),
       }),
     });
+  });
+
+  it('Should leave out of the daily email the variables Mailjet would reject as null', async () => {
+    const { mailsService, queuesService } = buildService();
+    await mailsService.sendHelpGroupsDailyDigest(addressee, {
+      subject: 'Nouvelles discussions dans vos groupes',
+      groups: [
+        {
+          name: 'Refaire un CV',
+          settingsUrl: 'https://front/cv',
+          discussions: [
+            {
+              title: null,
+              authorFirstName: 'Thomas',
+              excerpt: 'Bonjour',
+              url: 'u1',
+            },
+          ],
+        },
+      ],
+      groupsUrl: null,
+    });
+    const [, job] = queuesService.addToWorkQueue.mock.calls[0];
+    const { variables } = job as { variables: Record<string, unknown> };
+    expect(variables).not.toHaveProperty('groupsUrl');
+    expect(JSON.stringify(variables)).not.toContain('null');
+    expect(
+      (variables.groups as { discussions: object[] }[])[0].discussions[0]
+    ).not.toHaveProperty('title');
   });
 });

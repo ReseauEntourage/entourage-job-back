@@ -383,6 +383,7 @@ export class MailsService {
     digest: HelpGroupsDailyDigestEmail
   ) {
     const { subject } = digest;
+    // Mailjet rejects a variable set to null (400): a null value is left out
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addressee.email,
       subject,
@@ -390,8 +391,13 @@ export class MailsService {
       variables: {
         firstName: addressee.firstName,
         subject,
-        groups: digest.groups,
-        groupsUrl: digest.groupsUrl,
+        groups: digest.groups.map((group) => ({
+          ...group,
+          discussions: group.discussions.map((discussion) =>
+            _.omitBy(discussion, _.isNull)
+          ),
+        })),
+        ...(digest.groupsUrl ? { groupsUrl: digest.groupsUrl } : {}),
         reason:
           'Vous recevez cet email parce que vous êtes membre de ces groupes d’entraide.',
         zone: getZoneDisplayLabel(addressee.zone),
