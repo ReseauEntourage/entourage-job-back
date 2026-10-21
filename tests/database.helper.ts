@@ -21,7 +21,6 @@ import {
 } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
-import { Passion } from 'src/passions/models';
 import { Revision, RevisionChange } from 'src/revisions/models';
 import { Skill } from 'src/skills/models';
 import {
@@ -48,8 +47,6 @@ export class DatabaseHelper {
     private userProfileNudge: typeof UserProfileNudge,
     @InjectModel(Skill)
     private skillModel: typeof Skill,
-    @InjectModel(Passion)
-    private passionModel: typeof Passion,
     @InjectModel(Experience)
     private experienceModel: typeof Experience,
     @InjectModel(ExperienceSkill)
@@ -121,7 +118,6 @@ export class DatabaseHelper {
       await this.formationModel.truncate(destroyOptions);
       await this.formationSkillModel.truncate(destroyOptions);
       await this.skillModel.truncate(destroyOptions);
-      await this.passionModel.truncate(destroyOptions);
       await this.experienceModel.truncate(destroyOptions);
       await this.reviewModel.truncate(destroyOptions);
       await this.organizationModel.truncate(destroyOptions);

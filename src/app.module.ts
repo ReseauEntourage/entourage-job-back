@@ -37,7 +37,6 @@ import { MediasModule } from './medias/medias.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrganizationsModule } from './organizations/organizations.module';
-import { PassionsModule } from './passions/passions.module';
 import { PingModule } from './ping/ping.module';
 import { PostsModule } from './posts/posts.module';
 import { ProfileGenerationModule } from './profile-generation/profile-generation.module';
@@ -96,6 +95,8 @@ export function getSequelizeOptions(
     password: password,
     database: pathname.replace('/', ''),
     autoLoadModels: true,
+    // The schema is owned by the migrations: never create tables from the models
+    synchronize: false,
     logging: false,
     pool,
   };
@@ -139,7 +140,6 @@ export function getSequelizeOptions(
     ContractsModule,
     LanguagesModule,
     NudgesModule,
-    PassionsModule,
     SkillsModule,
     ReviewsModule,
     RecruitementAlertsModule,
@@ -200,7 +200,6 @@ export function getSequelizeOptions(
     ContractsModule,
     LanguagesModule,
     NudgesModule,
-    PassionsModule,
     SkillsModule,
     ReviewsModule,
     MailsModule,
