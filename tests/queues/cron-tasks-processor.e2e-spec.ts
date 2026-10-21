@@ -650,6 +650,7 @@ describe('CronTasksProcessor', () => {
 
   describe('prepareUserWithoutResponseToFirstMessageMails', () => {
     const dto = (id: string, recommendationCount: number) => ({
+      id,
       user: { id },
       recommendations: new Array(recommendationCount).fill({}),
     });
@@ -713,9 +714,7 @@ describe('CronTasksProcessor', () => {
         false,
         expect.any(String),
         { total: 2, success: 1, failure: 1 },
-        // The failing item id is intentionally not asserted: see the bug report
-        // (the processor reads `dto.id` whereas the DTOs only carry `dto.user.id`).
-        [expect.objectContaining({ reason: expect.any(Error) })],
+        [{ itemId: 'u1', reason: expect.any(Error) }],
         [],
         'Skipped (not enough recommendations)'
       );
