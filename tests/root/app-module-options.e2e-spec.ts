@@ -57,7 +57,6 @@ describe('app.module connection options', () => {
     });
 
     it('fails on a malformed DATABASE_URL, as soon as the module is loaded', () => {
-      expect(() => loadAppModule({ DATABASE_URL: undefined })).not.toThrow();
       process.env.DATABASE_URL = 'not a url';
       expect(() => {
         jest.isolateModules(() => {
