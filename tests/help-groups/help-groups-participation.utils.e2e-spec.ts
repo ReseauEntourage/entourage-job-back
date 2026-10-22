@@ -1,6 +1,7 @@
 import {
   buildHelpGroupTitleSystemPrompt,
   cleanHelpGroupTitle,
+  isHelpGroupTitleOutput,
 } from 'src/help-groups/help-groups-title.config';
 import {
   findForbiddenExpression,
@@ -56,6 +57,32 @@ describe('Help groups - Participation utils', () => {
       expect(prompt).toContain('Propose toujours un titre');
       expect(prompt).toContain('Ne refuse jamais');
       expect(prompt).toContain('sur une seule ligne : jamais de retour');
+    });
+
+    it('Should describe the two fields of the structured output', () => {
+      const prompt = buildHelpGroupTitleSystemPrompt();
+      expect(prompt).toContain('« title »');
+      expect(prompt).toContain('« cannotTitle »');
+    });
+  });
+
+  describe('isHelpGroupTitleOutput', () => {
+    it('Should accept the expected shape only', () => {
+      expect(
+        isHelpGroupTitleOutput({ title: 'Mon titre', cannotTitle: false })
+      ).toBe(true);
+      expect(isHelpGroupTitleOutput({ title: '', cannotTitle: true })).toBe(
+        true
+      );
+      expect(isHelpGroupTitleOutput({ title: 'Mon titre' })).toBe(false);
+      expect(isHelpGroupTitleOutput({ title: 1, cannotTitle: false })).toBe(
+        false
+      );
+      expect(isHelpGroupTitleOutput({ title: 'a', cannotTitle: 'no' })).toBe(
+        false
+      );
+      expect(isHelpGroupTitleOutput(null)).toBe(false);
+      expect(isHelpGroupTitleOutput('Mon titre')).toBe(false);
     });
   });
 
