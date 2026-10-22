@@ -124,8 +124,8 @@ export class ProfileGeneratorProcessor extends WorkerHost {
         {
           feature: AiFeature.CV_EXTRACTION,
           name: 'cv-extraction',
-          // The S3 key (`{userId}_{uuid}.pdf`) lets an operator find the source
-          // file of a trace by hand. The pages themselves are never attached.
+          // The S3 key lets an operator find the source file of a trace by hand.
+          // Neither the pages nor a link to the file are sent to Datadog.
           tags: { userProfileId, fileHash, s3Key },
         },
         async ({ setOutcome, annotate }) => {
@@ -133,7 +133,6 @@ export class ProfileGeneratorProcessor extends WorkerHost {
             metadata: {
               pageCount: base64Images.length,
               imagesBytes: totalPagesBytes(base64Images),
-              s3Url: pdfUrl,
             },
           });
           try {

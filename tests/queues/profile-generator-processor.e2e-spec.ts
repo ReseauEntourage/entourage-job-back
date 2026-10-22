@@ -144,7 +144,7 @@ describe('ProfileGeneratorProcessor', () => {
       const workflowAnnotation = () =>
         annotate.mock.calls.map(([, options]) => options)[0];
 
-      it('opens a cv_extraction workflow around the extraction, pointing to the source file', async () => {
+      it('opens a cv_extraction workflow around the extraction, pointing to the source file by its S3 key', async () => {
         fakePoppler([1, 2]);
         const { processor } = build();
 
@@ -168,8 +168,6 @@ describe('ProfileGeneratorProcessor', () => {
             imagesBytes:
               Buffer.from('page-1').toString('base64').length +
               Buffer.from('page-2').toString('base64').length,
-            s3Url:
-              'https://test-bucket.s3.eu-west-3.amazonaws.com/folder/cv.pdf',
           },
         });
       });
