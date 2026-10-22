@@ -40,6 +40,7 @@ export class ReportAbuseUserProfilePipe implements PipeTransform<
     if (errors.length > 0) {
       throw new BadRequestException();
     }
-    return value;
+    // The validated instance, so that the trimmed comment is kept
+    return object as typeof value;
   }
 }

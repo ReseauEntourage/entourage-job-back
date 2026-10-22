@@ -198,6 +198,16 @@ export class User extends HistorizedModel {
   @Column
   elearningCompletedAt: Date;
 
+  // Help groups charter, common to every group and accepted only once
+  @AllowNull(true)
+  @Column
+  helpGroupsCharterAcceptedAt: Date | null;
+
+  // Date of the last weekly help groups digest: lower bound of the next one
+  @AllowNull(true)
+  @Column
+  helpGroupsDigestSentAt: Date | null;
+
   @IsOptional()
   @IsDateString()
   @AllowNull(true)

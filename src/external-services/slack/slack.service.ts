@@ -10,8 +10,16 @@ import {
   CheckinPerceivedBenefit,
 } from 'src/checkin/checkin.types';
 import { ConversationCheckin } from 'src/checkin/models/conversation-checkin.model';
+import { ReportTarget, ReportTargetTypes } from 'src/reports/reports.types';
+import {
+  REPORT_TARGET_SLACK_ACTION_VALUE,
+  getGroupMessageModerationSlackActions,
+  getReportTargetSlackAction,
+  getResolveSlackAction,
+} from 'src/reports/reports.utils';
 import { User } from 'src/users/models';
 import {
+  SentSlackMessage,
   SlackBlockConfig,
   slackChannelEnvVars,
   slackChannels,
@@ -22,6 +30,57 @@ import {
   SlackMsgContextMrkdwn,
   SlackMsgPart,
 } from './slack.types';
+
+export interface HelpGroupMessageReport {
+  author: User;
+  comment: string | null;
+  excerpt: string;
+  groupName: string;
+  isReply: boolean;
+  messageUrl: string;
+  reasonLabel: string;
+  reporter: User;
+  // The reported message, for the page of its reports in the admin tab
+  target: ReportTarget;
+}
+
+export interface HelpGroupMessageAutoHidden {
+  author: User;
+  groupName: string;
+  isReply: boolean;
+  messageUrl: string;
+  reasonLabels: string[];
+}
+
+/**
+ * Escapes a user written text for Slack mrkdwn: `&`, `<` and `>` are the
+ * control characters of links and mentions (`<!channel>`, `<@U…>`).
+ */
+export const escapeSlackText = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const formatSlackUser = (user: User | null | undefined) =>
+  user
+    ? escapeSlackText(`${user.firstName} ${user.lastName} (${user.email})`)
+    : 'Compte supprimé';
+
+/**
+ * Slack ids of the referents of the given users, each once. A user without
+ * referent, a referent without Slack email, or not found on Slack, is
+ * ignored. Shared by every moderation alert.
+ */
+export const resolveReferentSlackUserIds = async (
+  users: (User | null | undefined)[],
+  getUserIdByEmail: (email: string) => Promise<string | null>
+): Promise<string[]> => {
+  const emails = [
+    ...new Set(
+      users.map((user) => user?.staffContact?.slackEmail).filter(Boolean)
+    ),
+  ];
+  const ids = await Promise.all(emails.map((email) => getUserIdByEmail(email)));
+  return [...new Set(ids.filter(Boolean))];
+};
 
 @Injectable()
 export class SlackService implements OnModuleInit {
@@ -78,6 +137,60 @@ export class SlackService implements OnModuleInit {
     });
   };
 
+  /**
+   * Posts a moderation alert and returns what is needed to rewrite it later,
+   * or null when Slack did not say where the message landed.
+   */
+  postModerationAlert = async (
+    blocks: (Block | KnownBlock)[],
+    message: string
+  ): Promise<SentSlackMessage | null> => {
+    const response = await this.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      blocks,
+      message
+    );
+    const channel = response?.channel;
+    if (!response?.ok || typeof channel !== 'string' || !response.ts) {
+      return null;
+    }
+    return { channel, ts: response.ts, blocks };
+  };
+
+  /**
+   * Once the reports of its target are handled, a moderation alert loses its
+   * action buttons for the given status. « Voir la fiche » stays.
+   */
+  markModerationAlertHandled = async (
+    message: SentSlackMessage,
+    status: string
+  ): Promise<void> => {
+    const blocks = message.blocks.flatMap((block) => {
+      if (block.type !== 'actions') {
+        return [block];
+      }
+      const elements = (
+        block as { elements: { action_id?: string }[] }
+      ).elements.filter(({ action_id }) =>
+        action_id?.startsWith(`${REPORT_TARGET_SLACK_ACTION_VALUE}-`)
+      );
+      const statusBlock = {
+        type: 'context',
+        elements: [{ type: 'mrkdwn', text: status }],
+      } as KnownBlock;
+      return elements.length > 0
+        ? [statusBlock, { ...block, elements } as KnownBlock]
+        : [statusBlock];
+    });
+    await this.app.client.chat.update({
+      channel: message.channel,
+      ts: message.ts,
+      blocks,
+      text: status,
+      token: process.env.SLACK_BOT_TOKEN,
+    });
+  };
+
   sendReplyMessage = async (
     channel: string,
     thread_ts: string,
@@ -97,26 +210,129 @@ export class SlackService implements OnModuleInit {
     }
   };
 
+  /**
+   * A profile was reported: reporter, reported person, motive, comment, the
+   * referent of the reported person when identifiable and a link to the page
+   * of the profile in the reports admin tab. Never any email.
+   */
   sendMessageUserReported = async (
     userReporter: User,
     userReported: User,
-    reason: string,
-    comment: string
-  ): Promise<void> => {
-    const staffContactSlackEmail = userReported.staffContact?.slackEmail;
-    const slackStaffContactUserId = await this.getUserIdByEmail(
-      staffContactSlackEmail
-    );
-    await this.sendMessage(
-      slackChannels.ENTOURAGE_PRO_MODERATION,
+    reasonLabel: string,
+    comment: string | null
+  ): Promise<SentSlackMessage | null> => {
+    const [slackStaffContactUserId] = await this.getReferentSlackUserIds([
+      userReported,
+    ]);
+    return this.postModerationAlert(
       await this.generateProfileReportedBlocks(
         userReporter,
         userReported,
-        reason,
+        reasonLabel,
         comment,
-        slackStaffContactUserId
+        slackStaffContactUserId ?? null
       ),
       `Le profil de ${userReported.firstName} ${userReported.lastName} a été signalé`
+    );
+  };
+
+  /**
+   * Slack ids of the referents of the given users, each once.
+   */
+  private getReferentSlackUserIds(users: User[]): Promise<string[]> {
+    return resolveReferentSlackUserIds(users, (email) =>
+      this.getUserIdByEmail(email)
+    );
+  }
+
+  /**
+   * A help group message was reported: link, group, excerpt, motive,
+   * comment, reporter and author, with the referents of the author and of
+   * the reporter mentioned once each. Never any email.
+   */
+  sendHelpGroupMessageReported = async ({
+    author,
+    comment,
+    excerpt,
+    groupName,
+    isReply,
+    messageUrl,
+    reasonLabel,
+    reporter,
+    target,
+  }: HelpGroupMessageReport): Promise<SentSlackMessage | null> => {
+    const referentIds = await this.getReferentSlackUserIds([author, reporter]);
+    const blocks = this.generateSlackBlockMsg({
+      title: '🚨 Un message de groupe d’entraide a été signalé',
+      context: [
+        { title: 'Signalé par', content: formatSlackUser(reporter) },
+        { title: 'Auteur du message', content: formatSlackUser(author) },
+        {
+          title: '👮 Référents',
+          content: referentIds.length
+            ? referentIds.map((id) => `<@${id}>`).join(' ')
+            : 'Aucun référent identifié',
+        },
+      ],
+      msgParts: [
+        { content: `*Groupe* : ${escapeSlackText(groupName)}` },
+        {
+          content: `*${isReply ? 'Réponse' : 'Discussion'}* : <${messageUrl}|Voir le message>`,
+        },
+        { content: `*Extrait* : ${escapeSlackText(excerpt)}` },
+        { content: `*Motif* : ${reasonLabel}` },
+        {
+          content: `*Commentaire* : ${comment ? escapeSlackText(comment) : 'Aucun commentaire'}`,
+        },
+      ],
+      actions: [
+        ...getGroupMessageModerationSlackActions(messageUrl),
+        getReportTargetSlackAction(target.targetType, target.targetId),
+      ],
+    });
+    return this.postModerationAlert(
+      blocks,
+      `Un message du groupe ${escapeSlackText(groupName)} a été signalé`
+    );
+  };
+
+  /**
+   * Priority alert: a help group message was hidden automatically after
+   * reports, so that an admin restores it quickly in case of abuse.
+   */
+  sendHelpGroupMessageAutoHidden = async ({
+    author,
+    groupName,
+    isReply,
+    messageUrl,
+    reasonLabels,
+  }: HelpGroupMessageAutoHidden): Promise<SentSlackMessage | null> => {
+    const [referentId] = await this.getReferentSlackUserIds([author]);
+    const blocks = this.generateSlackBlockMsg({
+      title: '‼️ PRIORITAIRE — Message masqué automatiquement',
+      context: [
+        { title: 'Auteur du message', content: formatSlackUser(author) },
+        {
+          title: '👮 Référent de l’auteur',
+          content: referentId ? `<@${referentId}>` : 'Aucun référent identifié',
+        },
+      ],
+      msgParts: [
+        { content: `*Groupe* : ${escapeSlackText(groupName)}` },
+        {
+          content: `*${isReply ? 'Réponse' : 'Discussion'}* : <${messageUrl}|Voir le message>`,
+        },
+        { content: `*Motifs reçus* : ${reasonLabels.join(', ')}` },
+        {
+          content:
+            'Le message n’est plus visible des membres. Un admin peut le rétablir ou le supprimer depuis le groupe.',
+        },
+      ],
+      actions: getGroupMessageModerationSlackActions(messageUrl),
+    });
+    return this.postModerationAlert(
+      blocks,
+      `PRIORITAIRE : un message du groupe ${escapeSlackText(groupName)} a été masqué automatiquement`
     );
   };
 
@@ -203,15 +419,15 @@ export class SlackService implements OnModuleInit {
    * Generate a slack message for a profile reported
    * @param userReporter - The user who reported
    * @param userReported - The user who was reported
-   * @param reason - The reason of the report
-   * @param comment - The comment of the report
+   * @param reasonLabel - The label of the motive of the report
+   * @param comment - The optional comment of the report
    * @returns blocks for the message
    */
   generateProfileReportedBlocks = async (
     userReporter: User,
     userReported: User,
-    reason: string,
-    comment: string,
+    reasonLabel: string,
+    comment: string | null,
     slackStaffContactUserId: string | null
   ) => {
     return this.generateSlackBlockMsg({
@@ -233,11 +449,18 @@ export class SlackService implements OnModuleInit {
           content: `Profil signalé : ${userReported.firstName} ${userReported.lastName} <${userReported.email}>`,
         },
         {
-          content: `Raison du signalement : ${reason}`,
+          content: `Raison du signalement : ${reasonLabel}`,
         },
         {
-          content: `Commentaire : ${comment}`,
+          content: `Commentaire : ${comment ? escapeSlackText(comment) : 'Aucun commentaire'}`,
         },
+      ],
+      actions: [
+        getResolveSlackAction(ReportTargetTypes.USER_PROFILE, userReported.id),
+        getReportTargetSlackAction(
+          ReportTargetTypes.USER_PROFILE,
+          userReported.id
+        ),
       ],
     });
   };
@@ -513,6 +736,9 @@ export class SlackService implements OnModuleInit {
       type: 'actions',
       elements: actions.map((action, idx) => ({
         type: 'button',
+        // Identifies the button when the message is rewritten; unique in the
+        // message, as Slack requires
+        action_id: `${action.value}-${idx}`,
         text: {
           type: 'plain_text',
           text: action.label,
@@ -520,6 +746,7 @@ export class SlackService implements OnModuleInit {
         },
         value: `action-${idx}}`,
         url: action.url,
+        ...(action.style ? { style: action.style } : {}),
       })),
     };
   };

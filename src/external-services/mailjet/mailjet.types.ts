@@ -119,8 +119,6 @@ export const MailjetTemplates = {
   CONTACT_FORM: 3272334,
   MESSAGING_MESSAGE: 6305900,
   USER_EMAIL_VERIFICATION: 8132248,
-  USER_REPORTED_ADMIN: 6223181,
-  CONVERSATION_REPORTED_ADMIN: 6276909,
   ONBOARDING_J1_BAO: 6129684,
   ONBOARDING_J3_WEBINAR: 6129711,
   ONBOARDING_J4_CONTACT_ADVICE: 6559473,
@@ -160,8 +158,18 @@ export const MailjetTemplates = {
   MAILER_CONVERSATION_CHECKIN_RELANCE: 8294437,
   MAILER_CONVERSATION_CHECKIN_NOTE: 8317148,
   UNVERIFIED_ACCOUNT_RELAUNCH: 8317361,
+  HELP_GROUP_NOTIFICATION: 8425539,
+  // « [To: CANDIDAT, COACH] Groupes - Nouvelles discussions du jour »
+  HELP_GROUPS_DAILY_DISCUSSIONS: 8437122,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;
 
 export type MailjetTemplate = (typeof MailjetTemplates)[MailjetTemplateKey];
+
+/**
+ * A template still at its placeholder id (0) cannot be sent: Mailjet would
+ * receive a message without a template nor a body.
+ */
+export const isMailjetTemplateConfigured = (templateId: MailjetTemplate) =>
+  templateId > 0;

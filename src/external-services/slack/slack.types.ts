@@ -1,3 +1,5 @@
+import { Block, KnownBlock } from '@slack/bolt';
+
 // Each channel is configured per environment through its own env var: preprod
 // and prod both run with NODE_ENV=production, so NODE_ENV can't tell them
 // apart. Unset or empty variables fall back to the dev channels.
@@ -48,8 +50,21 @@ export interface SlackMsgPart {
 
 export interface SlackMsgAction {
   label: string;
+  // Slack only offers two colours of button: green and red
+  style?: 'primary' | 'danger';
   url: string;
   value: string;
+}
+
+/**
+ * A posted Slack message, kept to be rewritten later (e.g. a moderation
+ * alert once its report is handled). `channel` is the channel id returned
+ * by Slack, not its name.
+ */
+export interface SentSlackMessage {
+  blocks: (Block | KnownBlock)[];
+  channel: string;
+  ts: string;
 }
 
 export interface SlackBlockConfig {

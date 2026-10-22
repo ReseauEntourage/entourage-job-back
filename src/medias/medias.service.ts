@@ -7,6 +7,11 @@ import { mediaAttributes } from 'src/messaging/messaging.attributes';
 import { Conversation, Message } from 'src/messaging/models';
 import { Media } from './models';
 
+// Signed URLs are computed when medias are loaded, but only used later (e.g. a
+// user reads a message for a while before opening its attachment): 60s is far
+// too short.
+export const MEDIA_SIGNED_URL_TTL_SECONDS = 60 * 60;
+
 @Injectable()
 export class MediasService {
   constructor(
@@ -56,7 +61,8 @@ export class MediasService {
         media.signedUrl = await this.s3Service.getSignedUrl(
           media.s3Key,
           media.mimeType,
-          'inline' // Permit to display the file directly in the browser
+          'inline', // Permit to display the file directly in the browser
+          MEDIA_SIGNED_URL_TTL_SECONDS
         );
       })
     );

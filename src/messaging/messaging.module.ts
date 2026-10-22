@@ -6,6 +6,7 @@ import { GamificationModule } from 'src/gamification/gamification.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { MediasModule } from 'src/medias/medias.module';
 import { QueuesModule } from 'src/queues/producers';
+import { ReportsModule } from 'src/reports/reports.module';
 import { UsersModule } from 'src/users/users.module';
 import { ConversationPipelineService } from './conversation-pipeline.service';
 import { MessagingController } from './messaging.controller';
@@ -27,6 +28,7 @@ import {
     ]),
     SlackModule,
     QueuesModule,
+    ReportsModule,
     forwardRef(() => GamificationModule),
     forwardRef(() => MailsModule),
     forwardRef(() => UsersModule),

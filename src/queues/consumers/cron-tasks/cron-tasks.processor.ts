@@ -14,8 +14,10 @@ import {
 } from 'src/external-services/salesforce/salesforce.utils';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { GamificationService } from 'src/gamification/gamification.service';
+import { HelpGroupsDigestService } from 'src/help-groups/help-groups-digest.service';
 import { ConversationPipelineService } from 'src/messaging/conversation-pipeline.service';
 import { MessagingService } from 'src/messaging/messaging.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import {
   collectSettledResults,
@@ -59,7 +61,9 @@ export class CronTasksProcessor extends WorkerHost {
     private conversationPipelineService: ConversationPipelineService,
     private checkinService: CheckinService,
     private salesforceService: SalesforceService,
-    private slackService: SlackService
+    private slackService: SlackService,
+    private helpGroupsDigestService: HelpGroupsDigestService,
+    private notificationsService: NotificationsService
   ) {
     super();
   }
@@ -136,12 +140,42 @@ export class CronTasksProcessor extends WorkerHost {
         return this.manualLinkSalesforceContact(
           job.data as ManualLinkSalesforceContactJob
         );
+      case Jobs.SEND_HELP_GROUPS_DAILY_DIGEST:
+        return this.sendHelpGroupsDailyDigest();
+      case Jobs.PURGE_EXPIRED_NOTIFICATIONS:
+        return this.purgeExpiredNotifications();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
         );
         throw new Error(`Unknown job type: ${job.name}`);
     }
+  }
+
+  /**
+   * Daily email of the new help group discussions, at 6 pm (Paris). Each
+   * person is handled in their own transaction: a failure is reported, never
+   * blocks the others.
+   */
+  async sendHelpGroupsDailyDigest() {
+    const { sent, skipped, failed } =
+      await this.helpGroupsDigestService.sendDailyDigests();
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      failed === 0,
+      '📬 Help groups daily discussions email',
+      {
+        total: sent + skipped + failed,
+        success: sent + skipped,
+        failure: failed,
+      },
+      []
+    );
+    return `Help groups daily discussions email: ${sent} sent, ${skipped} without new discussion, ${failed} failed`;
+  }
+
+  async purgeExpiredNotifications() {
+    const count = await this.notificationsService.purgeExpired();
+    return `Purged ${count} expired notifications`;
   }
 
   async deleteInactiveUsers() {

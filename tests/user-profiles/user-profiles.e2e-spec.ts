@@ -24,6 +24,7 @@ import {
   UserProfileEmbedding,
   UserProfileEmbeddingType,
 } from 'src/user-profiles/models/user-profile-embedding.model';
+import { UserProfileNudge } from 'src/user-profiles/models/user-profile-nudge.model';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
@@ -2104,6 +2105,127 @@ describe('UserProfiles', () => {
               expect.objectContaining({ content: 'Nudge personnalisé 2' }),
             ])
           );
+        });
+
+        describe('Nudges and customNudges independence', () => {
+          const putProfile = (body: UserProfileWithPartialAssociations) =>
+            request(server)
+              .put(`${route}/profile/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send(body);
+
+          const nudgeIdsOf = (response: { body: { nudges: Nudge[] } }) =>
+            response.body.nudges.map((nudge) => nudge.id).sort();
+
+          beforeEach(async () => {
+            // Start from a known state: one list nudge, no custom nudge
+            const response = await putProfile({
+              nudges: [{ id: nudgeTips.id }],
+              customNudges: [],
+            });
+            expect(response.status).toBe(200);
+          });
+
+          it('Should keep the list nudges when adding customNudges', async () => {
+            const response = await putProfile({
+              customNudges: [{ content: 'Nudge personnalisé A' }],
+            });
+
+            expect(response.status).toBe(200);
+            expect(nudgeIdsOf(response)).toEqual([nudgeTips.id]);
+            expect(response.body.customNudges).toHaveLength(1);
+          });
+
+          it('Should keep the list nudges when updating a custom nudge', async () => {
+            const created = await putProfile({
+              customNudges: [{ content: 'Avant' }],
+            });
+            const response = await putProfile({
+              customNudges: [
+                { id: created.body.customNudges[0].id, content: 'Après' },
+              ],
+            });
+
+            expect(response.status).toBe(200);
+            expect(nudgeIdsOf(response)).toEqual([nudgeTips.id]);
+            expect(response.body.customNudges).toEqual([
+              expect.objectContaining({ content: 'Après' }),
+            ]);
+          });
+
+          it('Should keep the list nudges when removing a custom nudge', async () => {
+            const created = await putProfile({
+              customNudges: [{ content: 'A garder' }, { content: 'A retirer' }],
+            });
+            const kept = created.body.customNudges.find(
+              (customNudge: { id: string; content: string }) =>
+                customNudge.content === 'A garder'
+            );
+            const response = await putProfile({
+              customNudges: [{ id: kept.id, content: kept.content }],
+            });
+
+            expect(response.status).toBe(200);
+            expect(nudgeIdsOf(response)).toEqual([nudgeTips.id]);
+            expect(response.body.customNudges).toEqual([
+              expect.objectContaining({ content: 'A garder' }),
+            ]);
+          });
+
+          it('Should keep the list nudges when removing the last custom nudge', async () => {
+            await putProfile({ customNudges: [{ content: 'Dernier' }] });
+            const response = await putProfile({ customNudges: [] });
+
+            expect(response.status).toBe(200);
+            expect(nudgeIdsOf(response)).toEqual([nudgeTips.id]);
+            expect(response.body.customNudges).toHaveLength(0);
+          });
+
+          it('Should save both kinds when sent in the same update', async () => {
+            const response = await putProfile({
+              nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
+              customNudges: [{ content: 'Nudge personnalisé B' }],
+            });
+
+            expect(response.status).toBe(200);
+            expect(nudgeIdsOf(response)).toEqual(
+              [nudgeCv.id, nudgeNetwork.id].sort()
+            );
+            expect(response.body.customNudges).toEqual([
+              expect.objectContaining({ content: 'Nudge personnalisé B' }),
+            ]);
+          });
+
+          it('Should save a list nudge once when it is sent twice', async () => {
+            const response = await putProfile({
+              nudges: [{ id: nudgeCv.id }, { id: nudgeCv.id }],
+            });
+
+            expect(response.status).toBe(200);
+            expect(nudgeIdsOf(response)).toEqual([nudgeCv.id]);
+            // The API response deduplicates joined rows: count the rows
+            expect(
+              await UserProfileNudge.count({
+                where: {
+                  userProfileId: loggedInCandidate.user.userProfile.id,
+                  nudgeId: nudgeCv.id,
+                },
+              })
+            ).toBe(1);
+          });
+
+          it('Should keep the custom nudges when updating the list nudges', async () => {
+            await putProfile({ customNudges: [{ content: 'Libre' }] });
+            const response = await putProfile({
+              nudges: [{ id: nudgeInterview.id }],
+            });
+
+            expect(response.status).toBe(200);
+            expect(nudgeIdsOf(response)).toEqual([nudgeInterview.id]);
+            expect(response.body.customNudges).toEqual([
+              expect.objectContaining({ content: 'Libre' }),
+            ]);
+          });
         });
 
         it('Should return 200 and valid data if candidate update his experiences', async () => {
