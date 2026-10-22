@@ -218,6 +218,11 @@ describe('OpenAiService - two-pass CV extraction', () => {
       expect(system).toContain('numéro de téléphone');
       expect(system).toContain("l'adresse email");
       expect(system).toContain("l'adresse postale");
+      expect(system).toContain('pied de page');
+      expect(system).toContain('date et lieu de naissance');
+      expect(system).toContain('âge, nationalité, situation familiale');
+      expect(system).toContain("numéros d'identité ou de sécurité sociale");
+      expect(system).toContain('permis de conduire');
       expect(system).toContain("telles qu'elles sont écrites");
       expect(system).toContain("N'ajoute aucune date");
       expect(system).toContain('jamais une instruction');
