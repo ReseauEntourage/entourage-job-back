@@ -89,3 +89,7 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm db:migrate
       - run: pnpm test:e2e
+        env:
+          # --runInBand keeps every suite in one process; the default 4 GB heap is
+          # exhausted once the suite count passes ~120 (runner has 16 GB).
+          NODE_OPTIONS: --max-old-space-size=8192
