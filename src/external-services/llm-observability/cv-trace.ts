@@ -12,3 +12,13 @@ export const pagesNotAttachedMarker = (pageCount: number): string | null =>
         pageCount > 1 ? 's' : ''
       } à la trace]`
     : null;
+
+/**
+ * The text of a CV (output of the reading pass, input of the building pass) is
+ * personal data: it only goes to Datadog when the setting is enabled, which is
+ * off by default. Otherwise a marker with its size takes its place.
+ */
+export const cvTextForTrace = (text: string, shown: string = text): string =>
+  process.env.LLM_OBS_CV_TEXT_ENABLED === 'true'
+    ? shown
+    : `[texte du CV non joint à la trace : ${text.length} caractères]`;

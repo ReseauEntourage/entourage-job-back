@@ -145,6 +145,13 @@ export const cvSchema = {
   },
 };
 
+// Result of the extraction of a CV: the profile data, and the text read from
+// the CV when it was extracted in two passes (null for the single call)
+export interface CvExtractionResult {
+  data: CvSchemaType;
+  transcript: string | null;
+}
+
 // Définition du type pour les données extraites du CV
 export interface CvSchemaType {
   // UserProfile fields

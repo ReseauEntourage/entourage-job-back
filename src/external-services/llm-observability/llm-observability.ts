@@ -49,6 +49,8 @@ export interface LlmCallAnnotation {
     outputTokens?: number;
     totalTokens?: number;
   };
+  /** Outcome tagged on the span. Defaults to `success`, or `error` if the call throws. */
+  outcome?: AiWorkflowOutcome;
   outputMessages?: LlmMessage[];
 }
 
@@ -56,6 +58,8 @@ interface LlmCallOptions {
   modelName: string;
   modelProvider: string;
   name: string;
+  /** Searchable tags of the span, such as the step of a flow. */
+  tags?: Record<string, string>;
 }
 
 /**
@@ -119,25 +123,47 @@ export const traceAiWorkflow = <T>(
  * Runs an LLM call in a manual `llm` span. Used where the automatic
  * instrumentation loses information (images become a `[image]` marker). The
  * provider is a parameter so that changing the model provider does not change
- * the traces.
+ * the traces. The span is tagged with its `outcome`, even when the call throws;
+ * the error is rethrown unchanged.
  */
 export const traceLlmCall = <T>(
-  { name, modelName, modelProvider }: LlmCallOptions,
+  { name, modelName, modelProvider, tags = {} }: LlmCallOptions,
   fn: (annotate: (annotation: LlmCallAnnotation) => void) => Promise<T>
 ): Promise<T> =>
-  tracer.llmobs.trace({ kind: 'llm', name, modelName, modelProvider }, (span) =>
-    fn(
-      ({
-        inputMessages,
-        outputMessages,
-        metrics,
-        metadata,
-      }: LlmCallAnnotation) =>
-        safeAnnotate(span, {
-          ...(inputMessages ? { inputData: inputMessages } : {}),
-          ...(outputMessages ? { outputData: outputMessages } : {}),
-          ...(metrics ? { metrics } : {}),
-          ...(metadata ? { metadata } : {}),
-        })
-    )
+  tracer.llmobs.trace(
+    { kind: 'llm', name, modelName, modelProvider },
+    async (span) => {
+      let outcome: AiWorkflowOutcome | undefined;
+      try {
+        const result = await fn(
+          ({
+            outcome: annotatedOutcome,
+            inputMessages,
+            outputMessages,
+            metrics,
+            metadata,
+          }: LlmCallAnnotation) => {
+            if (annotatedOutcome) {
+              outcome = annotatedOutcome;
+            }
+            const options = {
+              ...(inputMessages ? { inputData: inputMessages } : {}),
+              ...(outputMessages ? { outputData: outputMessages } : {}),
+              ...(metrics ? { metrics } : {}),
+              ...(metadata ? { metadata } : {}),
+            };
+            if (Object.keys(options).length > 0) {
+              safeAnnotate(span, options);
+            }
+          }
+        );
+        outcome ??= 'success';
+        return result;
+      } catch (error) {
+        outcome ??= 'error';
+        throw error;
+      } finally {
+        safeAnnotate(span, { tags: { ...tags, outcome: outcome ?? 'error' } });
+      }
+    }
   );

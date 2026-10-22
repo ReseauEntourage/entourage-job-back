@@ -192,6 +192,47 @@ describe('traceLlmCall', () => {
     expect(annotate).toHaveBeenCalledWith(span, { metadata: { pages: 1 } });
   });
 
+  it('tags the span with its tags and a success outcome', async () => {
+    await traceLlmCall(
+      { ...options, tags: { step: 'reading' } },
+      async () => 1
+    );
+
+    expect(annotate).toHaveBeenCalledWith(span, {
+      tags: { step: 'reading', outcome: 'success' },
+    });
+  });
+
+  it('tags the outcome given by the call', async () => {
+    await traceLlmCall(options, async (annotateCall) => {
+      annotateCall({ outcome: 'empty' });
+    });
+
+    expect(annotate).toHaveBeenCalledTimes(1);
+    expect(annotate).toHaveBeenCalledWith(span, { tags: { outcome: 'empty' } });
+  });
+
+  it('tags an error outcome when the call throws, and keeps the outcome it gave', async () => {
+    await expect(
+      traceLlmCall(options, async () => {
+        throw new Error('boom');
+      })
+    ).rejects.toThrow('boom');
+    expect(annotate).toHaveBeenLastCalledWith(span, {
+      tags: { outcome: 'error' },
+    });
+
+    await expect(
+      traceLlmCall(options, async (annotateCall) => {
+        annotateCall({ outcome: 'cancelled' });
+        throw new Error('aborted');
+      })
+    ).rejects.toThrow('aborted');
+    expect(annotate).toHaveBeenLastCalledWith(span, {
+      tags: { outcome: 'cancelled' },
+    });
+  });
+
   it('rethrows the error of the call', async () => {
     await expect(
       traceLlmCall(options, async () => {

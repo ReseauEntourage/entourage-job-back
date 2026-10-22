@@ -60,7 +60,10 @@ describe('OpenAiService.extractCVFromImages', () => {
       signal
     );
 
-    expect(result).toEqual({ description: 'A cook' });
+    expect(result).toEqual({
+      data: { description: 'A cook' },
+      transcript: null,
+    });
     const [body, options] = create.mock.calls[0];
     expect(options).toEqual({ signal });
     expect(body.tool_choice).toEqual({

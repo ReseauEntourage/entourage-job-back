@@ -51,11 +51,15 @@ describe('ProfileGeneratorProcessor', () => {
 
   const build = () => {
     const openAiService = {
-      extractCVFromImages: jest.fn().mockResolvedValue(CV_DATA),
+      extractCVFromImages: jest
+        .fn()
+        .mockResolvedValue({ data: CV_DATA, transcript: null }),
+      buildCVFromTranscript: jest.fn(),
     };
     const pusherService = { sendEvent: jest.fn().mockResolvedValue(undefined) };
     const profileGenerationService = {
       saveExtractedCVData: jest.fn().mockResolvedValue(undefined),
+      getReusableTranscript: jest.fn().mockResolvedValue(null),
       populateUserProfileFromCVData: jest.fn().mockResolvedValue(undefined),
     };
     const profileGenerationQueue = {
@@ -140,6 +144,210 @@ describe('ProfileGeneratorProcessor', () => {
   });
 
   describe('handleProfileGeneration', () => {
+    describe('two-pass extraction', () => {
+      const saved = process.env.CV_EXTRACTION_TWO_PASSES;
+      const TEXT =
+        '# Expériences\nCuisinier depuis 2019, restauration collective';
+
+      beforeEach(() => {
+        process.env.CV_EXTRACTION_TWO_PASSES = 'true';
+      });
+
+      afterAll(() => {
+        if (saved === undefined) {
+          delete process.env.CV_EXTRACTION_TWO_PASSES;
+        } else {
+          process.env.CV_EXTRACTION_TWO_PASSES = saved;
+        }
+      });
+
+      it('keeps the text read from the CV with the extracted data', async () => {
+        const { processor, openAiService, profileGenerationService } = build();
+        openAiService.extractCVFromImages.mockResolvedValue({
+          data: CV_DATA,
+          transcript: TEXT,
+        });
+
+        await processor.handleProfileGeneration(buildJob() as never);
+
+        expect(
+          profileGenerationService.getReusableTranscript
+        ).toHaveBeenCalledWith('profile-1', 'hash-1');
+        expect(mockAxiosGet).toHaveBeenCalled();
+        expect(openAiService.buildCVFromTranscript).not.toHaveBeenCalled();
+        expect(
+          profileGenerationService.saveExtractedCVData
+        ).toHaveBeenCalledWith('profile-1', CV_DATA, 'hash-1', TEXT);
+        expect(
+          profileGenerationService.populateUserProfileFromCVData
+        ).toHaveBeenCalledWith('user-1', CV_DATA);
+      });
+
+      it('builds the profile again from a reusable text, without downloading or reading the CV', async () => {
+        const {
+          processor,
+          openAiService,
+          profileGenerationService,
+          pusherService,
+        } = build();
+        profileGenerationService.getReusableTranscript.mockResolvedValue(TEXT);
+        openAiService.buildCVFromTranscript.mockResolvedValue({
+          data: CV_DATA,
+          transcript: TEXT,
+        });
+
+        await processor.handleProfileGeneration(buildJob() as never);
+
+        expect(mockAxiosGet).not.toHaveBeenCalled();
+        expect(mockExecFile).not.toHaveBeenCalled();
+        expect(openAiService.extractCVFromImages).not.toHaveBeenCalled();
+        expect(openAiService.buildCVFromTranscript).toHaveBeenCalledWith(
+          TEXT,
+          expect.any(AbortSignal)
+        );
+        expect(
+          profileGenerationService.saveExtractedCVData
+        ).toHaveBeenCalledWith('profile-1', CV_DATA, 'hash-1', TEXT);
+        expect(pusherService.sendEvent).toHaveBeenCalledWith(
+          `${PusherChannels.PROFILE_GENERATION}-user-1`,
+          PusherEvents.PROFILE_GENERATION_COMPLETE,
+          { success: true, jobId: 'job-1', userProfileId: 'profile-1' }
+        );
+        expect(annotate).toHaveBeenCalledWith(
+          span,
+          expect.objectContaining({
+            metadata: { reusedTranscript: true, textChars: TEXT.length },
+          })
+        );
+      });
+
+      it('reads the CV when no text can be reused (other file or older reading instructions)', async () => {
+        const { processor, openAiService, profileGenerationService } = build();
+        profileGenerationService.getReusableTranscript.mockResolvedValue(null);
+        openAiService.extractCVFromImages.mockResolvedValue({
+          data: CV_DATA,
+          transcript: TEXT,
+        });
+
+        await processor.handleProfileGeneration(buildJob() as never);
+
+        expect(mockAxiosGet).toHaveBeenCalled();
+        expect(openAiService.extractCVFromImages).toHaveBeenCalledTimes(1);
+        expect(openAiService.buildCVFromTranscript).not.toHaveBeenCalled();
+      });
+
+      it('does not even look for a reusable text when the two-pass extraction is off', async () => {
+        process.env.CV_EXTRACTION_TWO_PASSES = 'false';
+        const { processor, profileGenerationService } = build();
+
+        await processor.handleProfileGeneration(buildJob() as never);
+
+        expect(
+          profileGenerationService.getReusableTranscript
+        ).not.toHaveBeenCalled();
+        expect(
+          profileGenerationService.saveExtractedCVData
+        ).toHaveBeenCalledWith('profile-1', CV_DATA, 'hash-1', null);
+      });
+
+      it('fails as a technical error, writing nothing, when the CV could not be read', async () => {
+        const {
+          processor,
+          openAiService,
+          profileGenerationService,
+          pusherService,
+        } = build();
+        const failure =
+          "Impossible de lire le CV à partir des images: La lecture du CV n'a produit aucun texte exploitable (0 caractères).";
+        openAiService.extractCVFromImages.mockRejectedValue(new Error(failure));
+
+        await expect(
+          processor.handleProfileGeneration(buildJob() as never)
+        ).rejects.toThrow('aucun texte exploitable');
+
+        expect(
+          profileGenerationService.saveExtractedCVData
+        ).not.toHaveBeenCalled();
+        expect(
+          profileGenerationService.populateUserProfileFromCVData
+        ).not.toHaveBeenCalled();
+        expect(pusherService.sendEvent).toHaveBeenCalledWith(
+          `${PusherChannels.PROFILE_GENERATION}-user-1`,
+          PusherEvents.PROFILE_GENERATION_COMPLETE,
+          expect.objectContaining({ success: false, reason: 'error' })
+        );
+      });
+
+      it('reports a cancellation, and writes nothing, when the job is cancelled between the passes', async () => {
+        const {
+          processor,
+          openAiService,
+          profileGenerationQueue,
+          profileGenerationService,
+          pusherService,
+        } = build();
+        profileGenerationQueue.getJob.mockResolvedValue({
+          data: { cancelled: true },
+        });
+        // The cancellation is noticed after the reading, before the building
+        openAiService.extractCVFromImages.mockImplementation(
+          (_images: string[], signal: AbortSignal) =>
+            new Promise((_resolve, reject) => {
+              signal.addEventListener('abort', () =>
+                reject(new Error('Extraction du CV interrompue'))
+              );
+            })
+        );
+
+        await expect(
+          processor.handleProfileGeneration(buildJob() as never)
+        ).rejects.toThrow('interrompue');
+
+        expect(
+          profileGenerationService.saveExtractedCVData
+        ).not.toHaveBeenCalled();
+        expect(pusherService.sendEvent).toHaveBeenCalledWith(
+          `${PusherChannels.PROFILE_GENERATION}-user-1`,
+          PusherEvents.PROFILE_GENERATION_COMPLETE,
+          expect.objectContaining({ success: false, reason: 'cancelled' })
+        );
+        expect(
+          annotate.mock.calls
+            .map(([, options]) => options.tags)
+            .find((tags) => tags?.feature === 'cv_extraction')
+        ).toMatchObject({ outcome: 'cancelled' });
+      });
+
+      it('cancels while the profile is being built from a reusable text', async () => {
+        const {
+          processor,
+          openAiService,
+          profileGenerationQueue,
+          profileGenerationService,
+        } = build();
+        profileGenerationService.getReusableTranscript.mockResolvedValue(TEXT);
+        profileGenerationQueue.getJob.mockResolvedValue({
+          data: { cancelled: true },
+        });
+        openAiService.buildCVFromTranscript.mockImplementation(
+          (_text: string, signal: AbortSignal) =>
+            new Promise((_resolve, reject) => {
+              signal.addEventListener('abort', () =>
+                reject(new Error('Request aborted'))
+              );
+            })
+        );
+
+        await expect(
+          processor.handleProfileGeneration(buildJob() as never)
+        ).rejects.toThrow('Request aborted');
+
+        expect(
+          profileGenerationService.saveExtractedCVData
+        ).not.toHaveBeenCalled();
+      });
+    });
+
     describe('cv-extraction trace', () => {
       const workflowAnnotation = () =>
         annotate.mock.calls.map(([, options]) => options)[0];
@@ -251,7 +459,8 @@ describe('ProfileGeneratorProcessor', () => {
       expect(profileGenerationService.saveExtractedCVData).toHaveBeenCalledWith(
         'profile-1',
         CV_DATA,
-        'hash-1'
+        'hash-1',
+        null
       );
       expect(
         profileGenerationService.populateUserProfileFromCVData
