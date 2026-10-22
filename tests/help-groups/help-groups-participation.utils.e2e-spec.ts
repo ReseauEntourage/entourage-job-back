@@ -55,6 +55,7 @@ describe('Help groups - Participation utils', () => {
       const prompt = buildHelpGroupTitleSystemPrompt();
       expect(prompt).toContain('Propose toujours un titre');
       expect(prompt).toContain('Ne refuse jamais');
+      expect(prompt).toContain('sur une seule ligne : jamais de retour');
     });
   });
 

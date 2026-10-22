@@ -30,7 +30,7 @@ const RULES = [
   "N'ajoute aucune information absente du message : ni durée, ni métier, ni lieu, ni cause.",
   'Ne mentionne ni nom, ni prénom, ni coordonnées, ni aucune donnée personnelle, même si le message en contient.',
   "Propose toujours un titre, quel que soit le message : un remerciement, un message de joie, un encouragement, un partage d'expérience ou un message très court méritent un titre comme les autres (par exemple « Merci d'avoir créé ce groupe, c'est génial ! »). Ne refuse jamais, ne dis jamais que le message ne convient pas, ne suggère jamais de ne pas écrire de message et ne demande aucune précision.",
-  'Réponds uniquement par le titre : pas de guillemets, pas de préfixe, pas de commentaire.',
+  "Réponds uniquement par le titre, sur une seule ligne : jamais de retour à la ligne ni de second paragraphe, pas de guillemets, pas de préfixe, pas de commentaire, pas d'explication.",
 ];
 
 const DATA_RULE =
