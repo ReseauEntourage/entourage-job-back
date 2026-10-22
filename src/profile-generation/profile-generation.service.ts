@@ -15,6 +15,7 @@ import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-obs
 import {
   CvSchemaType,
   SCHEMA_VERSION,
+  TRANSCRIPT_VERSION,
 } from 'src/external-services/openai/openai.schemas';
 import { Formation } from 'src/formations/models';
 import { Interest } from 'src/interests/models';
@@ -221,13 +222,47 @@ export class ProfileGenerationService {
     }
   }
 
+  /**
+   * Returns the text read from the CV by an earlier extraction, only if it can
+   * still be used to build a profile: same file (same hash) and read with the
+   * current reading instructions. Otherwise the CV has to be read again.
+   */
+  async getReusableTranscript(
+    userProfileId: string,
+    fileHash: string
+  ): Promise<string | null> {
+    const existingData = await this.extractedCVDataModel.findOne({
+      where: { userProfileId },
+    });
+
+    if (
+      !existingData?.transcript ||
+      existingData.fileHash !== fileHash ||
+      existingData.transcriptVersion !== TRANSCRIPT_VERSION
+    ) {
+      return null;
+    }
+
+    return existingData.transcript;
+  }
+
+  /**
+   * @param transcript - Text read from the CV, kept to build the profile again
+   * without reading the CV. Null for the single-call extraction, which does not
+   * produce it.
+   */
   async saveExtractedCVData(
     userProfileId: string,
     data: CvSchemaType,
-    fileHash: string
+    fileHash: string,
+    transcript: string | null = null
   ): Promise<ExtractedCVData> {
     try {
       const currentSchemaVersion = SCHEMA_VERSION;
+      const transcriptColumns = {
+        transcript,
+        transcriptVersion: transcript === null ? null : TRANSCRIPT_VERSION,
+      };
       // Vérification si des données existent déjà pour cet utilisateur
       const existingData = await this.extractedCVDataModel.findOne({
         where: { userProfileId },
@@ -239,6 +274,7 @@ export class ProfileGenerationService {
           data,
           fileHash,
           schemaVersion: currentSchemaVersion,
+          ...transcriptColumns,
         });
         return existingData;
       } else {
@@ -248,6 +284,7 @@ export class ProfileGenerationService {
           data,
           fileHash,
           schemaVersion: currentSchemaVersion,
+          ...transcriptColumns,
         });
       }
     } catch (error) {

@@ -1,5 +1,9 @@
 // Increment schema version on changes to make sure we dont reuse old saved schemas
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
+
+// Increment when the instructions of the reading pass change, so that a text
+// read with older instructions is not reused to build a profile
+export const TRANSCRIPT_VERSION = 1;
 
 // Définition du schéma JSON pour la sortie structurée
 export const cvSchema = {

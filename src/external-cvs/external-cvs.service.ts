@@ -231,6 +231,12 @@ export class ExternalCvsService {
       return;
     }
 
+    // The data extracted from the CV (and the text read from it) are personal
+    // data that follow the file: they go with it, even when no CV is left
+    await this.extractedCVDataModel.destroy({
+      where: { userProfileId: userProfile.id },
+    });
+
     const externalCvs = await this.externalCvModel.findAll({
       where: { userProfileId: userProfile.id },
       paranoid: false,

@@ -4,7 +4,10 @@ import { InternalServerErrorException, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { SCHEMA_VERSION } from 'src/external-services/openai/openai.schemas';
+import {
+  SCHEMA_VERSION,
+  TRANSCRIPT_VERSION,
+} from 'src/external-services/openai/openai.schemas';
 import type { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -334,6 +337,82 @@ describe('ProfileGeneration - CV import', () => {
       );
       expect(await service.shouldExtractCV(profileId, 'h')).toBe(false);
       expect(await service.shouldExtractCV(profileId, 'other')).toBe(true);
+    });
+
+    describe('text read from the CV', () => {
+      const data = { schemaVersion: SCHEMA_VERSION };
+
+      it('keeps the text and its version with the extracted data', async () => {
+        const stored = await service.saveExtractedCVData(
+          profileId,
+          data,
+          'h',
+          '# Experience\nCook'
+        );
+
+        await stored.reload();
+        expect(stored.transcript).toBe('# Experience\nCook');
+        expect(stored.transcriptVersion).toBe(TRANSCRIPT_VERSION);
+      });
+
+      it('stores no text for a single-call extraction, and drops an older one', async () => {
+        await service.saveExtractedCVData(profileId, data, 'h', 'old text');
+        const stored = await service.saveExtractedCVData(profileId, data, 'h');
+
+        await stored.reload();
+        expect(stored.transcript).toBeNull();
+        expect(stored.transcriptVersion).toBeNull();
+      });
+
+      it('reuses the text of the same file read with the current instructions', async () => {
+        await service.saveExtractedCVData(profileId, data, 'h', 'the text');
+
+        expect(await service.getReusableTranscript(profileId, 'h')).toBe(
+          'the text'
+        );
+      });
+
+      it('does not reuse the text of another file', async () => {
+        await service.saveExtractedCVData(profileId, data, 'h', 'the text');
+
+        expect(
+          await service.getReusableTranscript(profileId, 'other')
+        ).toBeNull();
+      });
+
+      it('does not reuse a text read with older reading instructions', async () => {
+        const stored = await service.saveExtractedCVData(
+          profileId,
+          data,
+          'h',
+          'the text'
+        );
+        await stored.update({ transcriptVersion: TRANSCRIPT_VERSION - 1 });
+
+        expect(await service.getReusableTranscript(profileId, 'h')).toBeNull();
+      });
+
+      it('has nothing to reuse without stored text', async () => {
+        expect(await service.getReusableTranscript(profileId, 'h')).toBeNull();
+
+        await service.saveExtractedCVData(profileId, data, 'h');
+        expect(await service.getReusableTranscript(profileId, 'h')).toBeNull();
+      });
+
+      it('still asks for an extraction when only the schema version is stale, so the text can be reused', async () => {
+        const stored = await service.saveExtractedCVData(
+          profileId,
+          data,
+          'h',
+          'the text'
+        );
+        await stored.update({ schemaVersion: SCHEMA_VERSION - 1 });
+
+        expect(await service.shouldExtractCV(profileId, 'h')).toBe(true);
+        expect(await service.getReusableTranscript(profileId, 'h')).toBe(
+          'the text'
+        );
+      });
     });
 
     it('asks for an extraction when the data were produced with another schema version', async () => {
