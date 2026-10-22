@@ -2,6 +2,7 @@ import { Usage } from '@anthropic-ai/sdk/resources/messages/messages';
 import { Injectable, Logger } from '@nestjs/common';
 import { CompletionUsage } from 'openai/resources/completions';
 import { EmbedResponseUsage } from 'voyageai';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import { tracer } from 'src/tracer';
 
 @Injectable()
@@ -11,7 +12,7 @@ export class LlmMetricsService {
     model: string,
     usage: Usage,
     operation: string,
-    feature: string
+    feature: AiFeature
   ): void {
     const tags = { model, provider: 'anthropic', operation, feature };
 
@@ -39,7 +40,7 @@ export class LlmMetricsService {
     model: string,
     usage: CompletionUsage,
     operation: string,
-    feature: string
+    feature: AiFeature
   ): void {
     const tags = { model, provider: 'openai', operation, feature };
     tracer.dogstatsd.increment('ai.tokens.input', usage.prompt_tokens, tags);

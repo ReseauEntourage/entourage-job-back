@@ -15,6 +15,11 @@ import { BusinessSector } from 'src/business-sectors/models';
 import { Experience } from 'src/experiences/models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
+import {
+  AiWorkflowContext,
+  traceAiWorkflow,
+} from 'src/external-services/llm-observability/llm-observability';
 import { Formation } from 'src/formations/models';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { Occupation } from 'src/occupations/models';
@@ -134,11 +139,35 @@ export class AiAssistantService {
     };
   }
 
-  private async doStream(
+  /**
+   * One root span for the whole answer: `streamAnswer` awaits the complete
+   * stream, then the escalation classifier, so both are traced under it.
+   */
+  private doStream(
     subscriber: Subscriber<MessageEvent>,
     conversationId: string,
     userId: string,
     message: string
+  ) {
+    return traceAiWorkflow(
+      { feature: AiFeature.AI_ASSISTANT, name: 'ai-assistant' },
+      ({ setOutcome }) =>
+        this.streamAnswer(
+          subscriber,
+          conversationId,
+          userId,
+          message,
+          setOutcome
+        )
+    );
+  }
+
+  private async streamAnswer(
+    subscriber: Subscriber<MessageEvent>,
+    conversationId: string,
+    userId: string,
+    message: string,
+    setOutcome: AiWorkflowContext['setOutcome']
   ) {
     const caller = await this.userModel.findByPk(userId, {
       include: [{ model: Organization, as: 'organization' }],
@@ -154,6 +183,7 @@ export class AiAssistantService {
       await this.checkRateLimit(userId);
 
     if (!allowed) {
+      setOutcome('rate_limited');
       subscriber.next({ data: { type: 'rate_limit', resetInSeconds } });
       subscriber.next({ data: '[DONE]' });
       subscriber.complete();
@@ -278,13 +308,14 @@ export class AiAssistantService {
       'claude-sonnet-4-6',
       finalMessage.usage,
       'stream',
-      'ai_assistant'
+      AiFeature.AI_ASSISTANT
     );
 
     if (finalMessage.stop_reason === 'max_tokens') {
       this.logger.warn(
         `AI assistant response truncated by max_tokens (conversation ${conversationId}, ${finalMessage.usage.output_tokens} output tokens)`
       );
+      setOutcome('truncated');
       subscriber.next({ data: { type: 'truncated' } });
     }
 

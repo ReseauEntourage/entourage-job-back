@@ -11,6 +11,7 @@ import { QueuesService } from '../queues/producers/queues.service';
 import { Experience } from 'src/experiences/models';
 import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
+import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import {
   CvSchemaType,
   SCHEMA_VERSION,
@@ -20,7 +21,6 @@ import { Interest } from 'src/interests/models';
 import { LanguagesService } from 'src/languages/languages.service';
 
 import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
-import { tracer } from 'src/tracer';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
@@ -69,16 +69,18 @@ export class ProfileGenerationService {
 
     const input = buildPresentationPromptInput(user, userProfile);
     const tags = {
-      feature: PRESENTATION_GENERATION_CONFIG.feature,
       role: input.role,
       hasParcours: String(hasParcours(input)),
       gender: String(input.gender),
     };
 
-    return tracer.llmobs.trace(
-      { kind: 'workflow', name: 'presentation-generation' },
-      async () => {
-        let outcome = 'error';
+    return traceAiWorkflow(
+      {
+        feature: PRESENTATION_GENERATION_CONFIG.feature,
+        name: 'presentation-generation',
+        tags,
+      },
+      async ({ setOutcome }) => {
         try {
           const raw = await this.anthropicService.generateText(
             buildPresentationSystemPromptFor(input),
@@ -91,7 +93,7 @@ export class ProfileGenerationService {
             }
           );
           const result = postProcessPresentation(raw);
-          outcome = result.outcome;
+          setOutcome(result.outcome);
           if (!result.description) {
             this.logger.warn(
               `[PresentationGeneration] Empty generation (userId=${userId})`
@@ -99,8 +101,9 @@ export class ProfileGenerationService {
           }
           return { description: result.description };
         } catch (error) {
-          outcome =
+          const outcome =
             error instanceof APIConnectionTimeoutError ? 'timeout' : 'error';
+          setOutcome(outcome);
           this.logger.error(
             `[PresentationGeneration] ${outcome} (userId=${userId}): ${
               error instanceof Error ? error.message : String(error)
@@ -108,8 +111,6 @@ export class ProfileGenerationService {
             error instanceof Error ? error.stack : undefined
           );
           return { description: null };
-        } finally {
-          tracer.llmobs.annotate({ tags: { ...tags, outcome } });
         }
       }
     );

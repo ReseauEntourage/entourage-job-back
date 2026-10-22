@@ -1,6 +1,7 @@
 import { createLink } from '@short.io/client-node';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import { ShortioService } from 'src/external-services/shortio/shortio.service';
 import { Jobs } from 'src/queues/queues.types';
 import { SmsService } from 'src/sms/sms.service';
@@ -108,7 +109,7 @@ describe('LlmMetricsService', () => {
         cache_creation_input_tokens: 2,
       } as never,
       'classify',
-      'ai_assistant'
+      AiFeature.AI_ASSISTANT
     );
 
     const tags = {
@@ -129,7 +130,7 @@ describe('LlmMetricsService', () => {
       'model-a',
       { input_tokens: 1, output_tokens: 1 } as never,
       'op',
-      'feat'
+      AiFeature.AI_ASSISTANT
     );
 
     expect(increment).toHaveBeenCalledTimes(2);
@@ -140,7 +141,7 @@ describe('LlmMetricsService', () => {
       'gpt',
       { prompt_tokens: 7, completion_tokens: 4 } as never,
       'op',
-      'feat'
+      AiFeature.AI_ASSISTANT
     );
 
     expect(increment).toHaveBeenCalledWith(
@@ -161,7 +162,7 @@ describe('LlmMetricsService', () => {
       'voyage',
       { totalTokens: 9 } as never,
       'op',
-      'feat'
+      AiFeature.AI_ASSISTANT
     );
     service.recordVoyageAiUsage('voyage', {} as never, 'op', 'feat');
 
@@ -233,7 +234,7 @@ describe('AnthropicService', () => {
       timeoutMs: 1500,
       maxTokens: 50,
       operation: 'summarize',
-      feature: 'custom',
+      feature: AiFeature.PRESENTATION_GENERATION,
     });
 
     expect(text).toBe('');
@@ -245,7 +246,7 @@ describe('AnthropicService', () => {
       expect.any(String),
       {},
       'summarize',
-      'custom'
+      AiFeature.PRESENTATION_GENERATION
     );
   });
 });

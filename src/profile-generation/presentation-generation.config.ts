@@ -1,3 +1,4 @@
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import { Gender, Genders } from 'src/users/users.types';
 
 /**
@@ -17,7 +18,7 @@ export const PRESENTATION_GENERATION_CONFIG = {
   maxTokens: 300,
   // Below the front's 10 s budget, so the response reaches it in time.
   timeoutMs: 9000,
-  feature: 'presentation_generation',
+  feature: AiFeature.PRESENTATION_GENERATION,
   operation: 'generate',
 };
 

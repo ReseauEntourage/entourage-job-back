@@ -5,9 +5,24 @@ import type {
   ChatCompletionMessage,
 } from 'openai/resources/chat/completions';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
+import {
+  getCvTraceImagesConfig,
+  selectCvTraceImages,
+  totalImagesBytes,
+} from 'src/external-services/llm-observability/cv-trace-images';
+import { traceLlmCall } from 'src/external-services/llm-observability/llm-observability';
 import { cvSchema, CvSchemaType } from './openai.schemas';
 
 const CV_EXTRACTION_MODEL = 'o4-mini-2025-04-16';
+
+const CV_EXTRACTION_USER_TEXT =
+  'Analyse ce CV et extrait toutes les informations pertinentes selon le schéma JSON spécifié. Le document peut être sur plusieurs pages.';
+
+const CV_EXTRACTION_SYSTEM_PROMPT =
+  "Tu es un expert en analyse de CV. Tu dois extraire toutes les informations pertinentes d'un CV à partir d'images et les structurer selon le schéma JSON demandé. Le document peut être sur plusieurs pages, analyse toutes les pages. Pour la description, rédige un court résumé du CV à la première personne en mettant en avant les compétences clés, l'expérience et la formation de la personne. " +
+  `La description fait au plus ${cvSchema.properties.description.maxLength} caractères, espaces compris. ` +
+  "N'invente jamais une information absente du CV, en particulier une date : si une date n'apparaît pas dans le CV, ne la renseigne pas.";
 
 @Injectable()
 export class OpenAiService {
@@ -34,7 +49,7 @@ export class OpenAiService {
     const content: ChatCompletionContentPart[] = [
       {
         type: 'text',
-        text: 'Analyse ce CV et extrait toutes les informations pertinentes selon le schéma JSON spécifié. Le document peut être sur plusieurs pages.',
+        text: CV_EXTRACTION_USER_TEXT,
       },
     ];
     for (const base64Image of base64ImageArray) {
@@ -46,111 +61,162 @@ export class OpenAiService {
       });
     }
 
-    try {
-      const response = await this.openai.chat.completions.create(
-        {
-          model: CV_EXTRACTION_MODEL,
-          max_completion_tokens: Number(
-            process.env.OPENAI_MAX_COMPLETION_TOKENS ?? 4096
-          ),
-          messages: [
-            {
-              role: 'system',
-              content:
-                "Tu es un expert en analyse de CV. Tu dois extraire toutes les informations pertinentes d'un CV à partir d'images et les structurer selon le schéma JSON demandé. Le document peut être sur plusieurs pages, analyse toutes les pages. Pour la description, rédige un court résumé du CV à la première personne en mettant en avant les compétences clés, l'expérience et la formation de la personne. " +
-                `La description fait au plus ${cvSchema.properties.description.maxLength} caractères, espaces compris. ` +
-                "N'invente jamais une information absente du CV, en particulier une date : si une date n'apparaît pas dans le CV, ne la renseigne pas.",
-            },
+    const traceImages = selectCvTraceImages(
+      base64ImageArray,
+      getCvTraceImagesConfig()
+    );
+
+    // The automatic OpenAI span would turn the pages into an `[image]` marker
+    // (and is switched off, see src/tracer.ts): the LLM call is traced by hand.
+    return traceLlmCall(
+      {
+        name: 'cv-extraction-llm',
+        modelName: CV_EXTRACTION_MODEL,
+        modelProvider: 'openai',
+      },
+      async (annotateCall) => {
+        annotateCall({
+          inputMessages: [
+            { role: 'system', content: CV_EXTRACTION_SYSTEM_PROMPT },
             {
               role: 'user',
-              content: content,
+              content: [CV_EXTRACTION_USER_TEXT, traceImages.marker]
+                .filter(Boolean)
+                .join('\n'),
+              imageParts: traceImages.attached.length
+                ? traceImages.attached.map((page) => ({
+                    mimeType: 'image/png',
+                    content: page,
+                  }))
+                : undefined,
             },
           ],
-          tools: [
+          metadata: {
+            pageCount: base64ImageArray.length,
+            imagesBytes: totalImagesBytes(base64ImageArray),
+            attachedPages: traceImages.attached.length,
+          },
+        });
+
+        try {
+          const response = await this.openai.chat.completions.create(
             {
-              type: 'function',
-              function: {
-                name: 'extract_cv_data',
-                description: "Extraire les données structurées d'un CV",
-                parameters: cvSchema,
+              model: CV_EXTRACTION_MODEL,
+              max_completion_tokens: Number(
+                process.env.OPENAI_MAX_COMPLETION_TOKENS ?? 4096
+              ),
+              messages: [
+                {
+                  role: 'system',
+                  content: CV_EXTRACTION_SYSTEM_PROMPT,
+                },
+                {
+                  role: 'user',
+                  content: content,
+                },
+              ],
+              tools: [
+                {
+                  type: 'function',
+                  function: {
+                    name: 'extract_cv_data',
+                    description: "Extraire les données structurées d'un CV",
+                    parameters: cvSchema,
+                  },
+                },
+              ],
+              tool_choice: {
+                type: 'function',
+                function: { name: 'extract_cv_data' },
               },
             },
-          ],
-          tool_choice: {
-            type: 'function',
-            function: { name: 'extract_cv_data' },
-          },
-        },
-        { signal }
-      );
+            { signal }
+          );
 
-      const choice = response.choices?.[0];
-      const toolCalls = (choice?.message as ChatCompletionMessage)?.tool_calls;
-      const toolCall = toolCalls?.[0];
-      const functionArgs =
-        toolCall && 'function' in toolCall
-          ? toolCall.function?.arguments
-          : undefined;
+          if (response.usage) {
+            annotateCall({
+              metrics: {
+                inputTokens: response.usage.prompt_tokens,
+                outputTokens: response.usage.completion_tokens,
+                totalTokens: response.usage.total_tokens,
+              },
+            });
+          }
 
-      if (!functionArgs) {
-        const finishReason = choice?.finish_reason;
-        const usage = response.usage;
-        this.logger.error(
-          `OpenAI: aucun tool_call retourné (finish_reason=${String(
-            finishReason
-          )}). usage=${JSON.stringify(usage)}`
-        );
+          const choice = response.choices?.[0];
+          const toolCalls = (choice?.message as ChatCompletionMessage)
+            ?.tool_calls;
+          const toolCall = toolCalls?.[0];
+          const functionArgs =
+            toolCall && 'function' in toolCall
+              ? toolCall.function?.arguments
+              : undefined;
 
-        if (finishReason === 'length') {
+          if (!functionArgs) {
+            const finishReason = choice?.finish_reason;
+            const usage = response.usage;
+            this.logger.error(
+              `OpenAI: aucun tool_call retourné (finish_reason=${String(
+                finishReason
+              )}). usage=${JSON.stringify(usage)}`
+            );
+
+            if (finishReason === 'length') {
+              throw new Error(
+                `OpenAI a coupé la réponse par limite de tokens (finish_reason=length). ` +
+                  `Essaie de réduire le nombre/poids des images, ou augmente OPENAI_MAX_COMPLETION_TOKENS. ` +
+                  `usage=${JSON.stringify(usage)}`
+              );
+            }
+
+            throw new Error(
+              `Aucun tool_call n'a été retourné par l'API OpenAI (finish_reason=${String(
+                finishReason
+              )}).`
+            );
+          }
+
+          if (response.usage) {
+            this.logger.debug(
+              `OpenAI usage for CV extraction: ${JSON.stringify(response.usage)}`
+            );
+            this.llmMetrics.recordOpenAiUsage(
+              CV_EXTRACTION_MODEL,
+              response.usage,
+              'cv_extraction',
+              AiFeature.CV_EXTRACTION
+            );
+          }
+
+          annotateCall({
+            outputMessages: [{ role: 'assistant', content: functionArgs }],
+          });
+
+          // Analyser les arguments JSON
+          const extractedData = JSON.parse(functionArgs) as CvSchemaType;
+
+          return extractedData;
+        } catch (error) {
+          if (signal?.aborted) {
+            this.logger.debug(
+              `Extraction du CV interrompue (annulation du job): ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          } else {
+            this.logger.error(
+              `Erreur lors de l'extraction des données du CV à partir d'images: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          }
           throw new Error(
-            `OpenAI a coupé la réponse par limite de tokens (finish_reason=length). ` +
-              `Essaie de réduire le nombre/poids des images, ou augmente OPENAI_MAX_COMPLETION_TOKENS. ` +
-              `usage=${JSON.stringify(usage)}`
+            `Impossible d'extraire les données du CV à partir d'images: ${
+              error instanceof Error ? error.message : String(error)
+            }`
           );
         }
-
-        throw new Error(
-          `Aucun tool_call n'a été retourné par l'API OpenAI (finish_reason=${String(
-            finishReason
-          )}).`
-        );
       }
-
-      if (response.usage) {
-        this.logger.debug(
-          `OpenAI usage for CV extraction: ${JSON.stringify(response.usage)}`
-        );
-        this.llmMetrics.recordOpenAiUsage(
-          CV_EXTRACTION_MODEL,
-          response.usage,
-          'cv_extraction',
-          'cv_extraction'
-        );
-      }
-
-      // Analyser les arguments JSON
-      const extractedData = JSON.parse(functionArgs) as CvSchemaType;
-
-      return extractedData;
-    } catch (error) {
-      if (signal?.aborted) {
-        this.logger.debug(
-          `Extraction du CV interrompue (annulation du job): ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      } else {
-        this.logger.error(
-          `Erreur lors de l'extraction des données du CV à partir d'images: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
-      throw new Error(
-        `Impossible d'extraire les données du CV à partir d'images: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
+    );
   }
 }

@@ -5,9 +5,10 @@ import {
 } from '@anthropic-ai/sdk/resources/messages';
 import { Injectable } from '@nestjs/common';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 
 export interface GenerateTextOptions {
-  feature?: string;
+  feature?: AiFeature;
   maxTokens?: number;
   operation?: string;
   timeoutMs?: number;
@@ -57,7 +58,7 @@ export class AnthropicService {
       maxTokens = 5,
       timeoutMs,
       operation = 'classify',
-      feature = 'ai_assistant',
+      feature = AiFeature.AI_ASSISTANT,
     } = options;
     const model = 'claude-haiku-4-5-20251001';
     const response = await this.client.messages.create(

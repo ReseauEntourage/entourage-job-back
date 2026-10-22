@@ -7,6 +7,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { Job, Queue } from 'bullmq';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
+import { totalImagesBytes } from 'src/external-services/llm-observability/cv-trace-images';
+import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import {
@@ -117,9 +120,35 @@ export class ProfileGeneratorProcessor extends WorkerHost {
         });
       }, CANCELLATION_CHECK_INTERVAL_MS);
 
-      const extractedCVData = await this.openAiService.extractCVFromImages(
-        base64Images,
-        abortController.signal
+      const extractedCVData = await traceAiWorkflow(
+        {
+          feature: AiFeature.CV_EXTRACTION,
+          name: 'cv-extraction',
+          tags: { userProfileId, fileHash },
+        },
+        async ({ setOutcome, annotate }) => {
+          annotate({
+            metadata: {
+              pageCount: base64Images.length,
+              imagesBytes: totalImagesBytes(base64Images),
+            },
+          });
+          try {
+            const data = await this.openAiService.extractCVFromImages(
+              base64Images,
+              abortController.signal
+            );
+            if (cancelledDuringWait) {
+              setOutcome('cancelled');
+            }
+            return data;
+          } catch (error) {
+            if (abortController.signal.aborted) {
+              setOutcome('cancelled');
+            }
+            throw error;
+          }
+        }
       );
 
       await job.updateProgress(80);

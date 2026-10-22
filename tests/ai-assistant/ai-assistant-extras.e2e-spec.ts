@@ -13,6 +13,7 @@ import { AnthropicService } from 'src/external-services/anthropic/anthropic.serv
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { REDIS_CLIENT } from 'src/redis/redis.module';
+import { tracer } from 'src/tracer';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
 import { ZoneName } from 'src/utils/types/zones.types';
@@ -282,6 +283,110 @@ describe('AI ASSISTANT - extras', () => {
         .set('authorization', `Bearer ${coach.token}`);
 
       expect(response.status).toBe(400);
+    });
+
+    describe('LLM Observability trace', () => {
+      let traceSpy: jest.SpyInstance;
+      let annotateSpy: jest.SpyInstance;
+      let workflowActive: boolean;
+
+      const rootAnnotation = () =>
+        annotateSpy.mock.calls.map(([, options]) => options)[0];
+
+      beforeEach(() => {
+        workflowActive = false;
+        const originalTrace = tracer.llmobs.trace.bind(tracer.llmobs);
+        traceSpy = jest.spyOn(tracer.llmobs, 'trace').mockImplementation(((
+          options: unknown,
+          fn: unknown
+        ) =>
+          (originalTrace as (o: unknown, f: unknown) => unknown)(
+            options,
+            async (span: unknown) => {
+              workflowActive = true;
+              try {
+                return await (fn as (s: unknown) => Promise<unknown>)(span);
+              } finally {
+                workflowActive = false;
+              }
+            }
+          )) as never);
+        annotateSpy = jest.spyOn(tracer.llmobs, 'annotate');
+      });
+
+      afterEach(() => {
+        traceSpy.mockRestore();
+        annotateSpy.mockRestore();
+      });
+
+      it('traces the whole answer, escalation check included, as an ai_assistant workflow', async () => {
+        anthropicServiceMock.createStream.mockReturnValue(
+          createFakeStream(['ok'])
+        );
+        let activeDuringEscalationCheck = false;
+        anthropicServiceMock.generateText.mockImplementation(async () => {
+          activeDuringEscalationCheck = workflowActive;
+          return 'NON';
+        });
+
+        await postStream(coach.token);
+
+        expect(traceSpy).toHaveBeenCalledTimes(1);
+        expect(traceSpy.mock.calls[0][0]).toEqual({
+          kind: 'workflow',
+          name: 'ai-assistant',
+        });
+        expect(rootAnnotation()).toEqual({
+          tags: { feature: 'ai_assistant', outcome: 'success' },
+        });
+        expect(activeDuringEscalationCheck).toBe(true);
+      });
+
+      it('tags a rate_limited outcome when the quota is used, without any LLM call', async () => {
+        redisIncr.mockResolvedValue(11);
+
+        await postStream(coach.token);
+
+        expect(rootAnnotation().tags).toEqual({
+          feature: 'ai_assistant',
+          outcome: 'rate_limited',
+        });
+        expect(anthropicServiceMock.createStream).not.toHaveBeenCalled();
+        expect(anthropicServiceMock.generateText).not.toHaveBeenCalled();
+      });
+
+      it('tags a truncated outcome when the answer reached the token limit', async () => {
+        anthropicServiceMock.createStream.mockReturnValue({
+          ...createFakeStream(['partial']),
+          finalMessage: async () => ({
+            stop_reason: 'max_tokens',
+            usage: { input_tokens: 1, output_tokens: 1 },
+          }),
+        });
+
+        await postStream(coach.token);
+
+        expect(rootAnnotation().tags).toEqual({
+          feature: 'ai_assistant',
+          outcome: 'truncated',
+        });
+      });
+
+      it('tags an error outcome when the stream fails, and still answers the user', async () => {
+        anthropicServiceMock.createStream.mockImplementation(() => {
+          throw new Error('Anthropic down');
+        });
+
+        const response = await postStream(coach.token);
+
+        expect(rootAnnotation().tags).toEqual({
+          feature: 'ai_assistant',
+          outcome: 'error',
+        });
+        expect(parseSSEData(response.body)).toContainEqual({
+          error: 'Une erreur est survenue.',
+        });
+      });
     });
 
     it('stops with a rate_limit event once the hourly quota is used', async () => {

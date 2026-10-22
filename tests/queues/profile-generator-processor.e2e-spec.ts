@@ -5,6 +5,7 @@ import {
 } from 'src/external-services/pusher/pusher.types';
 import { ProfileGeneratorProcessor } from 'src/queues/consumers/profile-generator.processor';
 import { Jobs } from 'src/queues/queues.types';
+import { tracer } from 'src/tracer';
 
 const mockAxiosGet = jest.fn();
 const mockExecFile = jest.fn();
@@ -20,6 +21,14 @@ jest.mock('child_process', () => ({
 jest.mock('src/utils/misc/pdf-to-cairo', () => ({
   detectPdftocairoPath: () => '/usr/bin/pdftocairo',
 }));
+
+// The Datadog tracer is replaced: the LLM Observability spans are observed
+jest.mock('src/tracer', () => ({
+  tracer: { llmobs: { trace: jest.fn(), annotate: jest.fn() } },
+}));
+const span = { name: 'workflow-span' };
+const trace = tracer.llmobs.trace as jest.Mock;
+const annotate = tracer.llmobs.annotate as jest.Mock;
 
 const JOB_DATA = {
   s3Key: 'folder/cv.pdf',
@@ -88,6 +97,8 @@ describe('ProfileGeneratorProcessor', () => {
   };
 
   beforeEach(() => {
+    trace.mockReset().mockImplementation((_options, fn) => fn(span));
+    annotate.mockReset();
     process.env.AWSS3_BUCKET_NAME = 'test-bucket';
     mockAxiosGet.mockReset();
     mockExecFile.mockReset();
@@ -129,6 +140,88 @@ describe('ProfileGeneratorProcessor', () => {
   });
 
   describe('handleProfileGeneration', () => {
+    describe('cv-extraction trace', () => {
+      const workflowAnnotation = () =>
+        annotate.mock.calls.map(([, options]) => options)[0];
+
+      it('opens a cv_extraction workflow around the extraction, identifying the CV', async () => {
+        fakePoppler([1, 2]);
+        const { processor } = build();
+
+        await processor.handleProfileGeneration(buildJob() as never);
+
+        expect(trace).toHaveBeenCalledTimes(1);
+        expect(trace).toHaveBeenCalledWith(
+          { kind: 'workflow', name: 'cv-extraction' },
+          expect.any(Function)
+        );
+        expect(annotate).toHaveBeenCalledWith(span, {
+          tags: {
+            userProfileId: 'profile-1',
+            fileHash: 'hash-1',
+            feature: 'cv_extraction',
+            outcome: 'success',
+          },
+          metadata: {
+            pageCount: 2,
+            imagesBytes:
+              Buffer.from('page-1').toString('base64').length +
+              Buffer.from('page-2').toString('base64').length,
+          },
+        });
+      });
+
+      it('tags an error outcome when the extraction fails', async () => {
+        const { processor, openAiService } = build();
+        openAiService.extractCVFromImages.mockRejectedValue(
+          new Error('OpenAI overloaded')
+        );
+
+        await expect(
+          processor.handleProfileGeneration(buildJob() as never)
+        ).rejects.toThrow('OpenAI overloaded');
+
+        expect(workflowAnnotation().tags).toMatchObject({
+          feature: 'cv_extraction',
+          outcome: 'error',
+        });
+      });
+
+      it('tags a cancelled outcome when the job is cancelled during the extraction', async () => {
+        const { processor, openAiService, profileGenerationQueue } = build();
+        openAiService.extractCVFromImages.mockImplementation(
+          (_images: string[], signal: AbortSignal) =>
+            new Promise((_resolve, reject) => {
+              signal.addEventListener('abort', () =>
+                reject(new Error('Request aborted'))
+              );
+            })
+        );
+        profileGenerationQueue.getJob.mockResolvedValue({
+          data: { cancelled: true },
+        });
+
+        await expect(
+          processor.handleProfileGeneration(buildJob() as never)
+        ).rejects.toThrow('Request aborted');
+
+        expect(workflowAnnotation().tags).toMatchObject({
+          outcome: 'cancelled',
+        });
+      });
+
+      it('does not open a workflow when the CV cannot be downloaded', async () => {
+        mockAxiosGet.mockResolvedValue({ status: 404, data: '' });
+        const { processor } = build();
+
+        await expect(
+          processor.handleProfileGeneration(buildJob() as never)
+        ).rejects.toThrow();
+
+        expect(trace).not.toHaveBeenCalled();
+      });
+    });
+
     it('downloads the CV from S3, extracts its data from the page images and saves them', async () => {
       fakePoppler([10, 2, 1]);
       const {
