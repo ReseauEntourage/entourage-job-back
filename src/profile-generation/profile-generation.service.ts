@@ -10,6 +10,10 @@ import { InjectModel } from '@nestjs/sequelize';
 import { QueuesService } from '../queues/producers/queues.service';
 import { Experience } from 'src/experiences/models';
 import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
+import {
+  AiModelUse,
+  getAiModel,
+} from 'src/external-services/ai-models/ai-models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import {
@@ -88,6 +92,7 @@ export class ProfileGenerationService {
             buildPresentationUserMessage(input),
             {
               maxTokens: PRESENTATION_GENERATION_CONFIG.maxTokens,
+              model: getAiModel(AiModelUse.PRESENTATION_GENERATION),
               timeoutMs: PRESENTATION_GENERATION_CONFIG.timeoutMs,
               operation: PRESENTATION_GENERATION_CONFIG.operation,
               feature: PRESENTATION_GENERATION_CONFIG.feature,

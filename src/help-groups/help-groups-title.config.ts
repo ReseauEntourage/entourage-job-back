@@ -13,7 +13,6 @@ import { AiFeature } from 'src/external-services/llm-observability/ai-feature.en
 export const HELP_GROUP_TITLE_MAX_LENGTH = 120;
 
 export const HELP_GROUP_TITLE_CONFIG = {
-  model: 'claude-haiku-4-5-20251001',
   // A 120 characters French title fits in ~40 tokens
   maxTokens: 60,
   // The proposal never blocks the publication: past this budget, the member

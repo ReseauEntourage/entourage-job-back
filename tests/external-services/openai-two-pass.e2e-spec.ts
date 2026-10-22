@@ -65,6 +65,7 @@ describe('OpenAiService - two-pass CV extraction', () => {
     inputData: Array<{ role: string; content: string }>;
     outputData?: unknown;
     metadata?: unknown;
+    metrics?: Record<string, number>;
   };
 
   /** Everything annotated on the spans of one step, as Datadog merges it. */
@@ -421,6 +422,169 @@ describe('OpenAiService - two-pass CV extraction', () => {
         ['o4-mini-2025-04-16', USAGE, 'cv_reading', 'cv_extraction'],
         ['o4-mini-2025-04-16', USAGE, 'cv_building', 'cv_extraction'],
       ]);
+    });
+  });
+
+  describe('reasoning tokens', () => {
+    const REASONING_USAGE = {
+      ...USAGE,
+      completion_tokens_details: { reasoning_tokens: 3 },
+    };
+
+    it('sends them to each span as a breakdown of the output tokens', async () => {
+      const { service, create } = build();
+      create
+        .mockResolvedValueOnce(
+          readingResponse(CV_TEXT, 'stop', REASONING_USAGE)
+        )
+        .mockResolvedValueOnce({
+          ...buildingResponse(),
+          usage: { ...REASONING_USAGE, completion_tokens: 9 },
+        });
+
+      await service.extractCVFromImages(['p1']);
+
+      expect(spanAnnotations('cv-reading').metrics).toEqual({
+        inputTokens: 10,
+        outputTokens: 5,
+        totalTokens: 15,
+        reasoningOutputTokens: 3,
+      });
+      expect(spanAnnotations('cv-building').metrics).toMatchObject({
+        outputTokens: 9,
+        reasoningOutputTokens: 3,
+      });
+    });
+
+    it('sends none when the model does not report any', async () => {
+      const { service, create } = build();
+      create
+        .mockResolvedValueOnce(readingResponse(CV_TEXT))
+        .mockResolvedValueOnce(buildingResponse());
+
+      await service.extractCVFromImages(['p1']);
+
+      expect(spanAnnotations('cv-reading').metrics).toEqual({
+        inputTokens: 10,
+        outputTokens: 5,
+        totalTokens: 15,
+      });
+    });
+
+    it('counts them in the token metrics of the call', async () => {
+      const { service, create } = build();
+      create
+        .mockResolvedValueOnce(
+          readingResponse(CV_TEXT, 'stop', REASONING_USAGE)
+        )
+        .mockResolvedValueOnce(buildingResponse());
+
+      await service.extractCVFromImages(['p1']);
+
+      expect(llmMetrics.recordOpenAiUsage.mock.calls[0][1]).toEqual(
+        REASONING_USAGE
+      );
+    });
+
+    it('sends them for the single-call extraction too', async () => {
+      process.env.CV_EXTRACTION_TWO_PASSES = 'false';
+      const { service, create } = build();
+      create.mockResolvedValueOnce({
+        ...buildingResponse(),
+        usage: { ...REASONING_USAGE, completion_tokens: 12 },
+      });
+
+      await service.extractCVFromImages(['p1']);
+
+      expect(spanAnnotations('cv-extraction-llm').metrics).toMatchObject({
+        outputTokens: 12,
+        reasoningOutputTokens: 3,
+      });
+    });
+  });
+
+  describe('model of each step', () => {
+    const modelEnv = [
+      'AI_MODEL_CV_EXTRACTION',
+      'AI_MODEL_CV_READING',
+      'AI_MODEL_CV_BUILDING',
+    ];
+
+    afterEach(() => {
+      modelEnv.forEach((name) => delete process.env[name]);
+    });
+
+    it('calls the model of each step, and traces and records that model', async () => {
+      process.env.AI_MODEL_CV_READING = 'gpt-4.1-mini';
+      process.env.AI_MODEL_CV_BUILDING = 'gpt-4.1';
+      const { service, create } = build();
+      create
+        .mockResolvedValueOnce(readingResponse(CV_TEXT))
+        .mockResolvedValueOnce(buildingResponse());
+
+      await service.extractCVFromImages(['p1']);
+
+      expect(create.mock.calls.map(([body]) => body.model)).toEqual([
+        'gpt-4.1-mini',
+        'gpt-4.1',
+      ]);
+      expect(trace.mock.calls.map(([options]) => options.modelName)).toEqual([
+        'gpt-4.1-mini',
+        'gpt-4.1',
+      ]);
+      expect(
+        llmMetrics.recordOpenAiUsage.mock.calls.map(([model]) => model)
+      ).toEqual(['gpt-4.1-mini', 'gpt-4.1']);
+    });
+
+    it('keeps the default model of each step without a setting', async () => {
+      const { service, create } = build();
+      create
+        .mockResolvedValueOnce(readingResponse(CV_TEXT))
+        .mockResolvedValueOnce(buildingResponse());
+
+      await service.extractCVFromImages(['p1']);
+
+      expect(create.mock.calls.map(([body]) => body.model)).toEqual([
+        'o4-mini-2025-04-16',
+        'o4-mini-2025-04-16',
+      ]);
+    });
+
+    it('calls the model of the single-call extraction', async () => {
+      process.env.CV_EXTRACTION_TWO_PASSES = 'false';
+      process.env.AI_MODEL_CV_EXTRACTION = 'gpt-4.1';
+      const { service, create } = build();
+      create.mockResolvedValueOnce(buildingResponse());
+
+      await service.extractCVFromImages(['p1']);
+
+      expect(create.mock.calls[0][0].model).toBe('gpt-4.1');
+      expect(trace.mock.calls[0][0].modelName).toBe('gpt-4.1');
+      expect(llmMetrics.recordOpenAiUsage.mock.calls[0][0]).toBe('gpt-4.1');
+    });
+
+    it('builds from a stored text with the building model', async () => {
+      process.env.AI_MODEL_CV_BUILDING = 'gpt-4.1';
+      const { service, create } = build();
+      create.mockResolvedValueOnce(buildingResponse());
+
+      await service.buildCVFromTranscript(CV_TEXT);
+
+      expect(create.mock.calls[0][0].model).toBe('gpt-4.1');
+    });
+
+    it('does not fall back on the default model when the provider refuses the model', async () => {
+      process.env.AI_MODEL_CV_READING = 'claude-haiku-5-5';
+      const { service, create } = build();
+      create.mockRejectedValueOnce(new Error('model not found'));
+
+      await expect(service.extractCVFromImages(['p1'])).rejects.toThrow(
+        'Impossible de lire le CV à partir des images: model not found'
+      );
+
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(create.mock.calls[0][0].model).toBe('claude-haiku-5-5');
     });
   });
 });

@@ -4,6 +4,10 @@ import type {
   ChatCompletionContentPart,
   ChatCompletionMessage,
 } from 'openai/resources/chat/completions';
+import {
+  AiModelUse,
+  getAiModel,
+} from 'src/external-services/ai-models/ai-models';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import {
@@ -18,13 +22,10 @@ import {
 } from 'src/external-services/llm-observability/llm-observability';
 import {
   buildCVBuildingUserMessage,
-  CV_BUILDING_MODEL,
   CV_BUILDING_SYSTEM_PROMPT,
-  CV_EXTRACTION_MODEL,
   CV_EXTRACTION_SYSTEM_PROMPT,
   CV_EXTRACTION_USER_TEXT,
   CV_READING_MIN_CHARS,
-  CV_READING_MODEL,
   CV_READING_SYSTEM_PROMPT,
   CV_READING_USER_TEXT,
   isTwoPassExtractionEnabled,
@@ -109,12 +110,13 @@ export class OpenAiService {
   ): Promise<CvSchemaType> {
     // The pages themselves stay out of the trace: they hold personal data and
     // Datadog judges cannot read attached images.
+    const model = getAiModel(AiModelUse.CV_EXTRACTION);
     return this.tracedPass(
       {
         operation: 'cv_extraction',
         failure: "Impossible d'extraire les données du CV à partir d'images",
         name: 'cv-extraction-llm',
-        model: CV_EXTRACTION_MODEL,
+        model,
         inputMessages: [
           { role: 'system', content: CV_EXTRACTION_SYSTEM_PROMPT },
           {
@@ -135,7 +137,7 @@ export class OpenAiService {
       },
       (annotateCall) =>
         this.requestProfile(
-          CV_EXTRACTION_MODEL,
+          model,
           CV_EXTRACTION_SYSTEM_PROMPT,
           [
             { type: 'text', text: CV_EXTRACTION_USER_TEXT },
@@ -153,12 +155,13 @@ export class OpenAiService {
     base64ImageArray: string[],
     signal?: AbortSignal
   ): Promise<string> {
+    const model = getAiModel(AiModelUse.CV_READING);
     return this.tracedPass(
       {
         operation: 'cv_reading',
         failure: 'Impossible de lire le CV à partir des images',
         name: 'cv-reading',
-        model: CV_READING_MODEL,
+        model,
         step: 'reading',
         inputMessages: [
           { role: 'system', content: CV_READING_SYSTEM_PROMPT },
@@ -181,7 +184,7 @@ export class OpenAiService {
       async (annotateCall) => {
         const response = await this.openai.chat.completions.create(
           {
-            model: CV_READING_MODEL,
+            model,
             max_completion_tokens: this.maxCompletionTokens(),
             messages: [
               { role: 'system', content: CV_READING_SYSTEM_PROMPT },
@@ -197,12 +200,7 @@ export class OpenAiService {
           { signal }
         );
 
-        this.recordUsage(
-          response.usage,
-          'cv_reading',
-          CV_READING_MODEL,
-          annotateCall
-        );
+        this.recordUsage(response.usage, 'cv_reading', model, annotateCall);
 
         const choice = response.choices?.[0];
         const text = (choice?.message?.content ?? '').trim();
@@ -237,13 +235,14 @@ export class OpenAiService {
     signal?: AbortSignal
   ): Promise<CvSchemaType> {
     const userMessage = buildCVBuildingUserMessage(text);
+    const model = getAiModel(AiModelUse.CV_BUILDING);
 
     return this.tracedPass(
       {
         operation: 'cv_building',
         failure: 'Impossible de construire le profil à partir du texte du CV',
         name: 'cv-building',
-        model: CV_BUILDING_MODEL,
+        model,
         step: 'building',
         inputMessages: [
           { role: 'system', content: CV_BUILDING_SYSTEM_PROMPT },
@@ -254,7 +253,7 @@ export class OpenAiService {
       },
       (annotateCall) =>
         this.requestProfile(
-          CV_BUILDING_MODEL,
+          model,
           CV_BUILDING_SYSTEM_PROMPT,
           userMessage,
           annotateCall,
@@ -353,13 +352,7 @@ export class OpenAiService {
     );
 
     if (response.usage) {
-      annotateCall({
-        metrics: {
-          inputTokens: response.usage.prompt_tokens,
-          outputTokens: response.usage.completion_tokens,
-          totalTokens: response.usage.total_tokens,
-        },
-      });
+      annotateCall({ metrics: this.usageMetrics(response.usage) });
     }
 
     const choice = response.choices?.[0];
@@ -425,6 +418,26 @@ export class OpenAiService {
     return Number(process.env.OPENAI_MAX_COMPLETION_TOKENS ?? 4096);
   }
 
+  /**
+   * Token counts of a span. The reasoning tokens (reasoning models only) are
+   * already counted in the output tokens: they are sent as a breakdown, so that
+   * the part of the output the model spent thinking can be told from the text it
+   * produced.
+   */
+  private usageMetrics(
+    usage: OpenAI.Completions.CompletionUsage
+  ): NonNullable<LlmCallAnnotation['metrics']> {
+    const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens;
+    return {
+      inputTokens: usage.prompt_tokens,
+      outputTokens: usage.completion_tokens,
+      totalTokens: usage.total_tokens,
+      ...(reasoningTokens !== undefined
+        ? { reasoningOutputTokens: reasoningTokens }
+        : {}),
+    };
+  }
+
   private recordUsage(
     usage: OpenAI.Completions.CompletionUsage | undefined,
     operation: string,
@@ -434,13 +447,7 @@ export class OpenAiService {
     if (!usage) {
       return;
     }
-    annotateCall({
-      metrics: {
-        inputTokens: usage.prompt_tokens,
-        outputTokens: usage.completion_tokens,
-        totalTokens: usage.total_tokens,
-      },
-    });
+    annotateCall({ metrics: this.usageMetrics(usage) });
     this.logger.debug(
       `OpenAI usage for CV extraction: ${JSON.stringify(usage)}`
     );

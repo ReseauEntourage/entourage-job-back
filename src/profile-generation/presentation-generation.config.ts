@@ -13,7 +13,6 @@ import { Gender, Genders } from 'src/users/users.types';
 export const PRESENTATION_MAX_LENGTH = 500;
 
 export const PRESENTATION_GENERATION_CONFIG = {
-  model: 'claude-haiku-4-5-20251001',
   // Roughly 500 French characters fit in ~150 tokens: 300 leaves headroom.
   maxTokens: 300,
   // Below the front's 10 s budget, so the response reaches it in time.

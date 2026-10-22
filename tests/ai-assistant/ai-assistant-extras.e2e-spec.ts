@@ -10,6 +10,7 @@ import { AiAssistantModule } from 'src/ai-assistant/ai-assistant.module';
 import { AiAssistantMessage } from 'src/ai-assistant/models/ai-assistant-message.model';
 import { AiAssistantSession } from 'src/ai-assistant/models/ai-assistant-session.model';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
+import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { REDIS_CLIENT } from 'src/redis/redis.module';
@@ -283,6 +284,60 @@ describe('AI ASSISTANT - extras', () => {
         .set('authorization', `Bearer ${coach.token}`);
 
       expect(response.status).toBe(400);
+    });
+
+    describe('model of the assistant', () => {
+      const saved = process.env.AI_MODEL_AI_ASSISTANT;
+
+      afterEach(() => {
+        if (saved === undefined) {
+          delete process.env.AI_MODEL_AI_ASSISTANT;
+        } else {
+          process.env.AI_MODEL_AI_ASSISTANT = saved;
+        }
+      });
+
+      it('records the usage of the answer under the model of the setting', async () => {
+        process.env.AI_MODEL_AI_ASSISTANT = 'claude-sonnet-5-5';
+        const recordUsage = jest.spyOn(
+          app.get(LlmMetricsService),
+          'recordAnthropicUsage'
+        );
+        anthropicServiceMock.createStream.mockReturnValue(
+          createFakeStream(['ok'])
+        );
+
+        await postStream(coach.token);
+
+        expect(recordUsage).toHaveBeenCalledWith(
+          'claude-sonnet-5-5',
+          expect.anything(),
+          'stream',
+          'ai_assistant'
+        );
+        recordUsage.mockRestore();
+      });
+
+      it('records the usage under the default model without a setting', async () => {
+        delete process.env.AI_MODEL_AI_ASSISTANT;
+        const recordUsage = jest.spyOn(
+          app.get(LlmMetricsService),
+          'recordAnthropicUsage'
+        );
+        anthropicServiceMock.createStream.mockReturnValue(
+          createFakeStream(['ok'])
+        );
+
+        await postStream(coach.token);
+
+        expect(recordUsage).toHaveBeenCalledWith(
+          'claude-sonnet-4-6',
+          expect.anything(),
+          'stream',
+          'ai_assistant'
+        );
+        recordUsage.mockRestore();
+      });
     });
 
     describe('LLM Observability trace', () => {

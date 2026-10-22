@@ -1,9 +1,5 @@
 import { cvSchema } from './openai.schemas';
 
-export const CV_EXTRACTION_MODEL = 'o4-mini-2025-04-16';
-export const CV_READING_MODEL = 'o4-mini-2025-04-16';
-export const CV_BUILDING_MODEL = 'o4-mini-2025-04-16';
-
 /**
  * Below this size, the text read from a CV is not a CV: the page was blank or
  * illegible, and no profile is built from it.

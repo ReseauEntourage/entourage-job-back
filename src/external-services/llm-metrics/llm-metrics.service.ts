@@ -49,6 +49,11 @@ export class LlmMetricsService {
       usage.completion_tokens,
       tags
     );
+    // Reasoning tokens are already counted in the output tokens: a breakdown
+    const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens;
+    if (reasoningTokens && reasoningTokens > 0) {
+      tracer.dogstatsd.increment('ai.tokens.reasoning', reasoningTokens, tags);
+    }
     this.logger.debug(
       `OpenAI usage recorded: ${JSON.stringify({
         model,

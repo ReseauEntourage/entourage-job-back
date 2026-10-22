@@ -1,5 +1,9 @@
 import { APIConnectionTimeoutError } from '@anthropic-ai/sdk';
 import { Injectable, Logger } from '@nestjs/common';
+import {
+  AiModelUse,
+  getAiModel,
+} from 'src/external-services/ai-models/ai-models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import {
@@ -61,6 +65,7 @@ export class HelpGroupsTitleService {
       buildHelpGroupTitleUserMessage(content, previousTitles),
       {
         maxTokens: HELP_GROUP_TITLE_CONFIG.maxTokens,
+        model: getAiModel(AiModelUse.HELP_GROUPS_TITLE),
         timeoutMs: HELP_GROUP_TITLE_CONFIG.timeoutMs,
         operation: HELP_GROUP_TITLE_CONFIG.operation,
         feature: HELP_GROUP_TITLE_CONFIG.feature,

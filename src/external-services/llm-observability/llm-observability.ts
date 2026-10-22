@@ -48,6 +48,8 @@ export interface LlmCallAnnotation {
     inputTokens?: number;
     outputTokens?: number;
     totalTokens?: number;
+    /** Already included in `outputTokens`: a breakdown, not an addition. */
+    reasoningOutputTokens?: number;
   };
   /** Outcome tagged on the span. Defaults to `success`, or `error` if the call throws. */
   outcome?: AiWorkflowOutcome;

@@ -593,7 +593,27 @@ describe('Help groups - Participation', () => {
       expect(options).toMatchObject({
         timeoutMs: 5000,
         feature: 'help_groups_title',
+        model: 'claude-haiku-4-5-20251001',
       });
+    });
+
+    it('Should ask the model of the setting for the title', async () => {
+      const saved = process.env.AI_MODEL_HELP_GROUPS_TITLE;
+      process.env.AI_MODEL_HELP_GROUPS_TITLE = 'claude-haiku-5-5';
+      try {
+        const response = await api('post', path(), member, { content });
+
+        expect(response.status).toBe(200);
+        expect(generateText.mock.calls[0][2]).toMatchObject({
+          model: 'claude-haiku-5-5',
+        });
+      } finally {
+        if (saved === undefined) {
+          delete process.env.AI_MODEL_HELP_GROUPS_TITLE;
+        } else {
+          process.env.AI_MODEL_HELP_GROUPS_TITLE = saved;
+        }
+      }
     });
 
     it('Should return a null title on timeout', async () => {

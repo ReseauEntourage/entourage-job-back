@@ -13,6 +13,10 @@ import { Observable, Subscriber } from 'rxjs';
 import { Order } from 'sequelize';
 import { BusinessSector } from 'src/business-sectors/models';
 import { Experience } from 'src/experiences/models';
+import {
+  AiModelUse,
+  getAiModel,
+} from 'src/external-services/ai-models/ai-models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
@@ -305,7 +309,7 @@ export class AiAssistantService {
 
     const finalMessage = await stream.finalMessage();
     this.llmMetrics.recordAnthropicUsage(
-      'claude-sonnet-4-6',
+      getAiModel(AiModelUse.AI_ASSISTANT),
       finalMessage.usage,
       'stream',
       AiFeature.AI_ASSISTANT
