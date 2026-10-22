@@ -15,10 +15,6 @@ const annotate = tracer.llmobs.annotate as jest.Mock;
 
 describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
   const llmMetrics = { recordOpenAiUsage: jest.fn() };
-  const saved = {
-    enabled: process.env.LLM_OBS_CV_IMAGES_ENABLED,
-    maxBytes: process.env.LLM_OBS_CV_IMAGES_MAX_BYTES,
-  };
 
   const build = () => {
     const service = new OpenAiService(llmMetrics as never);
@@ -47,11 +43,7 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
     ...extra,
   });
 
-  type TracedMessage = {
-    role: string;
-    content: string;
-    imageParts?: unknown[];
-  };
+  type TracedMessage = { role: string; content: string };
   type Annotations = {
     inputData: TracedMessage[];
     outputData?: unknown;
@@ -66,25 +58,10 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
       return { ...merged, ...options };
     }, {} as Annotations);
 
-  const restore = (key: string, value: string | undefined) => {
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  };
-
   beforeEach(() => {
     trace.mockReset().mockImplementation((_options, fn) => fn(span));
     annotate.mockReset();
     llmMetrics.recordOpenAiUsage.mockReset();
-    delete process.env.LLM_OBS_CV_IMAGES_ENABLED;
-    delete process.env.LLM_OBS_CV_IMAGES_MAX_BYTES;
-  });
-
-  afterAll(() => {
-    restore('LLM_OBS_CV_IMAGES_ENABLED', saved.enabled);
-    restore('LLM_OBS_CV_IMAGES_MAX_BYTES', saved.maxBytes);
   });
 
   it('opens an llm span for the model and the provider of the call', async () => {
@@ -105,8 +82,7 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
     );
   });
 
-  it('attaches the pages to the trace when it is enabled, the tokens and the output', async () => {
-    process.env.LLM_OBS_CV_IMAGES_ENABLED = 'true';
+  it('traces the prompt, the output and the tokens, without any page image', async () => {
     const { service, create } = build();
     create.mockResolvedValue(
       toolCallResponse({
@@ -122,12 +98,9 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
     expect(user).toEqual({
       role: 'user',
       content: expect.stringContaining('Analyse ce CV'),
-      imageParts: [
-        { mimeType: 'image/png', content: 'page1' },
-        { mimeType: 'image/png', content: 'page2' },
-      ],
     });
-    expect(user.content).not.toContain('[image]');
+    expect(user.content).toContain('[2 pages de CV non jointes à la trace]');
+    expect(JSON.stringify(merged)).not.toContain('page1');
     expect(merged.outputData).toEqual([
       { role: 'assistant', content: '{"description":"A cook"}' },
     ]);
@@ -136,43 +109,26 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
       outputTokens: 5,
       totalTokens: 15,
     });
-    expect(merged.metadata).toEqual({
-      pageCount: 2,
-      imagesBytes: 10,
-      attachedPages: 2,
-    });
+    expect(merged.metadata).toEqual({ pageCount: 2, imagesBytes: 10 });
   });
 
-  it('attaches no page by default, and says so in the trace', async () => {
+  it('says a single page in the singular', async () => {
     const { service, create } = build();
     create.mockResolvedValue(toolCallResponse());
 
-    await service.extractCVFromImages(['page1', 'page2']);
+    await service.extractCVFromImages(['page1']);
 
-    const user = annotations().inputData[1];
-    expect(user.imageParts).toBeUndefined();
-    expect(user.content).toContain(
-      '[2 pages non jointes : envoi des images désactivé]'
+    expect(annotations().inputData[1].content).toContain(
+      '[1 page de CV non jointe à la trace]'
     );
-    expect(annotations().metadata).toMatchObject({
-      pageCount: 2,
-      attachedPages: 0,
-    });
   });
 
-  it('cuts the trace at the size budget but still sends every page to the model', async () => {
-    process.env.LLM_OBS_CV_IMAGES_ENABLED = 'true';
-    process.env.LLM_OBS_CV_IMAGES_MAX_BYTES = '12';
+  it('still sends every page to the model', async () => {
     const { service, create } = build();
     create.mockResolvedValue(toolCallResponse());
 
     await service.extractCVFromImages(['aaaaaaaa', 'bbbbbbbb', 'cc']);
 
-    const user = annotations().inputData[1];
-    expect(user.imageParts).toEqual([
-      { mimeType: 'image/png', content: 'aaaaaaaa' },
-    ]);
-    expect(user.content).toContain('[2 pages non jointes : plafond de taille]');
     const sent = create.mock.calls[0][0].messages[1].content.filter(
       (part: { type: string }) => part.type === 'image_url'
     );
@@ -180,7 +136,6 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
   });
 
   it('keeps the input in the trace when the call fails', async () => {
-    process.env.LLM_OBS_CV_IMAGES_ENABLED = 'true';
     const { service, create } = build();
     create.mockRejectedValue(new Error('rate limited'));
 
@@ -189,7 +144,7 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
     );
 
     const merged = annotations();
-    expect(merged.inputData[1].imageParts).toHaveLength(1);
+    expect(merged.inputData[1].content).toContain('Analyse ce CV');
     expect(merged.outputData).toBeUndefined();
   });
 });

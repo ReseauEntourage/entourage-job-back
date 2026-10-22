@@ -154,16 +154,12 @@ describe('traceLlmCall', () => {
     );
   });
 
-  it('annotates the messages with their image parts, the output and the tokens', async () => {
+  it('annotates the messages, the output and the tokens', async () => {
     const result = await traceLlmCall(options, async (annotateCall) => {
       annotateCall({
         inputMessages: [
           { role: 'system', content: 'rules' },
-          {
-            role: 'user',
-            content: 'analyse',
-            imageParts: [{ mimeType: 'image/png', content: 'AAAA' }],
-          },
+          { role: 'user', content: 'analyse' },
         ],
         outputMessages: [{ role: 'assistant', content: '{"a":1}' }],
         metrics: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
@@ -175,11 +171,7 @@ describe('traceLlmCall', () => {
     expect(annotate).toHaveBeenCalledWith(span, {
       inputData: [
         { role: 'system', content: 'rules' },
-        {
-          role: 'user',
-          content: 'analyse',
-          imageParts: [{ mimeType: 'image/png', content: 'AAAA' }],
-        },
+        { role: 'user', content: 'analyse' },
       ],
       outputData: [{ role: 'assistant', content: '{"a":1}' }],
       metrics: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },

@@ -7,10 +7,9 @@ import type {
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import {
-  getCvTraceImagesConfig,
-  selectCvTraceImages,
-  totalImagesBytes,
-} from 'src/external-services/llm-observability/cv-trace-images';
+  pagesNotAttachedMarker,
+  totalPagesBytes,
+} from 'src/external-services/llm-observability/cv-trace';
 import { traceLlmCall } from 'src/external-services/llm-observability/llm-observability';
 import { cvSchema, CvSchemaType } from './openai.schemas';
 
@@ -61,13 +60,10 @@ export class OpenAiService {
       });
     }
 
-    const traceImages = selectCvTraceImages(
-      base64ImageArray,
-      getCvTraceImagesConfig()
-    );
-
     // The automatic OpenAI span would turn the pages into an `[image]` marker
     // (and is switched off, see src/tracer.ts): the LLM call is traced by hand.
+    // The pages themselves stay out of the trace: they hold personal data and
+    // Datadog judges cannot read attached images.
     return traceLlmCall(
       {
         name: 'cv-extraction-llm',
@@ -80,21 +76,17 @@ export class OpenAiService {
             { role: 'system', content: CV_EXTRACTION_SYSTEM_PROMPT },
             {
               role: 'user',
-              content: [CV_EXTRACTION_USER_TEXT, traceImages.marker]
+              content: [
+                CV_EXTRACTION_USER_TEXT,
+                pagesNotAttachedMarker(base64ImageArray.length),
+              ]
                 .filter(Boolean)
                 .join('\n'),
-              imageParts: traceImages.attached.length
-                ? traceImages.attached.map((page) => ({
-                    mimeType: 'image/png',
-                    content: page,
-                  }))
-                : undefined,
             },
           ],
           metadata: {
             pageCount: base64ImageArray.length,
-            imagesBytes: totalImagesBytes(base64ImageArray),
-            attachedPages: traceImages.attached.length,
+            imagesBytes: totalPagesBytes(base64ImageArray),
           },
         });
 

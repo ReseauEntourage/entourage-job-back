@@ -38,7 +38,6 @@ export interface LlmImagePart {
 
 export interface LlmMessage {
   content: string;
-  imageParts?: LlmImagePart[];
   role: string;
 }
 

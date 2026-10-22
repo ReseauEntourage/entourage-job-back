@@ -8,7 +8,7 @@ import axios from 'axios';
 import { Job, Queue } from 'bullmq';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
 import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
-import { totalImagesBytes } from 'src/external-services/llm-observability/cv-trace-images';
+import { totalPagesBytes } from 'src/external-services/llm-observability/cv-trace';
 import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
@@ -124,13 +124,16 @@ export class ProfileGeneratorProcessor extends WorkerHost {
         {
           feature: AiFeature.CV_EXTRACTION,
           name: 'cv-extraction',
-          tags: { userProfileId, fileHash },
+          // The S3 key (`{userId}_{uuid}.pdf`) lets an operator find the source
+          // file of a trace by hand. The pages themselves are never attached.
+          tags: { userProfileId, fileHash, s3Key },
         },
         async ({ setOutcome, annotate }) => {
           annotate({
             metadata: {
               pageCount: base64Images.length,
-              imagesBytes: totalImagesBytes(base64Images),
+              imagesBytes: totalPagesBytes(base64Images),
+              s3Url: pdfUrl,
             },
           });
           try {
