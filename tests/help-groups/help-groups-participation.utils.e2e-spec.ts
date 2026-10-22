@@ -1,4 +1,7 @@
-import { cleanHelpGroupTitle } from 'src/help-groups/help-groups-title.config';
+import {
+  buildHelpGroupTitleSystemPrompt,
+  cleanHelpGroupTitle,
+} from 'src/help-groups/help-groups-title.config';
 import {
   findForbiddenExpression,
   parseForbiddenExpressions,
@@ -44,6 +47,14 @@ describe('Help groups - Participation utils', () => {
     it('Should return null for an empty list or text', () => {
       expect(findForbiddenExpression('whatsapp', [])).toBeNull();
       expect(findForbiddenExpression('', expressions)).toBeNull();
+    });
+  });
+
+  describe('buildHelpGroupTitleSystemPrompt', () => {
+    it('Should require a title for any message, thanks and joy included', () => {
+      const prompt = buildHelpGroupTitleSystemPrompt();
+      expect(prompt).toContain('Propose toujours un titre');
+      expect(prompt).toContain('Ne refuse jamais');
     });
   });
 
