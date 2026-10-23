@@ -20,6 +20,15 @@ export interface GenerateTextOptions {
   timeoutMs?: number;
 }
 
+export interface GenerateStructuredOptions {
+  feature: AiFeature;
+  maxTokens: number;
+  /** Defaults to the model of the escalation classifier. */
+  model?: string;
+  operation: string;
+  timeoutMs?: number;
+}
+
 @Injectable()
 export class AnthropicService {
   private readonly client: Anthropic;
@@ -86,5 +95,54 @@ export class AnthropicService {
     );
     const block = response.content[0];
     return block.type === 'text' ? block.text : '';
+  }
+
+  /**
+   * Single non-streamed Haiku call whose answer is constrained to a JSON
+   * schema (structured outputs). Returns the parsed JSON, whose shape the
+   * caller must still validate. Throws when the answer is cut by `maxTokens`,
+   * is not a text block or is not valid JSON, so that a partial answer is
+   * never used. When `timeoutMs` is set, the SDK's automatic retries are
+   * disabled so the call never exceeds that budget.
+   */
+  async generateStructured(
+    systemPrompt: string,
+    userMessage: string,
+    schema: Record<string, unknown>,
+    options: GenerateStructuredOptions
+  ): Promise<unknown> {
+    const {
+      maxTokens,
+      model = getAiModel(AiModelUse.AI_ASSISTANT_CLASSIFIER),
+      timeoutMs,
+      operation,
+      feature,
+    } = options;
+    const response = await this.client.messages.create(
+      {
+        model,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+        output_config: { format: { type: 'json_schema', schema } },
+      },
+      timeoutMs !== undefined
+        ? { timeout: timeoutMs, maxRetries: 0 }
+        : undefined
+    );
+    this.llmMetrics.recordAnthropicUsage(
+      model,
+      response.usage,
+      operation,
+      feature
+    );
+    if (response.stop_reason === 'max_tokens') {
+      throw new Error('Structured output truncated by max_tokens');
+    }
+    const block = response.content[0];
+    if (!block || block.type !== 'text') {
+      throw new Error('Structured output is not a text block');
+    }
+    return JSON.parse(block.text);
   }
 }

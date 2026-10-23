@@ -8,6 +8,7 @@ export type AiWorkflowOutcome =
   | 'success'
   | 'empty'
   | 'truncated'
+  | 'refused'
   | 'timeout'
   | 'error'
   | 'cancelled'

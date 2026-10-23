@@ -205,7 +205,7 @@ pnpm db:dump          # dumper le schéma
 pnpm db:drop          # supprimer la base
 ```
 
-`autoLoadModels: true` — les modèles sont enregistrés par leurs modules, mais **jamais synchronisés automatiquement** : tout changement de schéma passe par une migration.
+`autoLoadModels: true` — les modèles sont enregistrés par leurs modules, mais `synchronize: false` : ils ne sont **jamais synchronisés automatiquement** (ni API, ni worker, ni tests) et tout changement de schéma passe par une migration. Après avoir tiré une branche, rejouer les migrations (`docker exec api pnpm db:migrate`).
 
 ---
 
