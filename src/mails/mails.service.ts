@@ -361,9 +361,10 @@ export class MailsService {
         reactionTarget: email.reactionTarget ?? '',
         actorFirstName: actor,
         discussionAuthorFirstName: email.discussionAuthorFirstName,
-        discussionTitle: email.discussionTitle,
+        // Mailjet rejects a variable set to null (400): empty string instead
+        discussionTitle: email.discussionTitle ?? '',
         groupName: email.groupName,
-        excerpt: email.excerpt,
+        excerpt: email.excerpt ?? '',
         discussionUrl: email.discussionUrl,
         reason,
         settingsUrl: email.settingsUrl,
