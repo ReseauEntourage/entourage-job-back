@@ -592,4 +592,50 @@ describe('OpenAiService - two-pass CV extraction', () => {
       expect(create.mock.calls[0][0].model).toBe('claude-haiku-5-5');
     });
   });
+
+  describe('reasoning effort of each step', () => {
+    const effortEnv = [
+      'AI_REASONING_EFFORT_CV_EXTRACTION',
+      'AI_REASONING_EFFORT_CV_READING',
+      'AI_REASONING_EFFORT_CV_BUILDING',
+    ];
+
+    afterEach(() => {
+      effortEnv.forEach((name) => delete process.env[name]);
+    });
+
+    it('does not send the parameter without a setting', async () => {
+      const { service, create } = build();
+      create
+        .mockResolvedValueOnce(readingResponse(CV_TEXT))
+        .mockResolvedValueOnce(buildingResponse());
+
+      await service.extractCVFromImages(['p1']);
+
+      create.mock.calls.forEach(([body]) => {
+        expect(body).not.toHaveProperty('reasoning_effort');
+      });
+    });
+
+    it('sends the effort of each step and puts it in the span metadata', async () => {
+      process.env.AI_REASONING_EFFORT_CV_READING = 'low';
+      process.env.AI_REASONING_EFFORT_CV_BUILDING = 'medium';
+      const { service, create } = build();
+      create
+        .mockResolvedValueOnce(readingResponse(CV_TEXT))
+        .mockResolvedValueOnce(buildingResponse());
+
+      await service.extractCVFromImages(['p1']);
+
+      expect(create.mock.calls.map(([body]) => body.reasoning_effort)).toEqual([
+        'low',
+        'medium',
+      ]);
+      expect(
+        annotate.mock.calls
+          .map(([, annotation]) => annotation?.metadata?.reasoningEffort)
+          .filter(Boolean)
+      ).toEqual(['low', 'medium']);
+    });
+  });
 });

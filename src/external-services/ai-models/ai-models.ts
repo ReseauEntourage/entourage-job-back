@@ -38,3 +38,17 @@ export const aiModelEnvName = (use: AiModelUse): string =>
  */
 export const getAiModel = (use: AiModelUse): string =>
   process.env[aiModelEnvName(use)]?.trim() || DEFAULT_AI_MODELS[use];
+
+/** Name of the variable that sets the reasoning effort of a usage, e.g. `AI_REASONING_EFFORT_CV_READING`. */
+export const aiReasoningEffortEnvName = (use: AiModelUse): string =>
+  `AI_REASONING_EFFORT_${use.toUpperCase()}`;
+
+/**
+ * The reasoning effort of a usage (OpenAI reasoning models: `none`, `minimal`,
+ * `low`, `medium`, `high`...), or undefined when the variable is empty or
+ * absent: the parameter is then not sent and the model keeps its own default.
+ * Read at every call. The value is not validated: a model that does not support
+ * it fails with the provider's own error, rather than being silently ignored.
+ */
+export const getReasoningEffort = (use: AiModelUse): string | undefined =>
+  process.env[aiReasoningEffortEnvName(use)]?.trim() || undefined;

@@ -1,7 +1,9 @@
 import {
   aiModelEnvName,
   AiModelUse,
+  aiReasoningEffortEnvName,
   getAiModel,
+  getReasoningEffort,
 } from 'src/external-services/ai-models/ai-models';
 
 // Pure unit tests (no database, no network)
@@ -11,6 +13,7 @@ describe('AI models', () => {
   beforeEach(() => {
     Object.values(AiModelUse).forEach((use) => {
       delete process.env[aiModelEnvName(use)];
+      delete process.env[aiReasoningEffortEnvName(use)];
     });
   });
 
@@ -81,5 +84,37 @@ describe('AI models', () => {
 
     delete process.env.AI_MODEL_CV_READING;
     expect(getAiModel(AiModelUse.CV_READING)).toBe('o4-mini-2025-04-16');
+  });
+
+  describe('reasoning effort', () => {
+    it('is undefined when no variable is set', () => {
+      Object.values(AiModelUse).forEach((use) => {
+        expect(getReasoningEffort(use)).toBeUndefined();
+      });
+    });
+
+    it('names its variable AI_REASONING_EFFORT_<USAGE>', () => {
+      expect(aiReasoningEffortEnvName(AiModelUse.CV_READING)).toBe(
+        'AI_REASONING_EFFORT_CV_READING'
+      );
+    });
+
+    it('reads the variable of that usage only, at every call', () => {
+      process.env.AI_REASONING_EFFORT_CV_READING = ' low ';
+
+      expect(getReasoningEffort(AiModelUse.CV_READING)).toBe('low');
+      expect(getReasoningEffort(AiModelUse.CV_BUILDING)).toBeUndefined();
+
+      process.env.AI_REASONING_EFFORT_CV_READING = 'high';
+      expect(getReasoningEffort(AiModelUse.CV_READING)).toBe('high');
+    });
+
+    it('counts an empty or blank value as unset', () => {
+      process.env.AI_REASONING_EFFORT_CV_READING = '';
+      process.env.AI_REASONING_EFFORT_CV_BUILDING = '   ';
+
+      expect(getReasoningEffort(AiModelUse.CV_READING)).toBeUndefined();
+      expect(getReasoningEffort(AiModelUse.CV_BUILDING)).toBeUndefined();
+    });
   });
 });

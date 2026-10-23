@@ -4,9 +4,11 @@ import type {
   ChatCompletionContentPart,
   ChatCompletionMessage,
 } from 'openai/resources/chat/completions';
+import type { ReasoningEffort } from 'openai/resources/shared';
 import {
   AiModelUse,
   getAiModel,
+  getReasoningEffort,
 } from 'src/external-services/ai-models/ai-models';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
@@ -132,12 +134,14 @@ export class OpenAiService {
         metadata: {
           pageCount: base64ImageArray.length,
           imagesBytes: totalPagesBytes(base64ImageArray),
+          ...this.effortMetadata(AiModelUse.CV_EXTRACTION),
         },
         signal,
       },
       (annotateCall) =>
         this.requestProfile(
           model,
+          AiModelUse.CV_EXTRACTION,
           CV_EXTRACTION_SYSTEM_PROMPT,
           [
             { type: 'text', text: CV_EXTRACTION_USER_TEXT },
@@ -178,6 +182,7 @@ export class OpenAiService {
         metadata: {
           pageCount: base64ImageArray.length,
           imagesBytes: totalPagesBytes(base64ImageArray),
+          ...this.effortMetadata(AiModelUse.CV_READING),
         },
         signal,
       },
@@ -186,6 +191,7 @@ export class OpenAiService {
           {
             model,
             max_completion_tokens: this.maxCompletionTokens(),
+            ...this.effortParam(AiModelUse.CV_READING),
             messages: [
               { role: 'system', content: CV_READING_SYSTEM_PROMPT },
               {
@@ -248,12 +254,16 @@ export class OpenAiService {
           { role: 'system', content: CV_BUILDING_SYSTEM_PROMPT },
           { role: 'user', content: cvTextForTrace(text, userMessage) },
         ],
-        metadata: { textChars: text.length },
+        metadata: {
+          textChars: text.length,
+          ...this.effortMetadata(AiModelUse.CV_BUILDING),
+        },
         signal,
       },
       (annotateCall) =>
         this.requestProfile(
           model,
+          AiModelUse.CV_BUILDING,
           CV_BUILDING_SYSTEM_PROMPT,
           userMessage,
           annotateCall,
@@ -319,6 +329,7 @@ export class OpenAiService {
   /** Forced tool call that returns the profile data of a CV. */
   private async requestProfile(
     model: string,
+    use: AiModelUse,
     systemPrompt: string,
     userContent: string | ChatCompletionContentPart[],
     annotateCall: (annotation: LlmCallAnnotation) => void,
@@ -329,6 +340,7 @@ export class OpenAiService {
       {
         model,
         max_completion_tokens: this.maxCompletionTokens(),
+        ...this.effortParam(use),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent },
@@ -412,6 +424,18 @@ export class OpenAiService {
       type: 'image_url',
       image_url: { url: `data:image/png;base64,${base64Image}` },
     }));
+  }
+
+  /** `reasoning_effort` request parameter of a usage, absent when not configured. */
+  private effortParam(use: AiModelUse): { reasoning_effort?: ReasoningEffort } {
+    const effort = getReasoningEffort(use);
+    return effort ? { reasoning_effort: effort as ReasoningEffort } : {};
+  }
+
+  /** Span metadata telling which reasoning effort was requested, if any. */
+  private effortMetadata(use: AiModelUse): { reasoningEffort?: string } {
+    const effort = getReasoningEffort(use);
+    return effort ? { reasoningEffort: effort } : {};
   }
 
   private maxCompletionTokens(): number {
