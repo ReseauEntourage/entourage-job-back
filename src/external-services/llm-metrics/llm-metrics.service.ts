@@ -2,6 +2,7 @@ import { Usage } from '@anthropic-ai/sdk/resources/messages/messages';
 import { Injectable, Logger } from '@nestjs/common';
 import { CompletionUsage } from 'openai/resources/completions';
 import { EmbedResponseUsage } from 'voyageai';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import { tracer } from 'src/tracer';
 
 @Injectable()
@@ -11,7 +12,7 @@ export class LlmMetricsService {
     model: string,
     usage: Usage,
     operation: string,
-    feature: string
+    feature: AiFeature
   ): void {
     const tags = { model, provider: 'anthropic', operation, feature };
 
@@ -39,7 +40,7 @@ export class LlmMetricsService {
     model: string,
     usage: CompletionUsage,
     operation: string,
-    feature: string
+    feature: AiFeature
   ): void {
     const tags = { model, provider: 'openai', operation, feature };
     tracer.dogstatsd.increment('ai.tokens.input', usage.prompt_tokens, tags);
@@ -48,6 +49,11 @@ export class LlmMetricsService {
       usage.completion_tokens,
       tags
     );
+    // Reasoning tokens are already counted in the output tokens: a breakdown
+    const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens;
+    if (reasoningTokens && reasoningTokens > 0) {
+      tracer.dogstatsd.increment('ai.tokens.reasoning', reasoningTokens, tags);
+    }
     this.logger.debug(
       `OpenAI usage recorded: ${JSON.stringify({
         model,

@@ -10,17 +10,22 @@ import { InjectModel } from '@nestjs/sequelize';
 import { QueuesService } from '../queues/producers/queues.service';
 import { Experience } from 'src/experiences/models';
 import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
+import {
+  AiModelUse,
+  getAiModel,
+} from 'src/external-services/ai-models/ai-models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
+import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import {
   CvSchemaType,
   SCHEMA_VERSION,
+  TRANSCRIPT_VERSION,
 } from 'src/external-services/openai/openai.schemas';
 import { Formation } from 'src/formations/models';
 import { Interest } from 'src/interests/models';
 import { LanguagesService } from 'src/languages/languages.service';
 
 import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
-import { tracer } from 'src/tracer';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
@@ -69,29 +74,32 @@ export class ProfileGenerationService {
 
     const input = buildPresentationPromptInput(user, userProfile);
     const tags = {
-      feature: PRESENTATION_GENERATION_CONFIG.feature,
       role: input.role,
       hasParcours: String(hasParcours(input)),
       gender: String(input.gender),
     };
 
-    return tracer.llmobs.trace(
-      { kind: 'workflow', name: 'presentation-generation' },
-      async () => {
-        let outcome = 'error';
+    return traceAiWorkflow(
+      {
+        feature: PRESENTATION_GENERATION_CONFIG.feature,
+        name: 'presentation-generation',
+        tags,
+      },
+      async ({ setOutcome }) => {
         try {
           const raw = await this.anthropicService.generateText(
             buildPresentationSystemPromptFor(input),
             buildPresentationUserMessage(input),
             {
               maxTokens: PRESENTATION_GENERATION_CONFIG.maxTokens,
+              model: getAiModel(AiModelUse.PRESENTATION_GENERATION),
               timeoutMs: PRESENTATION_GENERATION_CONFIG.timeoutMs,
               operation: PRESENTATION_GENERATION_CONFIG.operation,
               feature: PRESENTATION_GENERATION_CONFIG.feature,
             }
           );
           const result = postProcessPresentation(raw);
-          outcome = result.outcome;
+          setOutcome(result.outcome);
           if (!result.description) {
             this.logger.warn(
               `[PresentationGeneration] Empty generation (userId=${userId})`
@@ -99,8 +107,9 @@ export class ProfileGenerationService {
           }
           return { description: result.description };
         } catch (error) {
-          outcome =
+          const outcome =
             error instanceof APIConnectionTimeoutError ? 'timeout' : 'error';
+          setOutcome(outcome);
           this.logger.error(
             `[PresentationGeneration] ${outcome} (userId=${userId}): ${
               error instanceof Error ? error.message : String(error)
@@ -108,8 +117,6 @@ export class ProfileGenerationService {
             error instanceof Error ? error.stack : undefined
           );
           return { description: null };
-        } finally {
-          tracer.llmobs.annotate({ tags: { ...tags, outcome } });
         }
       }
     );
@@ -220,13 +227,47 @@ export class ProfileGenerationService {
     }
   }
 
+  /**
+   * Returns the text read from the CV by an earlier extraction, only if it can
+   * still be used to build a profile: same file (same hash) and read with the
+   * current reading instructions. Otherwise the CV has to be read again.
+   */
+  async getReusableTranscript(
+    userProfileId: string,
+    fileHash: string
+  ): Promise<string | null> {
+    const existingData = await this.extractedCVDataModel.findOne({
+      where: { userProfileId },
+    });
+
+    if (
+      !existingData?.transcript ||
+      existingData.fileHash !== fileHash ||
+      existingData.transcriptVersion !== TRANSCRIPT_VERSION
+    ) {
+      return null;
+    }
+
+    return existingData.transcript;
+  }
+
+  /**
+   * @param transcript - Text read from the CV, kept to build the profile again
+   * without reading the CV. Null for the single-call extraction, which does not
+   * produce it.
+   */
   async saveExtractedCVData(
     userProfileId: string,
     data: CvSchemaType,
-    fileHash: string
+    fileHash: string,
+    transcript: string | null = null
   ): Promise<ExtractedCVData> {
     try {
       const currentSchemaVersion = SCHEMA_VERSION;
+      const transcriptColumns = {
+        transcript,
+        transcriptVersion: transcript === null ? null : TRANSCRIPT_VERSION,
+      };
       // Vérification si des données existent déjà pour cet utilisateur
       const existingData = await this.extractedCVDataModel.findOne({
         where: { userProfileId },
@@ -238,6 +279,7 @@ export class ProfileGenerationService {
           data,
           fileHash,
           schemaVersion: currentSchemaVersion,
+          ...transcriptColumns,
         });
         return existingData;
       } else {
@@ -247,6 +289,7 @@ export class ProfileGenerationService {
           data,
           fileHash,
           schemaVersion: currentSchemaVersion,
+          ...transcriptColumns,
         });
       }
     } catch (error) {

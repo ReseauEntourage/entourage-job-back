@@ -179,6 +179,7 @@ describe('ProfileGeneration - presentation', () => {
           timeoutMs: 9000,
           feature: 'presentation_generation',
           operation: 'generate',
+          model: 'claude-haiku-4-5-20251001',
         })
       );
 
@@ -186,6 +187,27 @@ describe('ProfileGeneration - presentation', () => {
         candidate.user.id
       );
       expect(saved?.description).toBeNull();
+    });
+
+    it('asks the model of the setting for the presentation', async () => {
+      const saved = process.env.AI_MODEL_PRESENTATION_GENERATION;
+      process.env.AI_MODEL_PRESENTATION_GENERATION = 'claude-haiku-5-5';
+      try {
+        const candidate = await usersHelper.createLoggedInUser({
+          role: UserRoles.CANDIDATE,
+        });
+
+        const response = await post(candidate);
+
+        expect(response.status).toBe(200);
+        expect(lastCall().options.model).toBe('claude-haiku-5-5');
+      } finally {
+        if (saved === undefined) {
+          delete process.env.AI_MODEL_PRESENTATION_GENERATION;
+        } else {
+          process.env.AI_MODEL_PRESENTATION_GENERATION = saved;
+        }
+      }
     });
 
     it('still proposes a text when a presentation exists, and leaves it unchanged', async () => {

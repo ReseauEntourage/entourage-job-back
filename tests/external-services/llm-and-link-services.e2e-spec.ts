@@ -1,6 +1,7 @@
 import { createLink } from '@short.io/client-node';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import { ShortioService } from 'src/external-services/shortio/shortio.service';
 import { Jobs } from 'src/queues/queues.types';
 import { SmsService } from 'src/sms/sms.service';
@@ -108,7 +109,7 @@ describe('LlmMetricsService', () => {
         cache_creation_input_tokens: 2,
       } as never,
       'classify',
-      'ai_assistant'
+      AiFeature.AI_ASSISTANT
     );
 
     const tags = {
@@ -129,7 +130,7 @@ describe('LlmMetricsService', () => {
       'model-a',
       { input_tokens: 1, output_tokens: 1 } as never,
       'op',
-      'feat'
+      AiFeature.AI_ASSISTANT
     );
 
     expect(increment).toHaveBeenCalledTimes(2);
@@ -140,7 +141,7 @@ describe('LlmMetricsService', () => {
       'gpt',
       { prompt_tokens: 7, completion_tokens: 4 } as never,
       'op',
-      'feat'
+      AiFeature.AI_ASSISTANT
     );
 
     expect(increment).toHaveBeenCalledWith(
@@ -156,12 +157,57 @@ describe('LlmMetricsService', () => {
     expect(flush).toHaveBeenCalled();
   });
 
+  it('counts the reasoning tokens apart, without changing the output tokens', () => {
+    service.recordOpenAiUsage(
+      'o4-mini',
+      {
+        prompt_tokens: 100,
+        completion_tokens: 40,
+        completion_tokens_details: { reasoning_tokens: 25 },
+      } as never,
+      'cv_building',
+      AiFeature.CV_EXTRACTION
+    );
+
+    const tags = {
+      model: 'o4-mini',
+      provider: 'openai',
+      operation: 'cv_building',
+      feature: 'cv_extraction',
+    };
+    expect(increment).toHaveBeenCalledWith('ai.tokens.output', 40, tags);
+    expect(increment).toHaveBeenCalledWith('ai.tokens.reasoning', 25, tags);
+  });
+
+  it.each([
+    ['no details', {}],
+    [
+      'zero reasoning tokens',
+      { completion_tokens_details: { reasoning_tokens: 0 } },
+    ],
+    ['no reasoning count', { completion_tokens_details: {} }],
+  ])('sends no reasoning metric with %s', (_label, details) => {
+    service.recordOpenAiUsage(
+      'gpt-4.1',
+      { prompt_tokens: 1, completion_tokens: 1, ...details } as never,
+      'op',
+      AiFeature.CV_EXTRACTION
+    );
+
+    expect(increment).toHaveBeenCalledTimes(2);
+    expect(increment).not.toHaveBeenCalledWith(
+      'ai.tokens.reasoning',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
   it('records the VoyageAI tokens, defaulting to zero', () => {
     service.recordVoyageAiUsage(
       'voyage',
       { totalTokens: 9 } as never,
       'op',
-      'feat'
+      AiFeature.AI_ASSISTANT
     );
     service.recordVoyageAiUsage('voyage', {} as never, 'op', 'feat');
 
@@ -202,6 +248,80 @@ describe('AnthropicService', () => {
     );
   });
 
+  describe('model of each usage', () => {
+    const envBackup = { ...process.env };
+
+    afterEach(() => {
+      process.env = { ...envBackup };
+    });
+
+    it('streams the assistant answer with the assistant model of the setting', () => {
+      mockMessagesStream.mockReturnValue('stream');
+      process.env.AI_MODEL_AI_ASSISTANT = 'claude-sonnet-5-5';
+
+      buildService().createStream([], []);
+
+      expect(mockMessagesStream).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-sonnet-5-5' })
+      );
+    });
+
+    it('streams the assistant answer with the default model without a setting', () => {
+      mockMessagesStream.mockReturnValue('stream');
+      delete process.env.AI_MODEL_AI_ASSISTANT;
+
+      buildService().createStream([], []);
+
+      expect(mockMessagesStream).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-sonnet-4-6' })
+      );
+    });
+
+    it('classifies with the classifier model of the setting by default, and records that model', async () => {
+      mockMessagesCreate.mockResolvedValue({
+        content: [{ type: 'text', text: 'NON' }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+      });
+      process.env.AI_MODEL_AI_ASSISTANT_CLASSIFIER = 'claude-haiku-5-5';
+
+      await buildService().generateText('system', 'user');
+
+      expect(mockMessagesCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-haiku-5-5' }),
+        undefined
+      );
+      expect(llmMetrics.recordAnthropicUsage).toHaveBeenCalledWith(
+        'claude-haiku-5-5',
+        expect.anything(),
+        'classify',
+        'ai_assistant'
+      );
+    });
+
+    it('calls the model given by the caller, and records that model', async () => {
+      mockMessagesCreate.mockResolvedValue({
+        content: [{ type: 'text', text: 'text' }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+      });
+      process.env.AI_MODEL_AI_ASSISTANT_CLASSIFIER = 'claude-haiku-5-5';
+
+      await buildService().generateText('system', 'user', {
+        model: 'claude-sonnet-5-5',
+      });
+
+      expect(mockMessagesCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-sonnet-5-5' }),
+        undefined
+      );
+      expect(llmMetrics.recordAnthropicUsage).toHaveBeenCalledWith(
+        'claude-sonnet-5-5',
+        expect.anything(),
+        expect.any(String),
+        expect.any(String)
+      );
+    });
+  });
+
   it('generateText returns the text block and records the usage with default options', async () => {
     mockMessagesCreate.mockResolvedValue({
       content: [{ type: 'text', text: 'ESCALATE' }],
@@ -233,7 +353,7 @@ describe('AnthropicService', () => {
       timeoutMs: 1500,
       maxTokens: 50,
       operation: 'summarize',
-      feature: 'custom',
+      feature: AiFeature.PRESENTATION_GENERATION,
     });
 
     expect(text).toBe('');
@@ -245,7 +365,7 @@ describe('AnthropicService', () => {
       expect.any(String),
       {},
       'summarize',
-      'custom'
+      AiFeature.PRESENTATION_GENERATION
     );
   });
 
@@ -255,7 +375,7 @@ describe('AnthropicService', () => {
       maxTokens: 100,
       timeoutMs: 5000,
       operation: 'generate',
-      feature: 'help_groups_title',
+      feature: AiFeature.HELP_GROUPS_TITLE,
     };
 
     it('asks for the JSON schema, disables the retries, records the usage and returns the parsed JSON', async () => {
@@ -288,6 +408,56 @@ describe('AnthropicService', () => {
         'generate',
         'help_groups_title'
       );
+    });
+
+    describe('model', () => {
+      const envBackup = { ...process.env };
+      const answer = {
+        content: [{ type: 'text', text: '{"title":"Mon titre"}' }],
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 1, output_tokens: 1 },
+      };
+
+      afterEach(() => {
+        process.env = { ...envBackup };
+      });
+
+      it('calls the model given by the caller, and records that model', async () => {
+        mockMessagesCreate.mockResolvedValue(answer);
+
+        await buildService().generateStructured('system', 'user', schema, {
+          ...options,
+          model: 'claude-haiku-5-5',
+        });
+
+        expect(mockMessagesCreate).toHaveBeenCalledWith(
+          expect.objectContaining({ model: 'claude-haiku-5-5' }),
+          expect.anything()
+        );
+        expect(llmMetrics.recordAnthropicUsage).toHaveBeenCalledWith(
+          'claude-haiku-5-5',
+          expect.anything(),
+          'generate',
+          'help_groups_title'
+        );
+      });
+
+      it('defaults to the model of the classifier setting', async () => {
+        mockMessagesCreate.mockResolvedValue(answer);
+        process.env.AI_MODEL_AI_ASSISTANT_CLASSIFIER = 'claude-haiku-5-5';
+
+        await buildService().generateStructured(
+          'system',
+          'user',
+          schema,
+          options
+        );
+
+        expect(mockMessagesCreate).toHaveBeenCalledWith(
+          expect.objectContaining({ model: 'claude-haiku-5-5' }),
+          expect.anything()
+        );
+      });
     });
 
     it('rejects an invalid JSON answer', async () => {
