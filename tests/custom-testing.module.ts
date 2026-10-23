@@ -22,7 +22,6 @@ import { LanguagesModule } from 'src/languages/languages.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
-import { PassionsModule } from 'src/passions/passions.module';
 import { PostsModule } from 'src/posts/posts.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import { ReadDocumentsModule } from 'src/read-documents/read-documents.module';
@@ -88,7 +87,6 @@ import { UsersTestingModule } from './users/users-testing.module';
     BusinessSectorsModule,
     ContractsModule,
     LanguagesModule,
-    PassionsModule,
     SkillsModule,
     ReviewsModule,
     ContactsModule,

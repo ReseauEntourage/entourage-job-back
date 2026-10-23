@@ -248,6 +248,92 @@ describe('AnthropicService', () => {
       'custom'
     );
   });
+
+  describe('generateStructured', () => {
+    const schema = { type: 'object' };
+    const options = {
+      maxTokens: 100,
+      timeoutMs: 5000,
+      operation: 'generate',
+      feature: 'help_groups_title',
+    };
+
+    it('asks for the JSON schema, disables the retries, records the usage and returns the parsed JSON', async () => {
+      mockMessagesCreate.mockResolvedValue({
+        content: [{ type: 'text', text: '{"title":"Mon titre"}' }],
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 3, output_tokens: 7 },
+      });
+
+      const result = await buildService().generateStructured(
+        'system',
+        'user',
+        schema,
+        options
+      );
+
+      expect(result).toEqual({ title: 'Mon titre' });
+      expect(mockMessagesCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          max_tokens: 100,
+          system: 'system',
+          messages: [{ role: 'user', content: 'user' }],
+          output_config: { format: { type: 'json_schema', schema } },
+        }),
+        { timeout: 5000, maxRetries: 0 }
+      );
+      expect(llmMetrics.recordAnthropicUsage).toHaveBeenCalledWith(
+        'claude-haiku-4-5-20251001',
+        { input_tokens: 3, output_tokens: 7 },
+        'generate',
+        'help_groups_title'
+      );
+    });
+
+    it('rejects an invalid JSON answer', async () => {
+      mockMessagesCreate.mockResolvedValue({
+        content: [{ type: 'text', text: 'Je suis ravi de votre enthousiasme' }],
+        stop_reason: 'end_turn',
+        usage: {},
+      });
+
+      await expect(
+        buildService().generateStructured('system', 'user', schema, options)
+      ).rejects.toThrow();
+    });
+
+    it('rejects an answer cut by max_tokens', async () => {
+      mockMessagesCreate.mockResolvedValue({
+        content: [{ type: 'text', text: '{"title":"Mon ti' }],
+        stop_reason: 'max_tokens',
+        usage: {},
+      });
+
+      await expect(
+        buildService().generateStructured('system', 'user', schema, options)
+      ).rejects.toThrow('truncated');
+    });
+
+    it('rejects a non text block', async () => {
+      mockMessagesCreate.mockResolvedValue({
+        content: [{ type: 'tool_use' }],
+        stop_reason: 'end_turn',
+        usage: {},
+      });
+
+      await expect(
+        buildService().generateStructured('system', 'user', schema, options)
+      ).rejects.toThrow('text block');
+    });
+
+    it('propagates the SDK errors, timeouts included', async () => {
+      mockMessagesCreate.mockRejectedValue(new Error('timeout'));
+
+      await expect(
+        buildService().generateStructured('system', 'user', schema, options)
+      ).rejects.toThrow('timeout');
+    });
+  });
 });
 
 describe('SmsService', () => {

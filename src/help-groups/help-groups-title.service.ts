@@ -7,12 +7,19 @@ import {
   buildHelpGroupTitleUserMessage,
   cleanHelpGroupTitle,
   HELP_GROUP_TITLE_CONFIG,
+  HELP_GROUP_TITLE_OUTPUT_SCHEMA,
+  isHelpGroupTitleOutput,
 } from './help-groups-title.config';
+
+type HelpGroupTitleOutcome =
+  'success' | 'empty' | 'refused' | 'timeout' | 'error';
 
 /**
  * Proposes a discussion title from the member's message. Never throws: any
- * failure or timeout gives `{ title: null }` and the member writes their own
- * title. The message content is never logged.
+ * failure, refusal or timeout gives `{ title: null }` and the member writes
+ * their own title. The model answer is constrained to a JSON schema, so
+ * nothing but a title is ever returned. The message content and the model
+ * output are never logged.
  */
 @Injectable()
 export class HelpGroupsTitleService {
@@ -29,11 +36,11 @@ export class HelpGroupsTitleService {
     return tracer.llmobs.trace(
       { kind: 'workflow', name: 'help-groups-title' },
       async () => {
-        let outcome = 'error';
+        let outcome: HelpGroupTitleOutcome = 'error';
         try {
           const result = await this.generate(content, previousTitles);
-          outcome = result.title ? 'success' : 'empty';
-          return result;
+          outcome = result.outcome;
+          return { title: result.title };
         } catch (error) {
           outcome =
             error instanceof APIConnectionTimeoutError ? 'timeout' : 'error';
@@ -59,10 +66,11 @@ export class HelpGroupsTitleService {
   private async generate(
     content: string,
     previousTitles: string[]
-  ): Promise<{ title: string | null }> {
-    const raw = await this.anthropicService.generateText(
+  ): Promise<{ title: string | null; outcome: HelpGroupTitleOutcome }> {
+    const output = await this.anthropicService.generateStructured(
       buildHelpGroupTitleSystemPrompt(),
       buildHelpGroupTitleUserMessage(content, previousTitles),
+      HELP_GROUP_TITLE_OUTPUT_SCHEMA,
       {
         maxTokens: HELP_GROUP_TITLE_CONFIG.maxTokens,
         timeoutMs: HELP_GROUP_TITLE_CONFIG.timeoutMs,
@@ -70,10 +78,18 @@ export class HelpGroupsTitleService {
         feature: HELP_GROUP_TITLE_CONFIG.feature,
       }
     );
-    const title = cleanHelpGroupTitle(raw);
+    if (!isHelpGroupTitleOutput(output)) {
+      throw new Error('Unexpected structured output shape');
+    }
+    if (output.cannotTitle) {
+      this.logger.warn('[HelpGroupsTitle] The model renounced to a title');
+      return { title: null, outcome: 'refused' };
+    }
+    const title = cleanHelpGroupTitle(output.title);
     if (!title) {
       this.logger.warn('[HelpGroupsTitle] Empty generation');
+      return { title: null, outcome: 'empty' };
     }
-    return { title };
+    return { title, outcome: 'success' };
   }
 }

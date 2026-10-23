@@ -43,6 +43,7 @@ describe('app.module connection options', () => {
         password: dbPassword,
         database: 'some_db',
         autoLoadModels: true,
+        synchronize: false,
         logging: false,
         pool: undefined,
       });

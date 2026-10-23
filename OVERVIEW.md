@@ -36,7 +36,7 @@ corepack enable
 pnpm install
 
 pnpm run db:create
-pnpm run db:migrate
+pnpm run db:migrate     # models are never auto-synchronized (synchronize: false): every schema change is a migration
 pnpm run db:seed
 pnpm run db:dump        # ./dump-db-schema.sh
 
