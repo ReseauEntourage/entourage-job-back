@@ -18,13 +18,16 @@ import {
   Queues,
   GenerateProfileFromPDFJob,
 } from 'src/queues/queues.types';
+import { WORKER_METRICS_OPTIONS } from 'src/queues/queues.utils';
 import { detectPdftocairoPath } from 'src/utils/misc/pdf-to-cairo';
 
 const CANCELLATION_CHECK_INTERVAL_MS = 2000;
 
 class ProfileGenerationCancelledError extends Error {}
 
-@Processor(Queues.PROFILE_GENERATION)
+@Processor(Queues.PROFILE_GENERATION, {
+  metrics: WORKER_METRICS_OPTIONS,
+})
 @Injectable()
 export class ProfileGeneratorProcessor extends WorkerHost {
   private readonly logger = new Logger(ProfileGeneratorProcessor.name);
