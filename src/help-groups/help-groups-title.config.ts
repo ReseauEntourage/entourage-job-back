@@ -12,14 +12,45 @@ export const HELP_GROUP_TITLE_MAX_LENGTH = 120;
 
 export const HELP_GROUP_TITLE_CONFIG = {
   model: 'claude-haiku-4-5-20251001',
-  // A 120 characters French title fits in ~40 tokens
-  maxTokens: 60,
+  // A 120 characters French title fits in ~40 tokens, the JSON envelope of the
+  // structured output adds ~20 more
+  maxTokens: 100,
   // The proposal never blocks the publication: past this budget, the member
   // writes their title
   timeoutMs: 5000,
   feature: 'help_groups_title',
   operation: 'generate',
 };
+
+export interface HelpGroupTitleOutput {
+  cannotTitle: boolean;
+  title: string;
+}
+
+/**
+ * JSON schema the model answer is constrained to (structured outputs): a
+ * refusal or a comment can never end up in `title`, the model has `cannotTitle`
+ * to renounce. The 120 characters limit is not expressed here (the schema
+ * keywords of structured outputs are restricted): the prompt asks for it and
+ * `cleanHelpGroupTitle` enforces it.
+ */
+export const HELP_GROUP_TITLE_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    title: { type: 'string' },
+    cannotTitle: { type: 'boolean' },
+  },
+  required: ['title', 'cannotTitle'],
+  additionalProperties: false,
+};
+
+export const isHelpGroupTitleOutput = (
+  value: unknown
+): value is HelpGroupTitleOutput =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as HelpGroupTitleOutput).title === 'string' &&
+  typeof (value as HelpGroupTitleOutput).cannotTitle === 'boolean';
 
 const RULES = [
   'Rédige en français, sur une seule ligne.',
@@ -29,7 +60,9 @@ const RULES = [
   "Ne qualifie, ne diagnostique et ne juge jamais la personne ni sa situation : pas d'étiquette (« en difficulté », « précaire », « fragile », « isolé »), pas de vocabulaire médical, social ou judiciaire qu'elle n'a pas employé.",
   "N'ajoute aucune information absente du message : ni durée, ni métier, ni lieu, ni cause.",
   'Ne mentionne ni nom, ni prénom, ni coordonnées, ni aucune donnée personnelle, même si le message en contient.',
-  'Réponds uniquement par le titre : pas de guillemets, pas de préfixe, pas de commentaire.',
+  "Propose toujours un titre, quel que soit le message : un remerciement, un message de joie, un encouragement, un partage d'expérience ou un message très court méritent un titre comme les autres (par exemple « Merci d'avoir créé ce groupe, c'est génial ! »). Ne refuse jamais, ne dis jamais que le message ne convient pas, ne suggère jamais de ne pas écrire de message et ne demande aucune précision.",
+  "Le champ « title » contient uniquement le titre, sur une seule ligne : jamais de retour à la ligne ni de second paragraphe, pas de guillemets, pas de préfixe, pas de commentaire, pas d'explication.",
+  "Mets le champ « cannotTitle » à true, avec un « title » vide, uniquement si aucun titre fidèle au message n'est possible. Jamais pour un remerciement, un message de joie ou un message court : mets-le à false et propose un titre.",
 ];
 
 const DATA_RULE =
