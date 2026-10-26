@@ -1,45 +1,29 @@
-import { OpenAiService } from 'src/external-services/openai/openai.service';
+import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
 import { tracer } from 'src/tracer';
 
-// Pure unit tests (no database, no network): the Datadog tracer is mocked, and
-// `openai` is replaced by a double for the whole e2e suite (tests/setup.ts)
+// Pure unit tests (no database, no network): the Datadog tracer and the
+// Anthropic service are replaced by doubles
 jest.mock('src/tracer', () => ({
   tracer: { llmobs: { trace: jest.fn(), annotate: jest.fn() } },
 }));
-
-type OpenAiDouble = { chat: { completions: { create: jest.Mock } } };
 
 const span = { name: 'llm-span' };
 const trace = tracer.llmobs.trace as jest.Mock;
 const annotate = tracer.llmobs.annotate as jest.Mock;
 
-describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
-  const llmMetrics = { recordOpenAiUsage: jest.fn() };
+describe('CvExtractionService.extractCVFromImages - LLM Observability trace', () => {
+  const anthropic = { createMessageUntraced: jest.fn() };
+  const llmMetrics = { recordAnthropicUsage: jest.fn() };
 
-  const build = () => {
-    const service = new OpenAiService(llmMetrics as never);
-    const create = (service as unknown as { openai: OpenAiDouble }).openai.chat
-      .completions.create;
-    return { service, create };
-  };
+  const build = () => ({
+    service: new CvExtractionService(anthropic as never, llmMetrics as never),
+    create: anthropic.createMessageUntraced,
+  });
 
-  const toolCallResponse = (extra: Record<string, unknown> = {}) => ({
-    choices: [
-      {
-        finish_reason: 'stop',
-        message: {
-          tool_calls: [
-            {
-              type: 'function',
-              function: {
-                name: 'extract_cv_data',
-                arguments: '{"description":"A cook"}',
-              },
-            },
-          ],
-        },
-      },
-    ],
+  const structuredResponse = (extra: Record<string, unknown> = {}) => ({
+    stop_reason: 'end_turn',
+    content: [{ type: 'text', text: '{"description":"A cook"}' }],
+    usage: { input_tokens: 10, output_tokens: 5 },
     ...extra,
   });
 
@@ -61,12 +45,13 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
   beforeEach(() => {
     trace.mockReset().mockImplementation((_options, fn) => fn(span));
     annotate.mockReset();
-    llmMetrics.recordOpenAiUsage.mockReset();
+    anthropic.createMessageUntraced.mockReset();
+    llmMetrics.recordAnthropicUsage.mockReset();
   });
 
   it('opens an llm span for the model and the provider of the call', async () => {
     const { service, create } = build();
-    create.mockResolvedValue(toolCallResponse());
+    create.mockResolvedValue(structuredResponse());
 
     await service.extractCVFromImages(['p1']);
 
@@ -75,8 +60,8 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
       {
         kind: 'llm',
         name: 'cv-extraction-llm',
-        modelName: 'gpt-5-mini',
-        modelProvider: 'openai',
+        modelName: 'claude-sonnet-5-5',
+        modelProvider: 'anthropic',
       },
       expect.any(Function)
     );
@@ -84,11 +69,7 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
 
   it('traces the prompt, the output and the tokens, without any page image', async () => {
     const { service, create } = build();
-    create.mockResolvedValue(
-      toolCallResponse({
-        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
-      })
-    );
+    create.mockResolvedValue(structuredResponse());
 
     await service.extractCVFromImages(['page1', 'page2']);
 
@@ -109,12 +90,16 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
       outputTokens: 5,
       totalTokens: 15,
     });
-    expect(merged.metadata).toEqual({ pageCount: 2, imagesBytes: 10 });
+    expect(merged.metadata).toEqual({
+      pageCount: 2,
+      imagesBytes: 10,
+      effort: 'medium',
+    });
   });
 
   it('says a single page in the singular', async () => {
     const { service, create } = build();
-    create.mockResolvedValue(toolCallResponse());
+    create.mockResolvedValue(structuredResponse());
 
     await service.extractCVFromImages(['page1']);
 
@@ -125,12 +110,12 @@ describe('OpenAiService.extractCVFromImages - LLM Observability trace', () => {
 
   it('still sends every page to the model', async () => {
     const { service, create } = build();
-    create.mockResolvedValue(toolCallResponse());
+    create.mockResolvedValue(structuredResponse());
 
     await service.extractCVFromImages(['aaaaaaaa', 'bbbbbbbb', 'cc']);
 
-    const sent = create.mock.calls[0][0].messages[1].content.filter(
-      (part: { type: string }) => part.type === 'image_url'
+    const sent = create.mock.calls[0][0].messages[0].content.filter(
+      (part: { type: string }) => part.type === 'image'
     );
     expect(sent).toHaveLength(3);
   });

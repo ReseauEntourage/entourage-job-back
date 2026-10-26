@@ -25,8 +25,8 @@ import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { EventsModule } from './events/events.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
+import { CvExtractionModule } from './external-services/cv-extraction/cv-extraction.module';
 import { LinkedInModule } from './external-services/linkedin/linkedin.module';
-import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { GamificationModule } from './gamification/gamification.module';
@@ -160,7 +160,7 @@ export function getSequelizeOptions(
     UserProfileSharesModule,
     UserSocialSituationsModule,
     MediasModule,
-    OpenAiModule,
+    CvExtractionModule,
     PublicCVsModule,
     CompaniesModule,
     ProfileGenerationModule,

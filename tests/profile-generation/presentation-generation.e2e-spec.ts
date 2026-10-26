@@ -6,7 +6,7 @@ import request from 'supertest';
 import { BusinessSector } from 'src/business-sectors/models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { SCHEMA_VERSION } from 'src/external-services/openai/openai.schemas';
+import { SCHEMA_VERSION } from 'src/external-services/cv-extraction/cv-extraction.schemas';
 import { Nudge } from 'src/nudge/models';
 import type { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { QueuesService } from 'src/queues/producers/queues.service';

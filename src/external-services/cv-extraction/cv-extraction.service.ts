@@ -1,15 +1,19 @@
-import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import { transformJSONSchema } from '@anthropic-ai/sdk/lib/transform-json-schema';
 import type {
-  ChatCompletionContentPart,
-  ChatCompletionMessage,
-} from 'openai/resources/chat/completions';
-import type { ReasoningEffort } from 'openai/resources/shared';
+  ContentBlockParam,
+  ImageBlockParam,
+  Message,
+  OutputConfig,
+  Usage,
+} from '@anthropic-ai/sdk/resources/messages';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   AiModelUse,
+  getAiEffort,
   getAiModel,
-  getReasoningEffort,
 } from 'src/external-services/ai-models/ai-models';
+import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import {
@@ -32,8 +36,33 @@ import {
   CV_READING_USER_TEXT,
   isTwoPassExtractionEnabled,
 } from './cv-extraction.config';
-import { CvReadingError } from './cv-reading.error';
-import { cvSchema, CvExtractionResult, CvSchemaType } from './openai.schemas';
+import { CvExtractionError } from './cv-extraction.error';
+import {
+  cvSchema,
+  CvExtractionResult,
+  CvSchemaType,
+} from './cv-extraction.schemas';
+
+/**
+ * The schema sent to Anthropic's structured outputs. The constraints it does
+ * not support (lengths, counts) are moved into the descriptions by the SDK and
+ * the text is still cut on import. The lists are required (they may be empty):
+ * a schema is limited to 24 optional properties, and this one has 23 otherwise.
+ */
+const CV_OUTPUT_SCHEMA = (() => {
+  const schema = transformJSONSchema(cvSchema as never) as {
+    required?: string[];
+  };
+  schema.required = [
+    ...(schema.required ?? []),
+    'skills',
+    'experiences',
+    'formations',
+    'languages',
+    'interests',
+  ];
+  return schema as Record<string, unknown>;
+})();
 
 interface TracedPass {
   /** Prefix of the error thrown when the call fails. */
@@ -50,15 +79,13 @@ interface TracedPass {
 }
 
 @Injectable()
-export class OpenAiService {
-  private readonly openai: OpenAI;
-  private readonly logger = new Logger(OpenAiService.name);
+export class CvExtractionService {
+  private readonly logger = new Logger(CvExtractionService.name);
 
-  constructor(private readonly llmMetrics: LlmMetricsService) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
+  constructor(
+    private readonly anthropicService: AnthropicService,
+    private readonly llmMetrics: LlmMetricsService
+  ) {}
 
   /**
    * Extracts the profile data of a CV from its page images, in one call or, when
@@ -144,8 +171,8 @@ export class OpenAiService {
           AiModelUse.CV_EXTRACTION,
           CV_EXTRACTION_SYSTEM_PROMPT,
           [
-            { type: 'text', text: CV_EXTRACTION_USER_TEXT },
             ...this.pageParts(base64ImageArray),
+            { type: 'text', text: CV_EXTRACTION_USER_TEXT },
           ],
           annotateCall,
           'cv_extraction',
@@ -187,39 +214,31 @@ export class OpenAiService {
         signal,
       },
       async (annotateCall) => {
-        const response = await this.openai.chat.completions.create(
+        const response = await this.anthropicService.createMessageUntraced(
           {
             model,
-            max_completion_tokens: this.maxCompletionTokens(),
-            ...this.effortParam(AiModelUse.CV_READING),
+            max_tokens: this.maxTokens(),
+            system: CV_READING_SYSTEM_PROMPT,
             messages: [
-              { role: 'system', content: CV_READING_SYSTEM_PROMPT },
               {
                 role: 'user',
                 content: [
-                  { type: 'text', text: CV_READING_USER_TEXT },
                   ...this.pageParts(base64ImageArray),
+                  { type: 'text', text: CV_READING_USER_TEXT },
                 ],
               },
             ],
+            ...this.outputConfig(AiModelUse.CV_READING),
           },
           { signal }
         );
 
         this.recordUsage(response.usage, 'cv_reading', model, annotateCall);
+        this.assertAnswered(response, 'la lecture du CV');
 
-        const choice = response.choices?.[0];
-        const text = (choice?.message?.content ?? '').trim();
-
-        if (choice?.finish_reason === 'length') {
-          throw new CvReadingError(
-            'truncated',
-            `OpenAI a coupé la lecture du CV par limite de tokens (finish_reason=length). ` +
-              `usage=${JSON.stringify(response.usage)}`
-          );
-        }
+        const text = this.textOf(response).trim();
         if (text.length < CV_READING_MIN_CHARS) {
-          throw new CvReadingError(
+          throw new CvExtractionError(
             'empty',
             `La lecture du CV n'a produit aucun texte exploitable (${text.length} caractères).`
           );
@@ -274,10 +293,10 @@ export class OpenAiService {
   }
 
   /**
-   * Runs one call of the extraction in its own LLM span: the automatic OpenAI
-   * span would turn the pages into an `[image]` marker (and is switched off, see
-   * src/tracer.ts). The span carries its step and its outcome, and the error of
-   * the call is rethrown with the context of the pass.
+   * Runs one call of the extraction in its own LLM span: the call is not seen
+   * by the automatic Anthropic span (see `createMessageUntraced`), so the span
+   * carries what we choose to send: its step, its outcome and no page. The error
+   * of the call is rethrown with the context of the pass.
    */
   private async tracedPass<T>(
     pass: TracedPass,
@@ -287,7 +306,7 @@ export class OpenAiService {
       {
         name: pass.name,
         modelName: pass.model,
-        modelProvider: 'openai',
+        modelProvider: 'anthropic',
         tags: pass.step ? { step: pass.step } : {},
       },
       async (annotateCall) => {
@@ -317,153 +336,132 @@ export class OpenAiService {
   }
 
   private outcomeOf(error: unknown): AiWorkflowOutcome {
-    if (error instanceof CvReadingError) {
+    if (error instanceof CvExtractionError) {
       return error.outcome;
     }
-    // Matched by name: the SDK class is not exported by the test doubles
-    return error instanceof Error && error.name === 'APIConnectionTimeoutError'
+    return error instanceof Anthropic.APIConnectionTimeoutError
       ? 'timeout'
       : 'error';
   }
 
-  /** Forced tool call that returns the profile data of a CV. */
+  /** Structured output that returns the profile data of a CV. */
   private async requestProfile(
     model: string,
     use: AiModelUse,
     systemPrompt: string,
-    userContent: string | ChatCompletionContentPart[],
+    userContent: string | ContentBlockParam[],
     annotateCall: (annotation: LlmCallAnnotation) => void,
     operation: string,
     signal?: AbortSignal
   ): Promise<CvSchemaType> {
-    const response = await this.openai.chat.completions.create(
+    const response = await this.anthropicService.createMessageUntraced(
       {
         model,
-        max_completion_tokens: this.maxCompletionTokens(),
-        ...this.effortParam(use),
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent },
-        ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'extract_cv_data',
-              description: "Extraire les données structurées d'un CV",
-              parameters: cvSchema,
-            },
-          },
-        ],
-        tool_choice: {
-          type: 'function',
-          function: { name: 'extract_cv_data' },
-        },
+        max_tokens: this.maxTokens(),
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userContent }],
+        ...this.outputConfig(use, {
+          type: 'json_schema',
+          schema: CV_OUTPUT_SCHEMA,
+        }),
       },
       { signal }
     );
 
-    if (response.usage) {
-      annotateCall({ metrics: this.usageMetrics(response.usage) });
+    this.recordUsage(response.usage, operation, model, annotateCall);
+    this.assertAnswered(response, 'la réponse');
+
+    const answer = this.textOf(response);
+    if (!answer) {
+      throw new Error("Aucun contenu structuré n'a été retourné par l'API.");
     }
 
-    const choice = response.choices?.[0];
-    const toolCalls = (choice?.message as ChatCompletionMessage)?.tool_calls;
-    const toolCall = toolCalls?.[0];
-    const functionArgs =
-      toolCall && 'function' in toolCall
-        ? toolCall.function?.arguments
-        : undefined;
+    annotateCall({ outputMessages: [{ role: 'assistant', content: answer }] });
 
-    if (!functionArgs) {
-      const finishReason = choice?.finish_reason;
-      const usage = response.usage;
-      this.logger.error(
-        `OpenAI: aucun tool_call retourné (finish_reason=${String(
-          finishReason
-        )}). usage=${JSON.stringify(usage)}`
-      );
-
-      if (finishReason === 'length') {
-        throw new Error(
-          `OpenAI a coupé la réponse par limite de tokens (finish_reason=length). ` +
-            `Essaie de réduire le nombre/poids des images, ou augmente OPENAI_MAX_COMPLETION_TOKENS. ` +
-            `usage=${JSON.stringify(usage)}`
-        );
-      }
-
-      throw new Error(
-        `Aucun tool_call n'a été retourné par l'API OpenAI (finish_reason=${String(
-          finishReason
-        )}).`
-      );
-    }
-
-    if (response.usage) {
-      this.logger.debug(
-        `OpenAI usage for CV extraction: ${JSON.stringify(response.usage)}`
-      );
-      this.llmMetrics.recordOpenAiUsage(
-        model,
-        response.usage,
-        operation,
-        AiFeature.CV_EXTRACTION
-      );
-    }
-
-    annotateCall({
-      outputMessages: [{ role: 'assistant', content: functionArgs }],
-    });
-
-    // Analyser les arguments JSON
-    return JSON.parse(functionArgs) as CvSchemaType;
-  }
-
-  private pageParts(base64ImageArray: string[]): ChatCompletionContentPart[] {
-    return base64ImageArray.map((base64Image) => ({
-      type: 'image_url',
-      image_url: { url: `data:image/png;base64,${base64Image}` },
-    }));
-  }
-
-  /** `reasoning_effort` request parameter of a usage, absent when not configured. */
-  private effortParam(use: AiModelUse): { reasoning_effort?: ReasoningEffort } {
-    const effort = getReasoningEffort(use);
-    return effort ? { reasoning_effort: effort as ReasoningEffort } : {};
-  }
-
-  /** Span metadata telling which reasoning effort was requested, if any. */
-  private effortMetadata(use: AiModelUse): { reasoningEffort?: string } {
-    const effort = getReasoningEffort(use);
-    return effort ? { reasoningEffort: effort } : {};
-  }
-
-  private maxCompletionTokens(): number {
-    return Number(process.env.OPENAI_MAX_COMPLETION_TOKENS ?? 4096);
+    return JSON.parse(answer) as CvSchemaType;
   }
 
   /**
-   * Token counts of a span. The reasoning tokens (reasoning models only) are
-   * already counted in the output tokens: they are sent as a breakdown, so that
-   * the part of the output the model spent thinking can be told from the text it
-   * produced.
+   * Throws when the model refused to answer or was cut by the token limit: a
+   * partial text or a partial JSON must never be used.
    */
-  private usageMetrics(
-    usage: OpenAI.Completions.CompletionUsage
-  ): NonNullable<LlmCallAnnotation['metrics']> {
-    const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens;
+  private assertAnswered(response: Message, subject: string): void {
+    if (response.stop_reason === 'refusal') {
+      throw new CvExtractionError(
+        'refused',
+        `Anthropic a refusé de traiter ${subject} (stop_reason=refusal, ${JSON.stringify(
+          response.stop_details ?? null
+        )}).`
+      );
+    }
+    if (response.stop_reason === 'max_tokens') {
+      throw new CvExtractionError(
+        'truncated',
+        `Anthropic a coupé ${subject} par limite de tokens (stop_reason=max_tokens). ` +
+          `Essaie de réduire le nombre/poids des images, ou augmente CV_EXTRACTION_MAX_TOKENS. ` +
+          `usage=${JSON.stringify(response.usage)}`
+      );
+    }
+  }
+
+  /** The text of the answer (the thinking blocks, if any, are left out). */
+  private textOf(response: Message): string {
+    return response.content
+      .flatMap((block) => (block.type === 'text' ? [block.text] : []))
+      .join('');
+  }
+
+  private pageParts(base64ImageArray: string[]): ImageBlockParam[] {
+    return base64ImageArray.map((base64Image) => ({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: 'image/png',
+        data: base64Image,
+      },
+    }));
+  }
+
+  /** `output_config` of a usage: its effort, and the format when structured. */
+  private outputConfig(
+    use: AiModelUse,
+    format?: OutputConfig['format']
+  ): { output_config: OutputConfig } {
+    const effort = getAiEffort(use);
     return {
-      inputTokens: usage.prompt_tokens,
-      outputTokens: usage.completion_tokens,
-      totalTokens: usage.total_tokens,
-      ...(reasoningTokens !== undefined
-        ? { reasoningOutputTokens: reasoningTokens }
-        : {}),
+      output_config: {
+        ...(effort ? { effort } : {}),
+        ...(format ? { format } : {}),
+      },
+    };
+  }
+
+  /** Span metadata telling which effort was requested, if any. */
+  private effortMetadata(use: AiModelUse): { effort?: string } {
+    const effort = getAiEffort(use);
+    return effort ? { effort } : {};
+  }
+
+  /**
+   * Output cap of a call. Part of it can be spent thinking, which the effort
+   * limits: a long CV needs room for its text on top.
+   */
+  private maxTokens(): number {
+    return Number(process.env.CV_EXTRACTION_MAX_TOKENS ?? 8192);
+  }
+
+  private usageMetrics(
+    usage: Usage
+  ): NonNullable<LlmCallAnnotation['metrics']> {
+    return {
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      totalTokens: usage.input_tokens + usage.output_tokens,
     };
   }
 
   private recordUsage(
-    usage: OpenAI.Completions.CompletionUsage | undefined,
+    usage: Usage | undefined,
     operation: string,
     model: string,
     annotateCall: (annotation: LlmCallAnnotation) => void
@@ -473,9 +471,9 @@ export class OpenAiService {
     }
     annotateCall({ metrics: this.usageMetrics(usage) });
     this.logger.debug(
-      `OpenAI usage for CV extraction: ${JSON.stringify(usage)}`
+      `Anthropic usage for CV extraction: ${JSON.stringify(usage)}`
     );
-    this.llmMetrics.recordOpenAiUsage(
+    this.llmMetrics.recordAnthropicUsage(
       model,
       usage,
       operation,

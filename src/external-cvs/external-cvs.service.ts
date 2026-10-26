@@ -3,7 +3,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { v4 as uuid } from 'uuid';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { OpenAiService } from 'src/external-services/openai/openai.service';
+import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
 import { Media } from 'src/medias/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { ExternalCv } from './models/external-cv.model';
@@ -41,7 +41,7 @@ export class ExternalCvsService {
   constructor(
     private s3Service: S3Service,
     private userProfileService: UserProfilesService,
-    private openAiService: OpenAiService,
+    private cvExtractionService: CvExtractionService,
     @InjectModel(ExtractedCVData)
     private extractedCVDataModel: typeof ExtractedCVData,
     @InjectModel(ExternalCv)

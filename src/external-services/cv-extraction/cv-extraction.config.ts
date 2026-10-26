@@ -1,4 +1,4 @@
-import { cvSchema } from './openai.schemas';
+import { cvSchema } from './cv-extraction.schemas';
 
 /**
  * Below this size, the text read from a CV is not a CV: the page was blank or

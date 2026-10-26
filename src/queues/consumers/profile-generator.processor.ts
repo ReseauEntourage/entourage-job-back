@@ -7,11 +7,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { Job, Queue } from 'bullmq';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
+import { isTwoPassExtractionEnabled } from 'src/external-services/cv-extraction/cv-extraction.config';
+import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
 import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import { totalPagesBytes } from 'src/external-services/llm-observability/cv-trace';
 import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
-import { isTwoPassExtractionEnabled } from 'src/external-services/openai/cv-extraction.config';
-import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import {
   PusherChannels,
@@ -34,7 +34,7 @@ export class ProfileGeneratorProcessor extends WorkerHost {
   private readonly logger = new Logger(ProfileGeneratorProcessor.name);
 
   constructor(
-    private readonly openAiService: OpenAiService,
+    private readonly cvExtractionService: CvExtractionService,
     private readonly pusherService: PusherService,
     private readonly profileGenerationService: ProfileGenerationService,
     @InjectQueue(Queues.PROFILE_GENERATION)
@@ -124,7 +124,7 @@ export class ProfileGeneratorProcessor extends WorkerHost {
 
       await job.updateProgress(30);
 
-      // Traitement long avec OpenAI : annulation coopérative via un signal
+      // Traitement long avec le LLM : annulation coopérative via un signal
       // relu périodiquement depuis les métadonnées du job (Redis).
       const abortController = new AbortController();
       cancellationCheckInterval = setInterval(() => {
@@ -155,11 +155,11 @@ export class ProfileGeneratorProcessor extends WorkerHost {
           });
           try {
             const result = reusableTranscript
-              ? await this.openAiService.buildCVFromTranscript(
+              ? await this.cvExtractionService.buildCVFromTranscript(
                   reusableTranscript,
                   abortController.signal
                 )
-              : await this.openAiService.extractCVFromImages(
+              : await this.cvExtractionService.extractCVFromImages(
                   base64Images,
                   abortController.signal
                 );
@@ -178,7 +178,7 @@ export class ProfileGeneratorProcessor extends WorkerHost {
 
       await job.updateProgress(80);
 
-      // Fenêtre résiduelle : l'annulation peut arriver après la réponse OpenAI
+      // Fenêtre résiduelle : l'annulation peut arriver après la réponse du LLM
       // mais avant l'écriture du profil.
       if (cancelledDuringWait || (await this.isJobCancelled(job.id))) {
         throw new ProfileGenerationCancelledError();

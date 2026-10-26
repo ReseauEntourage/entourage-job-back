@@ -15,12 +15,12 @@ import {
   getAiModel,
 } from 'src/external-services/ai-models/ai-models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
-import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import {
   CvSchemaType,
   SCHEMA_VERSION,
   TRANSCRIPT_VERSION,
-} from 'src/external-services/openai/openai.schemas';
+} from 'src/external-services/cv-extraction/cv-extraction.schemas';
+import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import { Formation } from 'src/formations/models';
 import { Interest } from 'src/interests/models';
 import { LanguagesService } from 'src/languages/languages.service';

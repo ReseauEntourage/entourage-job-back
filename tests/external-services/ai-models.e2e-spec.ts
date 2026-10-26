@@ -1,9 +1,9 @@
 import {
   aiModelEnvName,
   AiModelUse,
-  aiReasoningEffortEnvName,
+  aiEffortEnvName,
+  getAiEffort,
   getAiModel,
-  getReasoningEffort,
 } from 'src/external-services/ai-models/ai-models';
 
 // Pure unit tests (no database, no network)
@@ -13,7 +13,7 @@ describe('AI models', () => {
   beforeEach(() => {
     Object.values(AiModelUse).forEach((use) => {
       delete process.env[aiModelEnvName(use)];
-      delete process.env[aiReasoningEffortEnvName(use)];
+      delete process.env[aiEffortEnvName(use)];
     });
   });
 
@@ -35,10 +35,10 @@ describe('AI models', () => {
     );
   });
 
-  it('keeps the model used before the setting when no variable is set', () => {
-    expect(getAiModel(AiModelUse.CV_EXTRACTION)).toBe('gpt-5-mini');
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-5-mini');
-    expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('gpt-5-mini');
+  it('uses the default model of each usage when no variable is set', () => {
+    expect(getAiModel(AiModelUse.CV_EXTRACTION)).toBe('claude-sonnet-5-5');
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('claude-sonnet-5-5');
+    expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('claude-haiku-5-5');
     expect(getAiModel(AiModelUse.AI_ASSISTANT)).toBe('claude-sonnet-4-6');
     expect(getAiModel(AiModelUse.AI_ASSISTANT_CLASSIFIER)).toBe(
       'claude-haiku-4-5-20251001'
@@ -52,10 +52,10 @@ describe('AI models', () => {
   });
 
   it('uses the model of the variable, for that usage only', () => {
-    process.env.AI_MODEL_CV_BUILDING = 'gpt-4.1-mini';
+    process.env.AI_MODEL_CV_BUILDING = 'claude-haiku-5-5';
 
-    expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('gpt-4.1-mini');
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-5-mini');
+    expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('claude-haiku-5-5');
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('claude-sonnet-5-5');
     expect(getAiModel(AiModelUse.HELP_GROUPS_TITLE)).toBe(
       'claude-haiku-4-5-20251001'
     );
@@ -77,44 +77,46 @@ describe('AI models', () => {
   });
 
   it('reads the variable at every call, without caching it', () => {
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-5-mini');
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('claude-sonnet-5-5');
 
-    process.env.AI_MODEL_CV_READING = 'gpt-4.1-mini';
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-4.1-mini');
+    process.env.AI_MODEL_CV_READING = 'claude-haiku-5-5';
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('claude-haiku-5-5');
 
     delete process.env.AI_MODEL_CV_READING;
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-5-mini');
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('claude-sonnet-5-5');
   });
 
-  describe('reasoning effort', () => {
-    it('is undefined when no variable is set', () => {
-      Object.values(AiModelUse).forEach((use) => {
-        expect(getReasoningEffort(use)).toBeUndefined();
-      });
+  describe('effort', () => {
+    it('has a default for the CV extraction usages only', () => {
+      expect(getAiEffort(AiModelUse.CV_EXTRACTION)).toBe('medium');
+      expect(getAiEffort(AiModelUse.CV_READING)).toBe('low');
+      expect(getAiEffort(AiModelUse.CV_BUILDING)).toBe('low');
+      expect(getAiEffort(AiModelUse.AI_ASSISTANT)).toBeUndefined();
+      expect(getAiEffort(AiModelUse.HELP_GROUPS_TITLE)).toBeUndefined();
     });
 
-    it('names its variable AI_REASONING_EFFORT_<USAGE>', () => {
-      expect(aiReasoningEffortEnvName(AiModelUse.CV_READING)).toBe(
-        'AI_REASONING_EFFORT_CV_READING'
+    it('names its variable AI_EFFORT_<USAGE>', () => {
+      expect(aiEffortEnvName(AiModelUse.CV_READING)).toBe(
+        'AI_EFFORT_CV_READING'
       );
     });
 
     it('reads the variable of that usage only, at every call', () => {
-      process.env.AI_REASONING_EFFORT_CV_READING = ' low ';
+      process.env.AI_EFFORT_CV_READING = ' high ';
 
-      expect(getReasoningEffort(AiModelUse.CV_READING)).toBe('low');
-      expect(getReasoningEffort(AiModelUse.CV_BUILDING)).toBeUndefined();
+      expect(getAiEffort(AiModelUse.CV_READING)).toBe('high');
+      expect(getAiEffort(AiModelUse.CV_BUILDING)).toBe('low');
 
-      process.env.AI_REASONING_EFFORT_CV_READING = 'high';
-      expect(getReasoningEffort(AiModelUse.CV_READING)).toBe('high');
+      process.env.AI_EFFORT_CV_READING = 'medium';
+      expect(getAiEffort(AiModelUse.CV_READING)).toBe('medium');
     });
 
     it('counts an empty or blank value as unset', () => {
-      process.env.AI_REASONING_EFFORT_CV_READING = '';
-      process.env.AI_REASONING_EFFORT_CV_BUILDING = '   ';
+      process.env.AI_EFFORT_CV_READING = '';
+      process.env.AI_EFFORT_CV_BUILDING = '   ';
 
-      expect(getReasoningEffort(AiModelUse.CV_READING)).toBeUndefined();
-      expect(getReasoningEffort(AiModelUse.CV_BUILDING)).toBeUndefined();
+      expect(getAiEffort(AiModelUse.CV_READING)).toBe('low');
+      expect(getAiEffort(AiModelUse.CV_BUILDING)).toBe('low');
     });
   });
 });

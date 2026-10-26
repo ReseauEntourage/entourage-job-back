@@ -141,8 +141,8 @@ describe('traceAiWorkflow', () => {
 describe('traceLlmCall', () => {
   const options = {
     name: 'cv-extraction-llm',
-    modelName: 'gpt-5-mini',
-    modelProvider: 'openai',
+    modelName: 'claude-sonnet-5-5',
+    modelProvider: 'anthropic',
   };
 
   it('opens an llm span with the model and the provider', async () => {

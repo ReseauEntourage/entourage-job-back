@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import {
+  Message,
+  MessageCreateParamsNonStreaming,
   MessageParam,
   TextBlockParam,
 } from '@anthropic-ai/sdk/resources/messages';
@@ -144,5 +146,23 @@ export class AnthropicService {
       throw new Error('Structured output is not a text block');
     }
     return JSON.parse(block.text);
+  }
+
+  /**
+   * Single non-streamed message request that Datadog's automatic LLM span does
+   * not see: the integration only wraps `messages.create`, and this goes through
+   * the client's generic `post`. The caller traces the call by hand, so that it
+   * decides what of the prompt and the answer leaves for Datadog (the CV pages
+   * and the text read from them hold personal data). The request body and
+   * the SDK's retries and headers are those of `messages.create`.
+   */
+  async createMessageUntraced(
+    body: MessageCreateParamsNonStreaming,
+    options: { signal?: AbortSignal } = {}
+  ): Promise<Message> {
+    return this.client.post<Message>('/v1/messages', {
+      body,
+      signal: options.signal,
+    });
   }
 }

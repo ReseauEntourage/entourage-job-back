@@ -7,14 +7,14 @@ jest.mock('dd-trace', () => ({
 }));
 
 describe('tracer', () => {
-  it('switches off the LLM Observability half of the OpenAI integration only', async () => {
+  it('keeps the automatic LLM Observability spans of the LLM integrations', async () => {
     await import('src/tracer');
 
-    // The manual LLM span of the CV extraction replaces the automatic one,
-    // which turns images into an `[image]` marker. `llmobs: false` keeps the
-    // APM tracing of the HTTP call (checked against the real dd-trace 6.16:
-    // one automatic LLM span without it, none with it).
-    expect(mockUse).toHaveBeenCalledWith('openai', { llmobs: false });
+    // The Anthropic calls that are traced by hand (the CV extraction) go
+    // through the client's generic `post`, which the integration does not wrap:
+    // the integration stays on for every other call (assistant, titles,
+    // presentation).
+    expect(mockUse).not.toHaveBeenCalledWith('anthropic', expect.anything());
   });
 
   it('keeps the APM integrations it already configured', async () => {

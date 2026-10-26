@@ -50,7 +50,7 @@ describe('ProfileGeneratorProcessor', () => {
   });
 
   const build = () => {
-    const openAiService = {
+    const cvExtractionService = {
       extractCVFromImages: jest
         .fn()
         .mockResolvedValue({ data: CV_DATA, transcript: null }),
@@ -66,14 +66,14 @@ describe('ProfileGeneratorProcessor', () => {
       getJob: jest.fn().mockResolvedValue({ data: {} }),
     };
     const processor = new ProfileGeneratorProcessor(
-      openAiService as never,
+      cvExtractionService as never,
       pusherService as never,
       profileGenerationService as never,
       profileGenerationQueue as never
     );
     return {
       processor,
-      openAiService,
+      cvExtractionService,
       pusherService,
       profileGenerationService,
       profileGenerationQueue,
@@ -162,8 +162,9 @@ describe('ProfileGeneratorProcessor', () => {
       });
 
       it('keeps the text read from the CV with the extracted data', async () => {
-        const { processor, openAiService, profileGenerationService } = build();
-        openAiService.extractCVFromImages.mockResolvedValue({
+        const { processor, cvExtractionService, profileGenerationService } =
+          build();
+        cvExtractionService.extractCVFromImages.mockResolvedValue({
           data: CV_DATA,
           transcript: TEXT,
         });
@@ -174,7 +175,9 @@ describe('ProfileGeneratorProcessor', () => {
           profileGenerationService.getReusableTranscript
         ).toHaveBeenCalledWith('profile-1', 'hash-1');
         expect(mockAxiosGet).toHaveBeenCalled();
-        expect(openAiService.buildCVFromTranscript).not.toHaveBeenCalled();
+        expect(
+          cvExtractionService.buildCVFromTranscript
+        ).not.toHaveBeenCalled();
         expect(
           profileGenerationService.saveExtractedCVData
         ).toHaveBeenCalledWith('profile-1', CV_DATA, 'hash-1', TEXT);
@@ -186,12 +189,12 @@ describe('ProfileGeneratorProcessor', () => {
       it('builds the profile again from a reusable text, without downloading or reading the CV', async () => {
         const {
           processor,
-          openAiService,
+          cvExtractionService,
           profileGenerationService,
           pusherService,
         } = build();
         profileGenerationService.getReusableTranscript.mockResolvedValue(TEXT);
-        openAiService.buildCVFromTranscript.mockResolvedValue({
+        cvExtractionService.buildCVFromTranscript.mockResolvedValue({
           data: CV_DATA,
           transcript: TEXT,
         });
@@ -200,8 +203,8 @@ describe('ProfileGeneratorProcessor', () => {
 
         expect(mockAxiosGet).not.toHaveBeenCalled();
         expect(mockExecFile).not.toHaveBeenCalled();
-        expect(openAiService.extractCVFromImages).not.toHaveBeenCalled();
-        expect(openAiService.buildCVFromTranscript).toHaveBeenCalledWith(
+        expect(cvExtractionService.extractCVFromImages).not.toHaveBeenCalled();
+        expect(cvExtractionService.buildCVFromTranscript).toHaveBeenCalledWith(
           TEXT,
           expect.any(AbortSignal)
         );
@@ -222,9 +225,10 @@ describe('ProfileGeneratorProcessor', () => {
       });
 
       it('reads the CV when no text can be reused (other file or older reading instructions)', async () => {
-        const { processor, openAiService, profileGenerationService } = build();
+        const { processor, cvExtractionService, profileGenerationService } =
+          build();
         profileGenerationService.getReusableTranscript.mockResolvedValue(null);
-        openAiService.extractCVFromImages.mockResolvedValue({
+        cvExtractionService.extractCVFromImages.mockResolvedValue({
           data: CV_DATA,
           transcript: TEXT,
         });
@@ -232,8 +236,12 @@ describe('ProfileGeneratorProcessor', () => {
         await processor.handleProfileGeneration(buildJob() as never);
 
         expect(mockAxiosGet).toHaveBeenCalled();
-        expect(openAiService.extractCVFromImages).toHaveBeenCalledTimes(1);
-        expect(openAiService.buildCVFromTranscript).not.toHaveBeenCalled();
+        expect(cvExtractionService.extractCVFromImages).toHaveBeenCalledTimes(
+          1
+        );
+        expect(
+          cvExtractionService.buildCVFromTranscript
+        ).not.toHaveBeenCalled();
       });
 
       it('does not even look for a reusable text when the two-pass extraction is off', async () => {
@@ -253,13 +261,15 @@ describe('ProfileGeneratorProcessor', () => {
       it('fails as a technical error, writing nothing, when the CV could not be read', async () => {
         const {
           processor,
-          openAiService,
+          cvExtractionService,
           profileGenerationService,
           pusherService,
         } = build();
         const failure =
           "Impossible de lire le CV à partir des images: La lecture du CV n'a produit aucun texte exploitable (0 caractères).";
-        openAiService.extractCVFromImages.mockRejectedValue(new Error(failure));
+        cvExtractionService.extractCVFromImages.mockRejectedValue(
+          new Error(failure)
+        );
 
         await expect(
           processor.handleProfileGeneration(buildJob() as never)
@@ -281,7 +291,7 @@ describe('ProfileGeneratorProcessor', () => {
       it('reports a cancellation, and writes nothing, when the job is cancelled between the passes', async () => {
         const {
           processor,
-          openAiService,
+          cvExtractionService,
           profileGenerationQueue,
           profileGenerationService,
           pusherService,
@@ -290,7 +300,7 @@ describe('ProfileGeneratorProcessor', () => {
           data: { cancelled: true },
         });
         // The cancellation is noticed after the reading, before the building
-        openAiService.extractCVFromImages.mockImplementation(
+        cvExtractionService.extractCVFromImages.mockImplementation(
           (_images: string[], signal: AbortSignal) =>
             new Promise((_resolve, reject) => {
               signal.addEventListener('abort', () =>
@@ -321,7 +331,7 @@ describe('ProfileGeneratorProcessor', () => {
       it('cancels while the profile is being built from a reusable text', async () => {
         const {
           processor,
-          openAiService,
+          cvExtractionService,
           profileGenerationQueue,
           profileGenerationService,
         } = build();
@@ -329,7 +339,7 @@ describe('ProfileGeneratorProcessor', () => {
         profileGenerationQueue.getJob.mockResolvedValue({
           data: { cancelled: true },
         });
-        openAiService.buildCVFromTranscript.mockImplementation(
+        cvExtractionService.buildCVFromTranscript.mockImplementation(
           (_text: string, signal: AbortSignal) =>
             new Promise((_resolve, reject) => {
               signal.addEventListener('abort', () =>
@@ -381,14 +391,14 @@ describe('ProfileGeneratorProcessor', () => {
       });
 
       it('tags an error outcome when the extraction fails', async () => {
-        const { processor, openAiService } = build();
-        openAiService.extractCVFromImages.mockRejectedValue(
-          new Error('OpenAI overloaded')
+        const { processor, cvExtractionService } = build();
+        cvExtractionService.extractCVFromImages.mockRejectedValue(
+          new Error('LLM overloaded')
         );
 
         await expect(
           processor.handleProfileGeneration(buildJob() as never)
-        ).rejects.toThrow('OpenAI overloaded');
+        ).rejects.toThrow('LLM overloaded');
 
         expect(workflowAnnotation().tags).toMatchObject({
           feature: 'cv_extraction',
@@ -397,8 +407,9 @@ describe('ProfileGeneratorProcessor', () => {
       });
 
       it('tags a cancelled outcome when the job is cancelled during the extraction', async () => {
-        const { processor, openAiService, profileGenerationQueue } = build();
-        openAiService.extractCVFromImages.mockImplementation(
+        const { processor, cvExtractionService, profileGenerationQueue } =
+          build();
+        cvExtractionService.extractCVFromImages.mockImplementation(
           (_images: string[], signal: AbortSignal) =>
             new Promise((_resolve, reject) => {
               signal.addEventListener('abort', () =>
@@ -435,7 +446,7 @@ describe('ProfileGeneratorProcessor', () => {
       fakePoppler([10, 2, 1]);
       const {
         processor,
-        openAiService,
+        cvExtractionService,
         profileGenerationService,
         pusherService,
       } = build();
@@ -448,7 +459,7 @@ describe('ProfileGeneratorProcessor', () => {
         { responseType: 'arraybuffer' }
       );
       // Pages are sent in numeric order, not in lexical order
-      expect(openAiService.extractCVFromImages).toHaveBeenCalledWith(
+      expect(cvExtractionService.extractCVFromImages).toHaveBeenCalledWith(
         [
           Buffer.from('page-1').toString('base64'),
           Buffer.from('page-2').toString('base64'),
@@ -477,13 +488,13 @@ describe('ProfileGeneratorProcessor', () => {
 
     it('tells the user the generation failed when the CV cannot be downloaded', async () => {
       mockAxiosGet.mockResolvedValue({ status: 404, data: '' });
-      const { processor, openAiService, pusherService } = build();
+      const { processor, cvExtractionService, pusherService } = build();
 
       await expect(
         processor.handleProfileGeneration(buildJob() as never)
       ).rejects.toThrow('Erreur lors du téléchargement du PDF depuis S3: 404');
 
-      expect(openAiService.extractCVFromImages).not.toHaveBeenCalled();
+      expect(cvExtractionService.extractCVFromImages).not.toHaveBeenCalled();
       expect(pusherService.sendEvent).toHaveBeenCalledWith(
         `${PusherChannels.PROFILE_GENERATION}-user-1`,
         PusherEvents.PROFILE_GENERATION_COMPLETE,
@@ -521,20 +532,20 @@ describe('ProfileGeneratorProcessor', () => {
       ).rejects.toThrow("Aucune image n'a été générée à partir du PDF");
     });
 
-    it('does not save anything when OpenAI fails and reports the technical error', async () => {
+    it('does not save anything when the LLM fails and reports the technical error', async () => {
       const {
         processor,
-        openAiService,
+        cvExtractionService,
         profileGenerationService,
         pusherService,
       } = build();
-      openAiService.extractCVFromImages.mockRejectedValue(
-        new Error('OpenAI overloaded')
+      cvExtractionService.extractCVFromImages.mockRejectedValue(
+        new Error('LLM overloaded')
       );
 
       await expect(
         processor.handleProfileGeneration(buildJob() as never)
-      ).rejects.toThrow('OpenAI overloaded');
+      ).rejects.toThrow('LLM overloaded');
 
       expect(
         profileGenerationService.saveExtractedCVData
@@ -545,7 +556,7 @@ describe('ProfileGeneratorProcessor', () => {
         {
           success: false,
           reason: 'error',
-          error: 'OpenAI overloaded',
+          error: 'LLM overloaded',
           jobId: 'job-1',
           userProfileId: 'profile-1',
         }
@@ -553,8 +564,10 @@ describe('ProfileGeneratorProcessor', () => {
     });
 
     it('uses a generic message when the failure is not an Error', async () => {
-      const { processor, openAiService, pusherService } = build();
-      openAiService.extractCVFromImages.mockRejectedValue('weird failure');
+      const { processor, cvExtractionService, pusherService } = build();
+      cvExtractionService.extractCVFromImages.mockRejectedValue(
+        'weird failure'
+      );
 
       await expect(
         processor.handleProfileGeneration(buildJob() as never)
@@ -567,7 +580,7 @@ describe('ProfileGeneratorProcessor', () => {
       );
     });
 
-    it('discards the result of a job cancelled after the OpenAI answer', async () => {
+    it('discards the result of a job cancelled after the LLM answer', async () => {
       const {
         processor,
         profileGenerationService,
@@ -601,16 +614,16 @@ describe('ProfileGeneratorProcessor', () => {
       );
     });
 
-    it('aborts the OpenAI call when the job gets cancelled while waiting for it', async () => {
+    it('aborts the LLM call when the job gets cancelled while waiting for it', async () => {
       const {
         processor,
-        openAiService,
+        cvExtractionService,
         profileGenerationQueue,
         profileGenerationService,
         pusherService,
       } = build();
       let wasAborted = false;
-      openAiService.extractCVFromImages.mockImplementation(
+      cvExtractionService.extractCVFromImages.mockImplementation(
         (_images: string[], signal: AbortSignal) =>
           new Promise((_resolve, reject) => {
             signal.addEventListener('abort', () => {
@@ -619,7 +632,7 @@ describe('ProfileGeneratorProcessor', () => {
             });
           })
       );
-      // The cancellation request arrives while OpenAI is processing
+      // The cancellation request arrives while the LLM is processing
       profileGenerationQueue.getJob.mockResolvedValue({
         data: { cancelled: true },
       });

@@ -7,7 +7,7 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import {
   SCHEMA_VERSION,
   TRANSCRIPT_VERSION,
-} from 'src/external-services/openai/openai.schemas';
+} from 'src/external-services/cv-extraction/cv-extraction.schemas';
 import type { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';

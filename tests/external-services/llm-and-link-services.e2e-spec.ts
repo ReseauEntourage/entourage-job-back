@@ -16,10 +16,12 @@ jest.mock('@short.io/client-node', () => ({
 
 const mockMessagesCreate = jest.fn();
 const mockMessagesStream = jest.fn();
+const mockPost = jest.fn();
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
     messages: { create: mockMessagesCreate, stream: mockMessagesStream },
+    post: mockPost,
   })),
 }));
 
@@ -136,72 +138,6 @@ describe('LlmMetricsService', () => {
     expect(increment).toHaveBeenCalledTimes(2);
   });
 
-  it('records the OpenAI tokens', () => {
-    service.recordOpenAiUsage(
-      'gpt',
-      { prompt_tokens: 7, completion_tokens: 4 } as never,
-      'op',
-      AiFeature.AI_ASSISTANT
-    );
-
-    expect(increment).toHaveBeenCalledWith(
-      'ai.tokens.input',
-      7,
-      expect.objectContaining({ provider: 'openai' })
-    );
-    expect(increment).toHaveBeenCalledWith(
-      'ai.tokens.output',
-      4,
-      expect.objectContaining({ provider: 'openai' })
-    );
-    expect(flush).toHaveBeenCalled();
-  });
-
-  it('counts the reasoning tokens apart, without changing the output tokens', () => {
-    service.recordOpenAiUsage(
-      'o4-mini',
-      {
-        prompt_tokens: 100,
-        completion_tokens: 40,
-        completion_tokens_details: { reasoning_tokens: 25 },
-      } as never,
-      'cv_building',
-      AiFeature.CV_EXTRACTION
-    );
-
-    const tags = {
-      model: 'o4-mini',
-      provider: 'openai',
-      operation: 'cv_building',
-      feature: 'cv_extraction',
-    };
-    expect(increment).toHaveBeenCalledWith('ai.tokens.output', 40, tags);
-    expect(increment).toHaveBeenCalledWith('ai.tokens.reasoning', 25, tags);
-  });
-
-  it.each([
-    ['no details', {}],
-    [
-      'zero reasoning tokens',
-      { completion_tokens_details: { reasoning_tokens: 0 } },
-    ],
-    ['no reasoning count', { completion_tokens_details: {} }],
-  ])('sends no reasoning metric with %s', (_label, details) => {
-    service.recordOpenAiUsage(
-      'gpt-4.1',
-      { prompt_tokens: 1, completion_tokens: 1, ...details } as never,
-      'op',
-      AiFeature.CV_EXTRACTION
-    );
-
-    expect(increment).toHaveBeenCalledTimes(2);
-    expect(increment).not.toHaveBeenCalledWith(
-      'ai.tokens.reasoning',
-      expect.anything(),
-      expect.anything()
-    );
-  });
-
   it('records the VoyageAI tokens, defaulting to zero', () => {
     service.recordVoyageAiUsage(
       'voyage',
@@ -234,7 +170,33 @@ describe('AnthropicService', () => {
   beforeEach(() => {
     mockMessagesCreate.mockReset();
     mockMessagesStream.mockReset();
+    mockPost.mockReset();
     llmMetrics.recordAnthropicUsage.mockReset();
+  });
+
+  describe('createMessageUntraced', () => {
+    it('posts the request to the messages endpoint, not through messages.create', async () => {
+      // Datadog's automatic LLM span only wraps `messages.create`
+      mockPost.mockResolvedValue({ id: 'msg_1' });
+      const body = { model: 'm', max_tokens: 10, messages: [] } as never;
+      const signal = new AbortController().signal;
+
+      const message = await buildService().createMessageUntraced(body, {
+        signal,
+      });
+
+      expect(message).toEqual({ id: 'msg_1' });
+      expect(mockPost).toHaveBeenCalledWith('/v1/messages', { body, signal });
+      expect(mockMessagesCreate).not.toHaveBeenCalled();
+    });
+
+    it('lets the errors of the SDK through', async () => {
+      mockPost.mockRejectedValue(new Error('rate limited'));
+
+      await expect(
+        buildService().createMessageUntraced({} as never)
+      ).rejects.toThrow('rate limited');
+    });
   });
 
   it('createStream asks the SDK for a streamed answer with the system blocks', () => {

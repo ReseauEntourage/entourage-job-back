@@ -1,13 +1,13 @@
-import { OpenAiService } from 'src/external-services/openai/openai.service';
+import Anthropic from '@anthropic-ai/sdk';
+import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
 import { tracer } from 'src/tracer';
 
-// Pure unit tests (no database, no network): the Datadog tracer is mocked, and
-// `openai` is replaced by a double for the whole e2e suite (tests/setup.ts)
+// Pure unit tests (no database, no network): the Datadog tracer and the
+// Anthropic service are replaced by doubles
 jest.mock('src/tracer', () => ({
   tracer: { llmobs: { trace: jest.fn(), annotate: jest.fn() } },
 }));
 
-type OpenAiDouble = { chat: { completions: { create: jest.Mock } } };
 type Span = { name: string };
 
 const trace = tracer.llmobs.trace as jest.Mock;
@@ -15,48 +15,34 @@ const annotate = tracer.llmobs.annotate as jest.Mock;
 
 const CV_TEXT =
   '# Expériences\\nCuisinier chez Chez Paul depuis 2019\\n# Formations\\nCAP Cuisine, 2012';
-const USAGE = { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 };
+const USAGE = { input_tokens: 10, output_tokens: 5 };
 
-describe('OpenAiService - two-pass CV extraction', () => {
-  const llmMetrics = { recordOpenAiUsage: jest.fn() };
+describe('CvExtractionService - two-pass CV extraction', () => {
+  const anthropic = { createMessageUntraced: jest.fn() };
+  const llmMetrics = { recordAnthropicUsage: jest.fn() };
   const saved = {
     twoPasses: process.env.CV_EXTRACTION_TWO_PASSES,
     traceText: process.env.LLM_OBS_CV_TEXT_ENABLED,
   };
 
-  const build = () => {
-    const service = new OpenAiService(llmMetrics as never);
-    const create = (service as unknown as { openai: OpenAiDouble }).openai.chat
-      .completions.create;
-    return { service, create };
-  };
+  const build = () => ({
+    service: new CvExtractionService(anthropic as never, llmMetrics as never),
+    create: anthropic.createMessageUntraced,
+  });
 
   const readingResponse = (
     text: string | null,
-    finishReason = 'stop',
+    stopReason = 'end_turn',
     usage: unknown = USAGE
   ) => ({
-    choices: [{ finish_reason: finishReason, message: { content: text } }],
+    stop_reason: stopReason,
+    content: text === null ? [] : [{ type: 'text', text }],
     usage,
   });
 
   const buildingResponse = (args: unknown = { description: 'A cook' }) => ({
-    choices: [
-      {
-        finish_reason: 'stop',
-        message: {
-          tool_calls: [
-            {
-              type: 'function',
-              function: {
-                name: 'extract_cv_data',
-                arguments: JSON.stringify(args),
-              },
-            },
-          ],
-        },
-      },
-    ],
+    stop_reason: 'end_turn',
+    content: [{ type: 'text', text: JSON.stringify(args) }],
     usage: USAGE,
   });
 
@@ -96,7 +82,8 @@ describe('OpenAiService - two-pass CV extraction', () => {
         fn({ name: options.name })
       );
     annotate.mockReset();
-    llmMetrics.recordOpenAiUsage.mockReset();
+    anthropic.createMessageUntraced.mockReset();
+    llmMetrics.recordAnthropicUsage.mockReset();
     process.env.CV_EXTRACTION_TWO_PASSES = 'true';
     delete process.env.LLM_OBS_CV_TEXT_ENABLED;
   });
@@ -117,7 +104,9 @@ describe('OpenAiService - two-pass CV extraction', () => {
         const result = await service.extractCVFromImages(['p1', 'p2']);
 
         expect(create).toHaveBeenCalledTimes(1);
-        expect(create.mock.calls[0][0].tools).toHaveLength(1);
+        expect(create.mock.calls[0][0].output_config.format.type).toBe(
+          'json_schema'
+        );
         expect(result).toEqual({
           data: { description: 'A cook' },
           transcript: null,
@@ -142,21 +131,19 @@ describe('OpenAiService - two-pass CV extraction', () => {
       expect(create).toHaveBeenCalledTimes(2);
 
       const [reading, building] = create.mock.calls.map(([body]) => body);
-      // Reading: the pages, no forced tool
-      expect(reading.tools).toBeUndefined();
+      // Reading: the pages, free text out
+      expect(reading.output_config.format).toBeUndefined();
       expect(
-        reading.messages[1].content.filter(
-          (part: { type: string }) => part.type === 'image_url'
+        reading.messages[0].content.filter(
+          (part: { type: string }) => part.type === 'image'
         )
       ).toHaveLength(2);
-      // Building: the text only, in a data block, with the forced tool
-      expect(typeof building.messages[1].content).toBe('string');
-      expect(building.messages[1].content).toBe(`<cv>\n${CV_TEXT}\n</cv>`);
-      expect(JSON.stringify(building)).not.toContain('image_url');
-      expect(building.tool_choice).toEqual({
-        type: 'function',
-        function: { name: 'extract_cv_data' },
-      });
+      // Building: the text only, in a data block, as a structured output
+      expect(typeof building.messages[0].content).toBe('string');
+      expect(building.messages[0].content).toBe(`<cv>\n${CV_TEXT}\n</cv>`);
+      expect(JSON.stringify(building)).not.toContain('"image"');
+      expect(building.output_config.format.type).toBe('json_schema');
+      expect(building).not.toHaveProperty('tool_choice');
     });
 
     it('gives the same signal to both calls', async () => {
@@ -198,7 +185,7 @@ describe('OpenAiService - two-pass CV extraction', () => {
         transcript: CV_TEXT,
       });
       expect(create).toHaveBeenCalledTimes(1);
-      expect(create.mock.calls[0][0].messages[1].content).toBe(
+      expect(create.mock.calls[0][0].messages[0].content).toBe(
         `<cv>\n${CV_TEXT}\n</cv>`
       );
     });
@@ -213,7 +200,7 @@ describe('OpenAiService - two-pass CV extraction', () => {
 
       await service.extractCVFromImages(['p1']);
 
-      const system: string = create.mock.calls[0][0].messages[0].content;
+      const system: string = create.mock.calls[0][0].system;
       expect(system).toContain('ni le nom, ni le prénom');
       expect(system).toContain('numéro de téléphone');
       expect(system).toContain("l'adresse email");
@@ -236,7 +223,7 @@ describe('OpenAiService - two-pass CV extraction', () => {
 
       await service.extractCVFromImages(['p1']);
 
-      const system: string = create.mock.calls[1][0].messages[0].content;
+      const system: string = create.mock.calls[1][0].system;
       expect(system).toContain("N'invente jamais une information");
       expect(system).toContain('ne la renseigne pas');
       expect(system).toContain('<cv>');
@@ -270,21 +257,31 @@ describe('OpenAiService - two-pass CV extraction', () => {
 
     it('fails when the reading is cut by the token limit, and tags a truncated outcome', async () => {
       const { service, create } = build();
-      create.mockResolvedValueOnce(readingResponse(CV_TEXT, 'length'));
+      create.mockResolvedValueOnce(readingResponse(CV_TEXT, 'max_tokens'));
 
       await expect(service.extractCVFromImages(['p1'])).rejects.toThrow(
-        /limite de tokens \(finish_reason=length\)/
+        /limite de tokens \(stop_reason=max_tokens\)/
       );
 
       expect(create).toHaveBeenCalledTimes(1);
       expect(spanAnnotations('cv-reading').tags.outcome).toBe('truncated');
     });
 
+    it('fails when the model refuses to read, and tags a refused outcome', async () => {
+      const { service, create } = build();
+      create.mockResolvedValueOnce(readingResponse(null, 'refusal'));
+
+      await expect(service.extractCVFromImages(['p1'])).rejects.toThrow(
+        /stop_reason=refusal/
+      );
+
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(spanAnnotations('cv-reading').tags.outcome).toBe('refused');
+    });
+
     it('tags a timeout outcome', async () => {
       const { service, create } = build();
-      const timeout = new Error('Request timed out.');
-      timeout.name = 'APIConnectionTimeoutError';
-      create.mockRejectedValueOnce(timeout);
+      create.mockRejectedValueOnce(new Anthropic.APIConnectionTimeoutError());
 
       await expect(service.extractCVFromImages(['p1'])).rejects.toThrow(
         'Request timed out.'
@@ -341,14 +338,14 @@ describe('OpenAiService - two-pass CV extraction', () => {
         {
           kind: 'llm',
           name: 'cv-reading',
-          modelName: 'gpt-5-mini',
-          modelProvider: 'openai',
+          modelName: 'claude-sonnet-5-5',
+          modelProvider: 'anthropic',
         },
         {
           kind: 'llm',
           name: 'cv-building',
-          modelName: 'gpt-5-mini',
-          modelProvider: 'openai',
+          modelName: 'claude-haiku-5-5',
+          modelProvider: 'anthropic',
         },
       ]);
       expect(spanAnnotations('cv-reading').tags).toEqual({
@@ -380,7 +377,10 @@ describe('OpenAiService - two-pass CV extraction', () => {
       expect(reading.inputData[1].content).toContain(
         '[1 page de CV non jointe à la trace]'
       );
-      expect(building.metadata).toEqual({ textChars: CV_TEXT.length });
+      expect(building.metadata).toEqual({
+        textChars: CV_TEXT.length,
+        effort: 'low',
+      });
     });
 
     it('puts the CV text in the trace when the setting is enabled', async () => {
@@ -423,45 +423,15 @@ describe('OpenAiService - two-pass CV extraction', () => {
 
       await service.extractCVFromImages(['p1']);
 
-      expect(llmMetrics.recordOpenAiUsage.mock.calls).toEqual([
-        ['gpt-5-mini', USAGE, 'cv_reading', 'cv_extraction'],
-        ['gpt-5-mini', USAGE, 'cv_building', 'cv_extraction'],
+      expect(llmMetrics.recordAnthropicUsage.mock.calls).toEqual([
+        ['claude-sonnet-5-5', USAGE, 'cv_reading', 'cv_extraction'],
+        ['claude-haiku-5-5', USAGE, 'cv_building', 'cv_extraction'],
       ]);
     });
   });
 
-  describe('reasoning tokens', () => {
-    const REASONING_USAGE = {
-      ...USAGE,
-      completion_tokens_details: { reasoning_tokens: 3 },
-    };
-
-    it('sends them to each span as a breakdown of the output tokens', async () => {
-      const { service, create } = build();
-      create
-        .mockResolvedValueOnce(
-          readingResponse(CV_TEXT, 'stop', REASONING_USAGE)
-        )
-        .mockResolvedValueOnce({
-          ...buildingResponse(),
-          usage: { ...REASONING_USAGE, completion_tokens: 9 },
-        });
-
-      await service.extractCVFromImages(['p1']);
-
-      expect(spanAnnotations('cv-reading').metrics).toEqual({
-        inputTokens: 10,
-        outputTokens: 5,
-        totalTokens: 15,
-        reasoningOutputTokens: 3,
-      });
-      expect(spanAnnotations('cv-building').metrics).toMatchObject({
-        outputTokens: 9,
-        reasoningOutputTokens: 3,
-      });
-    });
-
-    it('sends none when the model does not report any', async () => {
+  describe('span metrics', () => {
+    it('sends the tokens of each call to its span', async () => {
       const { service, create } = build();
       create
         .mockResolvedValueOnce(readingResponse(CV_TEXT))
@@ -474,36 +444,10 @@ describe('OpenAiService - two-pass CV extraction', () => {
         outputTokens: 5,
         totalTokens: 15,
       });
-    });
-
-    it('counts them in the token metrics of the call', async () => {
-      const { service, create } = build();
-      create
-        .mockResolvedValueOnce(
-          readingResponse(CV_TEXT, 'stop', REASONING_USAGE)
-        )
-        .mockResolvedValueOnce(buildingResponse());
-
-      await service.extractCVFromImages(['p1']);
-
-      expect(llmMetrics.recordOpenAiUsage.mock.calls[0][1]).toEqual(
-        REASONING_USAGE
-      );
-    });
-
-    it('sends them for the single-call extraction too', async () => {
-      process.env.CV_EXTRACTION_TWO_PASSES = 'false';
-      const { service, create } = build();
-      create.mockResolvedValueOnce({
-        ...buildingResponse(),
-        usage: { ...REASONING_USAGE, completion_tokens: 12 },
-      });
-
-      await service.extractCVFromImages(['p1']);
-
-      expect(spanAnnotations('cv-extraction-llm').metrics).toMatchObject({
-        outputTokens: 12,
-        reasoningOutputTokens: 3,
+      expect(spanAnnotations('cv-building').metrics).toEqual({
+        inputTokens: 10,
+        outputTokens: 5,
+        totalTokens: 15,
       });
     });
   });
@@ -520,8 +464,8 @@ describe('OpenAiService - two-pass CV extraction', () => {
     });
 
     it('calls the model of each step, and traces and records that model', async () => {
-      process.env.AI_MODEL_CV_READING = 'gpt-4.1-mini';
-      process.env.AI_MODEL_CV_BUILDING = 'gpt-4.1';
+      process.env.AI_MODEL_CV_READING = 'claude-haiku-5-5';
+      process.env.AI_MODEL_CV_BUILDING = 'claude-sonnet-5-5';
       const { service, create } = build();
       create
         .mockResolvedValueOnce(readingResponse(CV_TEXT))
@@ -530,16 +474,16 @@ describe('OpenAiService - two-pass CV extraction', () => {
       await service.extractCVFromImages(['p1']);
 
       expect(create.mock.calls.map(([body]) => body.model)).toEqual([
-        'gpt-4.1-mini',
-        'gpt-4.1',
+        'claude-haiku-5-5',
+        'claude-sonnet-5-5',
       ]);
       expect(trace.mock.calls.map(([options]) => options.modelName)).toEqual([
-        'gpt-4.1-mini',
-        'gpt-4.1',
+        'claude-haiku-5-5',
+        'claude-sonnet-5-5',
       ]);
       expect(
-        llmMetrics.recordOpenAiUsage.mock.calls.map(([model]) => model)
-      ).toEqual(['gpt-4.1-mini', 'gpt-4.1']);
+        llmMetrics.recordAnthropicUsage.mock.calls.map(([model]) => model)
+      ).toEqual(['claude-haiku-5-5', 'claude-sonnet-5-5']);
     });
 
     it('keeps the default model of each step without a setting', async () => {
@@ -551,36 +495,38 @@ describe('OpenAiService - two-pass CV extraction', () => {
       await service.extractCVFromImages(['p1']);
 
       expect(create.mock.calls.map(([body]) => body.model)).toEqual([
-        'gpt-5-mini',
-        'gpt-5-mini',
+        'claude-sonnet-5-5',
+        'claude-haiku-5-5',
       ]);
     });
 
     it('calls the model of the single-call extraction', async () => {
       process.env.CV_EXTRACTION_TWO_PASSES = 'false';
-      process.env.AI_MODEL_CV_EXTRACTION = 'gpt-4.1';
+      process.env.AI_MODEL_CV_EXTRACTION = 'claude-opus-5-5';
       const { service, create } = build();
       create.mockResolvedValueOnce(buildingResponse());
 
       await service.extractCVFromImages(['p1']);
 
-      expect(create.mock.calls[0][0].model).toBe('gpt-4.1');
-      expect(trace.mock.calls[0][0].modelName).toBe('gpt-4.1');
-      expect(llmMetrics.recordOpenAiUsage.mock.calls[0][0]).toBe('gpt-4.1');
+      expect(create.mock.calls[0][0].model).toBe('claude-opus-5-5');
+      expect(trace.mock.calls[0][0].modelName).toBe('claude-opus-5-5');
+      expect(llmMetrics.recordAnthropicUsage.mock.calls[0][0]).toBe(
+        'claude-opus-5-5'
+      );
     });
 
     it('builds from a stored text with the building model', async () => {
-      process.env.AI_MODEL_CV_BUILDING = 'gpt-4.1';
+      process.env.AI_MODEL_CV_BUILDING = 'claude-opus-5-5';
       const { service, create } = build();
       create.mockResolvedValueOnce(buildingResponse());
 
       await service.buildCVFromTranscript(CV_TEXT);
 
-      expect(create.mock.calls[0][0].model).toBe('gpt-4.1');
+      expect(create.mock.calls[0][0].model).toBe('claude-opus-5-5');
     });
 
     it('does not fall back on the default model when the provider refuses the model', async () => {
-      process.env.AI_MODEL_CV_READING = 'claude-haiku-5-5';
+      process.env.AI_MODEL_CV_READING = 'gpt-5-mini';
       const { service, create } = build();
       create.mockRejectedValueOnce(new Error('model not found'));
 
@@ -589,22 +535,22 @@ describe('OpenAiService - two-pass CV extraction', () => {
       );
 
       expect(create).toHaveBeenCalledTimes(1);
-      expect(create.mock.calls[0][0].model).toBe('claude-haiku-5-5');
+      expect(create.mock.calls[0][0].model).toBe('gpt-5-mini');
     });
   });
 
-  describe('reasoning effort of each step', () => {
+  describe('effort of each step', () => {
     const effortEnv = [
-      'AI_REASONING_EFFORT_CV_EXTRACTION',
-      'AI_REASONING_EFFORT_CV_READING',
-      'AI_REASONING_EFFORT_CV_BUILDING',
+      'AI_EFFORT_CV_EXTRACTION',
+      'AI_EFFORT_CV_READING',
+      'AI_EFFORT_CV_BUILDING',
     ];
 
     afterEach(() => {
       effortEnv.forEach((name) => delete process.env[name]);
     });
 
-    it('does not send the parameter without a setting', async () => {
+    it('keeps a low effort by default, so that a transcription does not think for long', async () => {
       const { service, create } = build();
       create
         .mockResolvedValueOnce(readingResponse(CV_TEXT))
@@ -612,14 +558,14 @@ describe('OpenAiService - two-pass CV extraction', () => {
 
       await service.extractCVFromImages(['p1']);
 
-      create.mock.calls.forEach(([body]) => {
-        expect(body).not.toHaveProperty('reasoning_effort');
-      });
+      expect(
+        create.mock.calls.map(([body]) => body.output_config.effort)
+      ).toEqual(['low', 'low']);
     });
 
     it('sends the effort of each step and puts it in the span metadata', async () => {
-      process.env.AI_REASONING_EFFORT_CV_READING = 'low';
-      process.env.AI_REASONING_EFFORT_CV_BUILDING = 'medium';
+      process.env.AI_EFFORT_CV_READING = 'medium';
+      process.env.AI_EFFORT_CV_BUILDING = 'high';
       const { service, create } = build();
       create
         .mockResolvedValueOnce(readingResponse(CV_TEXT))
@@ -627,15 +573,14 @@ describe('OpenAiService - two-pass CV extraction', () => {
 
       await service.extractCVFromImages(['p1']);
 
-      expect(create.mock.calls.map(([body]) => body.reasoning_effort)).toEqual([
-        'low',
-        'medium',
-      ]);
+      expect(
+        create.mock.calls.map(([body]) => body.output_config.effort)
+      ).toEqual(['medium', 'high']);
       expect(
         annotate.mock.calls
-          .map(([, annotation]) => annotation?.metadata?.reasoningEffort)
+          .map(([, annotation]) => annotation?.metadata?.effort)
           .filter(Boolean)
-      ).toEqual(['low', 'medium']);
+      ).toEqual(['medium', 'high']);
     });
   });
 });
