@@ -74,7 +74,6 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-jwt-secret' }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN || 'xoxb-ci-test' }}
       SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET || 'ci-test-signing-secret' }}
-      OPENAI_API_KEY: ''
       SHORTIO_DOMAIN: test.short.io
       SHORTIO_API_KEY: test_api_key
       AWSS3_BUCKET_NAME: test-bucket

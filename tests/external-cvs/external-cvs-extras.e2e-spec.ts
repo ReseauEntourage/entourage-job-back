@@ -1,8 +1,10 @@
 import { randomUUID } from 'crypto';
 import { INestApplication, InternalServerErrorException } from '@nestjs/common';
+import { getModelToken } from '@nestjs/sequelize';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { ExternalCvsService } from 'src/external-cvs/external-cvs.service';
+import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Media } from 'src/medias/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -24,6 +26,7 @@ describe('ExternalCvs - extras', () => {
   let usersHelper: UsersHelper;
   let externalCvsHelper: ExternalCvsHelper;
   let externalCvsService: ExternalCvsService;
+  let extractedCVDataModel: typeof ExtractedCVData;
 
   let candidate: LoggedInUser;
   let coach: LoggedInUser;
@@ -48,6 +51,7 @@ describe('ExternalCvs - extras', () => {
     usersHelper = moduleFixture.get(UsersHelper);
     externalCvsHelper = moduleFixture.get(ExternalCvsHelper);
     externalCvsService = app.get(ExternalCvsService);
+    extractedCVDataModel = moduleFixture.get(getModelToken(ExtractedCVData));
   });
 
   afterAll(async () => {
@@ -167,6 +171,59 @@ describe('ExternalCvs - extras', () => {
         externalCvsService.deleteAllExternalCvsForUser(randomUUID())
       ).resolves.toBeUndefined();
       expect(S3Mocks.deleteFiles).not.toHaveBeenCalled();
+    });
+
+    describe('account deletion', () => {
+      const createExtractedData = (userProfileId: string) =>
+        extractedCVDataModel.create({
+          userProfileId,
+          data: { description: 'extracted' },
+          fileHash: 'hash',
+          schemaVersion: 7,
+          transcript: '# Experience\nCook',
+          transcriptVersion: 1,
+        });
+
+      it('deletes the data extracted from the CV, and the text read from it, with the CV', async () => {
+        await externalCvsHelper.createExternalCv(
+          candidate.user.userProfile.id,
+          candidate.user.id
+        );
+        await createExtractedData(candidate.user.userProfile.id);
+
+        await externalCvsService.deleteAllExternalCvsForUser(candidate.user.id);
+
+        expect(
+          await extractedCVDataModel.count({
+            where: { userProfileId: candidate.user.userProfile.id },
+          })
+        ).toBe(0);
+        expect(S3Mocks.deleteFiles).toHaveBeenCalled();
+      });
+
+      it('deletes them even when the profile has no CV left', async () => {
+        await createExtractedData(candidate.user.userProfile.id);
+
+        await externalCvsService.deleteAllExternalCvsForUser(candidate.user.id);
+
+        expect(
+          await extractedCVDataModel.count({
+            where: { userProfileId: candidate.user.userProfile.id },
+          })
+        ).toBe(0);
+      });
+
+      it("keeps the extracted data of another user's profile", async () => {
+        await createExtractedData(coach.user.userProfile.id);
+
+        await externalCvsService.deleteAllExternalCvsForUser(candidate.user.id);
+
+        expect(
+          await extractedCVDataModel.count({
+            where: { userProfileId: coach.user.userProfile.id },
+          })
+        ).toBe(1);
+      });
     });
 
     it('has no signed url without media, and none when S3 fails', async () => {

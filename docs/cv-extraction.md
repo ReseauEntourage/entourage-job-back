@@ -39,7 +39,7 @@ Si l'utilisateur a déjà rempli son profil, les champs extraits du CV **écrase
 
 ### Mentions légales
 
-L'interface affiche une mention légale informant l'utilisateur que ses données sont traitées par OpenAI pour générer son profil, et que celles-ci sont ensuite conservées par Entourage Pro conformément à la politique de confidentialité.
+L'interface affiche une mention légale informant l'utilisateur que ses données sont traitées par Anthropic pour générer son profil, et que celles-ci sont ensuite conservées par Entourage Pro conformément à la politique de confidentialité.
 
 ---
 
@@ -67,7 +67,7 @@ GET /profile-generation/generate-profile-from-cv
         │           └── ProfileGeneratorProcessor.handleProfileGeneration()
         │                 ├── Télécharge PDF depuis S3
         │                 ├── convertPDFToImages() → pdftocairo → PNG base64[]
-        │                 ├── OpenAiService.extractCVFromImages() → CvSchemaType
+        │                 ├── CvExtractionService.extractCVFromImages() → CvSchemaType
         │                 ├── saveExtractedCVData() → ExtractedCVData (upsert)
         │                 ├── populateUserProfileFromCVData() → UserProfile update
         │                 └── PusherService.sendEvent(PROFILE_GENERATION_COMPLETE)
@@ -142,7 +142,7 @@ Le contrôleur :
 | ------------------------------ | ----------- |
 | Démarrage                      | 10 %        |
 | Fin de conversion PDF → images | 30 %        |
-| Fin d'extraction OpenAI        | 80 %        |
+| Fin d'extraction IA            | 80 %        |
 | Fin de peuplement du profil    | 90 %        |
 | Terminé                        | 100 %       |
 
@@ -171,22 +171,24 @@ pdftocairo -png -scale-to 1024 <input.pdf> <output_dir>/converted
 
 **Détection du binaire :** `detectPdftocairoPath()` (`src/utils/misc/pdf-to-cairo.ts`) localise `pdftocairo` dans le `PATH` système.
 
-### Étape 5 — Extraction IA (OpenAI)
+### Étape 5 — Extraction IA (Anthropic)
 
-**Fichier :** `src/external-services/openai/openai.service.ts`
-**Modèle :** `o4-mini-2025-04-16`
-**Max tokens :** `OPENAI_MAX_COMPLETION_TOKENS` (variable d'environnement, défaut 4 096)
+**Fichier :** `src/external-services/cv-extraction/cv-extraction.service.ts`
+**Modèles :** `AI_MODEL_CV_EXTRACTION` (un appel) et, avec `CV_EXTRACTION_TWO_PASSES=true`, `AI_MODEL_CV_READING` (lecture des pages, défaut `claude-sonnet-5-5`) puis `AI_MODEL_CV_BUILDING` (construction du profil depuis le texte, défaut `claude-sonnet-5-5` : Haiku 5.5 a laissé des listes vides sur un CV de test)
+**Effort :** `AI_EFFORT_CV_EXTRACTION`, `AI_EFFORT_CV_READING`, `AI_EFFORT_CV_BUILDING` (`low` à `max`)
+**Max tokens :** `CV_EXTRACTION_MAX_TOKENS` (variable d'environnement, défaut 8 192, la réflexion du modèle en consomme une partie)
 
-Chaque image PNG (page du CV) est envoyée en `image_url` base64 dans un seul appel `chat.completions.create`. Le **tool calling forcé** garantit une réponse JSON structurée :
+Chaque image PNG (page du CV) est envoyée en bloc `image` base64 dans un appel de l'API Messages. Les **sorties structurées** (`output_config.format`, schéma JSON) garantissent une réponse JSON conforme au schéma :
 
 ```typescript
-tools: [{ type: 'function', function: { name: 'extract_cv_data', parameters: cvSchema } }]
-tool_choice: { type: 'function', function: { name: 'extract_cv_data' } }
+output_config: { effort, format: { type: 'json_schema', schema: CV_OUTPUT_SCHEMA } }
 ```
 
-**Gestion de `finish_reason === 'length'` :** si OpenAI coupe la réponse par limite de tokens, une erreur explicite est levée avec les détails d'usage pour faciliter le diagnostic (réduire la résolution des images ou augmenter `OPENAI_MAX_COMPLETION_TOKENS`).
+Le schéma est `cvSchema` passé par `transformJSONSchema` du SDK : les contraintes non gérées par Anthropic (`maxLength`, `maxItems`…) passent dans les descriptions, et les textes sont toujours coupés à l'import. Une limite d'Anthropic (24 propriétés optionnelles par schéma) impose de rendre les listes obligatoires (elles peuvent être vides).
 
-#### Schéma d'extraction (`openai.schemas.ts`) — version `SCHEMA_VERSION = 5`
+**Gestion de `stop_reason` :** `refusal` (le modèle a refusé) et `max_tokens` (réponse coupée) lèvent une erreur explicite (issue `refused` ou `truncated` sur la trace) : une réponse partielle n'est jamais utilisée. Pour `max_tokens`, réduire le nombre ou le poids des images, ou augmenter `CV_EXTRACTION_MAX_TOKENS`.
+
+#### Schéma d'extraction (`cv-extraction.schemas.ts`) — version `SCHEMA_VERSION = 5`
 
 | Champ           | Type                                                                                   | Contraintes                                                                              |
 | --------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -275,7 +277,7 @@ Affiche :
 - Un avertissement si `overwriteWarning === true` (données existantes qui seront écrasées)
 - L'illustration du CV ou `ProfileGenerationLoadingIndicator` (GIF animé `/static/img/illustrations/cv-ia.gif`) pendant le traitement
 - Le bouton "Générer mon profil avec l'IA" (désactivé pendant `isLoading`)
-- La mention légale OpenAI
+- La mention légale Anthropic
 
 #### Points d'entrée dans l'interface
 
@@ -297,8 +299,8 @@ Affiche :
 
 | Variable                       | Requis | Description                                      |
 | ------------------------------ | ------ | ------------------------------------------------ |
-| `OPENAI_API_KEY`               | Oui    | Clé API OpenAI                                   |
-| `OPENAI_MAX_COMPLETION_TOKENS` | Non    | Budget tokens pour l'extraction (défaut : 4 096) |
+| `ANTHROPIC_API_KEY`            | Oui    | Clé API Anthropic                                |
+| `CV_EXTRACTION_MAX_TOKENS`     | Non    | Budget tokens de chaque appel (défaut : 8 192)   |
 | `AWSS3_BUCKET_NAME`            | Oui    | Nom du bucket S3                                 |
 | `AWSS3_FILE_DIRECTORY`         | Oui    | Préfixe de chemin S3                             |
 
@@ -307,7 +309,7 @@ Affiche :
 **Back-end :**
 
 ```json
-"openai": "^4.98.0"
+"@anthropic-ai/sdk": "^0.91.1"
 ```
 
 **Système (doit être installé sur le serveur) :**
@@ -318,8 +320,8 @@ poppler-utils  →  fournit le binaire pdftocairo
 
 ### Évolution du schéma
 
-Pour modifier les champs extraits par OpenAI :
+Pour modifier les champs extraits par le modèle :
 
-1. Modifier `cvSchema` dans `src/external-services/openai/openai.schemas.ts`
+1. Modifier `cvSchema` dans `src/external-services/cv-extraction/cv-extraction.schemas.ts`
 2. Mettre à jour l'interface `CvSchemaType` en conséquence
 3. **Incrémenter `SCHEMA_VERSION`** — tous les enregistrements `ExtractedCVData` existants auront une version périmée et déclencheront une nouvelle extraction au prochain appel utilisateur

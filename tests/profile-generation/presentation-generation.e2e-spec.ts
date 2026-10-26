@@ -6,7 +6,7 @@ import request from 'supertest';
 import { BusinessSector } from 'src/business-sectors/models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { SCHEMA_VERSION } from 'src/external-services/openai/openai.schemas';
+import { SCHEMA_VERSION } from 'src/external-services/cv-extraction/cv-extraction.schemas';
 import { Nudge } from 'src/nudge/models';
 import type { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -179,6 +179,7 @@ describe('ProfileGeneration - presentation', () => {
           timeoutMs: 9000,
           feature: 'presentation_generation',
           operation: 'generate',
+          model: 'claude-haiku-4-5-20251001',
         })
       );
 
@@ -186,6 +187,27 @@ describe('ProfileGeneration - presentation', () => {
         candidate.user.id
       );
       expect(saved?.description).toBeNull();
+    });
+
+    it('asks the model of the setting for the presentation', async () => {
+      const saved = process.env.AI_MODEL_PRESENTATION_GENERATION;
+      process.env.AI_MODEL_PRESENTATION_GENERATION = 'claude-haiku-5-5';
+      try {
+        const candidate = await usersHelper.createLoggedInUser({
+          role: UserRoles.CANDIDATE,
+        });
+
+        const response = await post(candidate);
+
+        expect(response.status).toBe(200);
+        expect(lastCall().options.model).toBe('claude-haiku-5-5');
+      } finally {
+        if (saved === undefined) {
+          delete process.env.AI_MODEL_PRESENTATION_GENERATION;
+        } else {
+          process.env.AI_MODEL_PRESENTATION_GENERATION = saved;
+        }
+      }
     });
 
     it('still proposes a text when a presentation exists, and leaves it unchanged', async () => {

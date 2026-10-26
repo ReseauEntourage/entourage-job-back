@@ -59,7 +59,7 @@ From `src/external-services/` subdirectories and env var patterns:
 
 - **AWS S3** (`src/external-services/aws/s3.service.ts`) — file storage (CVs, logos, media)
 - **AWS CloudFront** (`src/external-services/aws/cloud-front.service.ts`) — CDN cache invalidation
-- **OpenAI** (`src/external-services/openai/`) — CV extraction (vision), profile generation
+- **Anthropic** (`src/external-services/anthropic/`, `src/external-services/cv-extraction/`) — CV extraction (vision), profile generation, AI assistant
 - **VoyageAI** (`src/external-services/voyageai/`) — text embeddings
 - **Salesforce** (`src/external-services/salesforce/`) — CRM sync (users, companies)
 - **Mailjet** (`src/external-services/mailjet/`) — transactional email templates
@@ -88,7 +88,7 @@ graph LR
     end
 
     subgraph AI["AI"]
-        OpenAI ~~~ VoyageAI
+        Anthropic ~~~ VoyageAI
     end
 
     subgraph Autres["Services externes"]
@@ -151,7 +151,7 @@ graph TB
         SF["Salesforce CRM"]
         MJ["Mailjet\n(transactional email)"]
         MC["Mailchimp\n(newsletter)"]
-        OAI["OpenAI\n(vision + chat)"]
+        CLAUDE["Anthropic Claude\n(vision + chat)"]
         VAI["VoyageAI\n(embeddings)"]
         PUSHER["Pusher\n(real-time)"]
         SLACK["Slack\n(internal alerts)"]
@@ -203,7 +203,7 @@ Columns: Service | Rôle | Authentification | Utilisé par (module)
 - **Cache**: Redis (TLS) via ioredis + cache-manager-ioredis
 - **Queue engine**: BullMQ 5 with 4 named queues
 - **Cron**: `@nestjs/schedule` (node-cron under the hood), runs in the Worker process
-- **AI**: OpenAI SDK v4, VoyageAI SDK — both async via embedding/profile-generation queues
+- **AI**: Anthropic SDK, VoyageAI SDK — both async via embedding/profile-generation queues
 - **Monitoring**: Datadog APM (`dd-trace`) initialized in `src/tracer.ts`
 - **Auth**: JWT (passport-jwt) + local strategy; API-key guard for worker endpoints
 - **Secrets**: Environment variables (`.env` / Heroku config vars)

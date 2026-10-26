@@ -134,9 +134,6 @@ importers:
       node-mailjet:
         specifier: ^6.0.4
         version: 6.0.11(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
-      openai:
-        specifier: ^6.45.0
-        version: 6.49.0(@aws-sdk/credential-provider-node@3.972.75)(@smithy/signature-v4@5.6.12)(zod@4.4.3)
       passport:
         specifier: ^0.6.0
         version: 0.6.0
@@ -4233,26 +4230,6 @@ packages:
   onetime@6.0.0:
     resolution: {integrity: sha512-1FlR+gjXK7X+AsAHso35MnyN5KqGwJRi/31ft6x0M194ht7S+rWAvd7PHss9xSKMzE0asv1pyIHaJYq+BbacAQ==}
     engines: {node: '>=12'}
-
-  openai@6.49.0:
-    resolution: {integrity: sha512-aYCc0C6L864eR6WSYIwQGyXriw/nIyZx0ObvhzOEVuk0zoBDpynjSbrionWI7q65B5H8jJX0DXR9snEzM6bfPg==}
-    peerDependencies:
-      '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
-      '@smithy/hash-node': '>=4.3.0 <5'
-      '@smithy/signature-v4': '>=5.4.0 <6'
-      ws: ^8.18.0
-      zod: ^3.25 || ^4.0
-    peerDependenciesMeta:
-      '@aws-sdk/credential-provider-node':
-        optional: true
-      '@smithy/hash-node':
-        optional: true
-      '@smithy/signature-v4':
-        optional: true
-      ws:
-        optional: true
-      zod:
-        optional: true
 
   opentracing@0.14.7:
     resolution: {integrity: sha512-vz9iS7MJ5+Bp1URw8Khvdyw1H/hGvzHWlKQ7eRrQojSCDL1/SrWfrY9QebLw97n2deyRtzHRC3MkQfVNUCo91Q==}
@@ -10198,12 +10175,6 @@ snapshots:
   onetime@6.0.0:
     dependencies:
       mimic-fn: 4.0.0
-
-  openai@6.49.0(@aws-sdk/credential-provider-node@3.972.75)(@smithy/signature-v4@5.6.12)(zod@4.4.3):
-    optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.75
-      '@smithy/signature-v4': 5.6.12
-      zod: 4.4.3
 
   opentracing@0.14.7: {}
 

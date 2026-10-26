@@ -480,19 +480,19 @@ Simple HTTP Basic Auth middleware for Express.
 
 ## AI & Embeddings
 
-### `openai`
+### `@anthropic-ai/sdk`
 
-|                  |                                                                                |
-| ---------------- | ------------------------------------------------------------------------------ |
-| **Version**      | `^4.98.0`                                                                      |
-| **Release date** | April 2025                                                                     |
-| **Changelog**    | [CHANGELOG.md](https://github.com/openai/openai-node/blob/master/CHANGELOG.md) |
+|                  |                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| **Version**      | `^0.91.1`                                                                                          |
+| **Release date** | —                                                                                                  |
+| **Changelog**    | [CHANGELOG.md](https://github.com/anthropics/anthropic-sdk-typescript/blob/main/CHANGELOG.md)     |
 
-Official OpenAI Node.js SDK for chat completions and vision APIs.
+Official Anthropic Node.js SDK for the Messages API (text, vision, streaming, structured outputs).
 
-**Used in:** `src/external-services/openai/` for structured CV extraction from PDF images (vision), `src/profile-generation/` for AI profile text generation, `src/external-cvs/` for parsing external CV documents.
+**Used in:** `src/external-services/anthropic/` (assistant stream, classification, titles, presentation), `src/external-services/cv-extraction/` for the structured CV extraction from PDF images (vision), `src/profile-generation/` for AI profile text generation.
 
-**Alternatives:** `@anthropic-ai/sdk`, `@google-cloud/vertexai`.
+**Alternatives:** `@google-cloud/vertexai`, the OpenAI Node.js SDK.
 
 ---
 
