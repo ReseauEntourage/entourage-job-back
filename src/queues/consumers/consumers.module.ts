@@ -3,8 +3,8 @@ import { Module } from '@nestjs/common';
 import { CheckinModule } from 'src/checkin/checkin.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { EmbeddingsModule } from 'src/embeddings/embeddings.module';
+import { CvExtractionModule } from 'src/external-services/cv-extraction/cv-extraction.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
-import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
@@ -39,7 +39,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     BullModule.registerQueue(getEmbeddingQueueOptions()),
     MailjetModule,
     VonageModule,
-    OpenAiModule,
+    CvExtractionModule,
     SalesforceModule,
     ProfileGenerationModule,
     CompaniesModule,

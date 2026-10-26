@@ -578,8 +578,9 @@ describe('Help groups - Participation', () => {
     const content =
       "J'ai arrêté de travailler deux ans pour m'occuper de ma mère.";
 
+    // The workflow span is annotated as `annotate(span, { tags })`
     const outcomeOf = (annotate: jest.SpyInstance) =>
-      annotate.mock.calls[0][0].tags.outcome;
+      annotate.mock.calls[0][1].tags.outcome;
 
     it('Should propose a title, every client text passed as user content', async () => {
       const annotate = jest.spyOn(tracer.llmobs, 'annotate');
@@ -605,8 +606,28 @@ describe('Help groups - Participation', () => {
         maxTokens: 100,
         timeoutMs: 5000,
         feature: 'help_groups_title',
+        model: 'claude-haiku-4-5-20251001',
       });
       expect(outcomeOf(annotate)).toBe('success');
+    });
+
+    it('Should ask the model of the setting for the title', async () => {
+      const saved = process.env.AI_MODEL_HELP_GROUPS_TITLE;
+      process.env.AI_MODEL_HELP_GROUPS_TITLE = 'claude-haiku-5-5';
+      try {
+        const response = await api('post', path(), member, { content });
+
+        expect(response.status).toBe(200);
+        expect(generateStructured.mock.calls[0][3]).toMatchObject({
+          model: 'claude-haiku-5-5',
+        });
+      } finally {
+        if (saved === undefined) {
+          delete process.env.AI_MODEL_HELP_GROUPS_TITLE;
+        } else {
+          process.env.AI_MODEL_HELP_GROUPS_TITLE = saved;
+        }
+      }
     });
 
     it('Should propose a title for a message of thanks', async () => {

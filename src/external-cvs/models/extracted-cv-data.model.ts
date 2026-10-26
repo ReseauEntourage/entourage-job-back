@@ -35,6 +35,17 @@ export class ExtractedCVData extends Model {
   @Column(DataType.INTEGER)
   schemaVersion: number;
 
+  // Text read from the CV by the reading pass; null for the single-call
+  // extraction and for rows saved before the two-pass extraction
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  transcript: string | null;
+
+  // Version of the reading instructions that produced `transcript`
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  transcriptVersion: number | null;
+
   @BelongsTo(() => UserProfile)
   userProfile: UserProfile;
 }

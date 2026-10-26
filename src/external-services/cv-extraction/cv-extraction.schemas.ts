@@ -1,5 +1,9 @@
 // Increment schema version on changes to make sure we dont reuse old saved schemas
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
+
+// Increment when the instructions of the reading pass change, so that a text
+// read with older instructions is not reused to build a profile
+export const TRANSCRIPT_VERSION = 1;
 
 // Définition du schéma JSON pour la sortie structurée
 export const cvSchema = {
@@ -140,6 +144,13 @@ export const cvSchema = {
     },
   },
 };
+
+// Result of the extraction of a CV: the profile data, and the text read from
+// the CV when it was extracted in two passes (null for the single call)
+export interface CvExtractionResult {
+  data: CvSchemaType;
+  transcript: string | null;
+}
 
 // Définition du type pour les données extraites du CV
 export interface CvSchemaType {

@@ -1,21 +1,32 @@
 import Anthropic from '@anthropic-ai/sdk';
 import {
+  Message,
+  MessageCreateParamsNonStreaming,
   MessageParam,
   TextBlockParam,
 } from '@anthropic-ai/sdk/resources/messages';
 import { Injectable } from '@nestjs/common';
+import {
+  AiModelUse,
+  getAiModel,
+} from 'src/external-services/ai-models/ai-models';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 
 export interface GenerateTextOptions {
-  feature?: string;
+  feature?: AiFeature;
   maxTokens?: number;
+  /** Defaults to the model of the escalation classifier. */
+  model?: string;
   operation?: string;
   timeoutMs?: number;
 }
 
 export interface GenerateStructuredOptions {
-  feature: string;
+  feature: AiFeature;
   maxTokens: number;
+  /** Defaults to the model of the escalation classifier. */
+  model?: string;
   operation: string;
   timeoutMs?: number;
 }
@@ -43,7 +54,7 @@ export class AnthropicService {
    */
   createStream(systemBlocks: TextBlockParam[], messages: MessageParam[]) {
     return this.client.messages.stream({
-      model: 'claude-sonnet-4-6',
+      model: getAiModel(AiModelUse.AI_ASSISTANT),
       max_tokens: this.STREAM_MAX_TOKENS,
       system: systemBlocks,
       messages,
@@ -62,11 +73,11 @@ export class AnthropicService {
   ): Promise<string> {
     const {
       maxTokens = 5,
+      model = getAiModel(AiModelUse.AI_ASSISTANT_CLASSIFIER),
       timeoutMs,
       operation = 'classify',
-      feature = 'ai_assistant',
+      feature = AiFeature.AI_ASSISTANT,
     } = options;
-    const model = 'claude-haiku-4-5-20251001';
     const response = await this.client.messages.create(
       {
         model,
@@ -102,8 +113,13 @@ export class AnthropicService {
     schema: Record<string, unknown>,
     options: GenerateStructuredOptions
   ): Promise<unknown> {
-    const { maxTokens, timeoutMs, operation, feature } = options;
-    const model = 'claude-haiku-4-5-20251001';
+    const {
+      maxTokens,
+      model = getAiModel(AiModelUse.AI_ASSISTANT_CLASSIFIER),
+      timeoutMs,
+      operation,
+      feature,
+    } = options;
     const response = await this.client.messages.create(
       {
         model,
@@ -130,5 +146,23 @@ export class AnthropicService {
       throw new Error('Structured output is not a text block');
     }
     return JSON.parse(block.text);
+  }
+
+  /**
+   * Single non-streamed message request that Datadog's automatic LLM span does
+   * not see: the integration only wraps `messages.create`, and this goes through
+   * the client's generic `post`. The caller traces the call by hand, so that it
+   * decides what of the prompt and the answer leaves for Datadog (the CV pages
+   * and the text read from them hold personal data). The request body and
+   * the SDK's retries and headers are those of `messages.create`.
+   */
+  async createMessageUntraced(
+    body: MessageCreateParamsNonStreaming,
+    options: { signal?: AbortSignal } = {}
+  ): Promise<Message> {
+    return this.client.post<Message>('/v1/messages', {
+      body,
+      signal: options.signal,
+    });
   }
 }

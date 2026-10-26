@@ -7,7 +7,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { Job, Queue } from 'bullmq';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
-import { OpenAiService } from 'src/external-services/openai/openai.service';
+import { isTwoPassExtractionEnabled } from 'src/external-services/cv-extraction/cv-extraction.config';
+import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
+import { totalPagesBytes } from 'src/external-services/llm-observability/cv-trace';
+import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import {
   PusherChannels,
@@ -30,7 +34,7 @@ export class ProfileGeneratorProcessor extends WorkerHost {
   private readonly logger = new Logger(ProfileGeneratorProcessor.name);
 
   constructor(
-    private readonly openAiService: OpenAiService,
+    private readonly cvExtractionService: CvExtractionService,
     private readonly pusherService: PusherService,
     private readonly profileGenerationService: ProfileGenerationService,
     @InjectQueue(Queues.PROFILE_GENERATION)
@@ -72,40 +76,55 @@ export class ProfileGeneratorProcessor extends WorkerHost {
       // Build the S3 URL — `s3Key` is the full key stored in database
       const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${s3Key}`;
 
-      // Télécharger le PDF depuis S3 directement dans le worker
-      const tempDir = process.platform === 'darwin' ? '/tmp' : os.tmpdir();
-      fs.mkdirSync(tempDir, { recursive: true });
+      // A text already read from this very file (same hash, current reading
+      // instructions) spares the download, the conversion and the reading: only
+      // the profile is built again
+      const reusableTranscript = isTwoPassExtractionEnabled()
+        ? await this.profileGenerationService.getReusableTranscript(
+            userProfileId,
+            fileHash
+          )
+        : null;
 
-      // Utiliser un nom de fichier unique pour éviter les conflits - ne peut pas utiliser le userId
-      const uniqueId = `${Date.now()}_${Math.random()
-        .toString(36)
-        .substring(2, 8)}`;
-      tempPdfPath = path.join(tempDir, `${uniqueId}.pdf`);
+      let base64Images: string[] = [];
+      if (!reusableTranscript) {
+        // Télécharger le PDF depuis S3 directement dans le worker
+        const tempDir = process.platform === 'darwin' ? '/tmp' : os.tmpdir();
+        fs.mkdirSync(tempDir, { recursive: true });
 
-      const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-      if (response.status !== 200) {
-        throw new Error(
-          `Erreur lors du téléchargement du PDF depuis S3: ${response.status}`
-        );
+        // Utiliser un nom de fichier unique pour éviter les conflits - ne peut pas utiliser le userId
+        const uniqueId = `${Date.now()}_${Math.random()
+          .toString(36)
+          .substring(2, 8)}`;
+        tempPdfPath = path.join(tempDir, `${uniqueId}.pdf`);
+
+        const response = await axios.get(pdfUrl, {
+          responseType: 'arraybuffer',
+        });
+        if (response.status !== 200) {
+          throw new Error(
+            `Erreur lors du téléchargement du PDF depuis S3: ${response.status}`
+          );
+        }
+
+        fs.writeFileSync(tempPdfPath, Buffer.from(response.data));
+
+        // Vérification de l'existence du fichier PDF
+        if (!fs.existsSync(tempPdfPath)) {
+          console.error(
+            `Le fichier PDF n'existe pas après téléchargement: ${tempPdfPath}`
+          );
+          throw new Error(
+            `Le fichier PDF n'existe pas à l'emplacement spécifié après téléchargement: ${tempPdfPath}`
+          );
+        }
+
+        base64Images = await this.convertPDFToImages(tempPdfPath);
       }
-
-      fs.writeFileSync(tempPdfPath, Buffer.from(response.data));
-
-      // Vérification de l'existence du fichier PDF
-      if (!fs.existsSync(tempPdfPath)) {
-        console.error(
-          `Le fichier PDF n'existe pas après téléchargement: ${tempPdfPath}`
-        );
-        throw new Error(
-          `Le fichier PDF n'existe pas à l'emplacement spécifié après téléchargement: ${tempPdfPath}`
-        );
-      }
-
-      const base64Images = await this.convertPDFToImages(tempPdfPath);
 
       await job.updateProgress(30);
 
-      // Traitement long avec OpenAI : annulation coopérative via un signal
+      // Traitement long avec le LLM : annulation coopérative via un signal
       // relu périodiquement depuis les métadonnées du job (Redis).
       const abortController = new AbortController();
       cancellationCheckInterval = setInterval(() => {
@@ -117,14 +136,49 @@ export class ProfileGeneratorProcessor extends WorkerHost {
         });
       }, CANCELLATION_CHECK_INTERVAL_MS);
 
-      const extractedCVData = await this.openAiService.extractCVFromImages(
-        base64Images,
-        abortController.signal
+      const extraction = await traceAiWorkflow(
+        {
+          feature: AiFeature.CV_EXTRACTION,
+          name: 'cv-extraction',
+          // The S3 key lets an operator find the source file of a trace by hand.
+          // Neither the pages nor a link to the file are sent to Datadog.
+          tags: { userProfileId, fileHash, s3Key },
+        },
+        async ({ setOutcome, annotate }) => {
+          annotate({
+            metadata: reusableTranscript
+              ? { reusedTranscript: true, textChars: reusableTranscript.length }
+              : {
+                  pageCount: base64Images.length,
+                  imagesBytes: totalPagesBytes(base64Images),
+                },
+          });
+          try {
+            const result = reusableTranscript
+              ? await this.cvExtractionService.buildCVFromTranscript(
+                  reusableTranscript,
+                  abortController.signal
+                )
+              : await this.cvExtractionService.extractCVFromImages(
+                  base64Images,
+                  abortController.signal
+                );
+            if (cancelledDuringWait) {
+              setOutcome('cancelled');
+            }
+            return result;
+          } catch (error) {
+            if (abortController.signal.aborted) {
+              setOutcome('cancelled');
+            }
+            throw error;
+          }
+        }
       );
 
       await job.updateProgress(80);
 
-      // Fenêtre résiduelle : l'annulation peut arriver après la réponse OpenAI
+      // Fenêtre résiduelle : l'annulation peut arriver après la réponse du LLM
       // mais avant l'écriture du profil.
       if (cancelledDuringWait || (await this.isJobCancelled(job.id))) {
         throw new ProfileGenerationCancelledError();
@@ -132,13 +186,14 @@ export class ProfileGeneratorProcessor extends WorkerHost {
 
       await this.profileGenerationService.saveExtractedCVData(
         userProfileId,
-        extractedCVData,
-        fileHash
+        extraction.data,
+        fileHash,
+        extraction.transcript
       );
 
       await this.profileGenerationService.populateUserProfileFromCVData(
         userId,
-        extractedCVData
+        extraction.data
       );
 
       await job.updateProgress(90);

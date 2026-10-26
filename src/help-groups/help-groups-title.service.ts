@@ -1,7 +1,11 @@
 import { APIConnectionTimeoutError } from '@anthropic-ai/sdk';
 import { Injectable, Logger } from '@nestjs/common';
+import {
+  AiModelUse,
+  getAiModel,
+} from 'src/external-services/ai-models/ai-models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
-import { tracer } from 'src/tracer';
+import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import {
   buildHelpGroupTitleSystemPrompt,
   buildHelpGroupTitleUserMessage,
@@ -31,33 +35,29 @@ export class HelpGroupsTitleService {
     content: string,
     previousTitles: string[] = []
   ): Promise<{ title: string | null }> {
-    // Dedicated LLM Observability span: the Datadog bias evaluations target
-    // the `help-groups-title` workflow
-    return tracer.llmobs.trace(
-      { kind: 'workflow', name: 'help-groups-title' },
-      async () => {
-        let outcome: HelpGroupTitleOutcome = 'error';
+    // Dedicated LLM Observability span: keep its `help-groups-title` name
+    // stable, queries and evaluations may target it
+    return traceAiWorkflow(
+      {
+        feature: HELP_GROUP_TITLE_CONFIG.feature,
+        name: 'help-groups-title',
+        tags: { isRetry: String(previousTitles.length > 0) },
+      },
+      async ({ setOutcome }) => {
         try {
           const result = await this.generate(content, previousTitles);
-          outcome = result.outcome;
+          setOutcome(result.outcome);
           return { title: result.title };
         } catch (error) {
-          outcome =
+          const outcome =
             error instanceof APIConnectionTimeoutError ? 'timeout' : 'error';
+          setOutcome(outcome);
           this.logger.warn(
             `[HelpGroupsTitle] ${outcome}: ${
               error instanceof Error ? error.message : String(error)
             }`
           );
           return { title: null };
-        } finally {
-          tracer.llmobs.annotate({
-            tags: {
-              feature: HELP_GROUP_TITLE_CONFIG.feature,
-              isRetry: String(previousTitles.length > 0),
-              outcome,
-            },
-          });
         }
       }
     );
@@ -73,6 +73,7 @@ export class HelpGroupsTitleService {
       HELP_GROUP_TITLE_OUTPUT_SCHEMA,
       {
         maxTokens: HELP_GROUP_TITLE_CONFIG.maxTokens,
+        model: getAiModel(AiModelUse.HELP_GROUPS_TITLE),
         timeoutMs: HELP_GROUP_TITLE_CONFIG.timeoutMs,
         operation: HELP_GROUP_TITLE_CONFIG.operation,
         feature: HELP_GROUP_TITLE_CONFIG.feature,
