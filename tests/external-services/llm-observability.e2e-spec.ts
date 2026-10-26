@@ -141,7 +141,7 @@ describe('traceAiWorkflow', () => {
 describe('traceLlmCall', () => {
   const options = {
     name: 'cv-extraction-llm',
-    modelName: 'o4-mini-2025-04-16',
+    modelName: 'gpt-5-mini',
     modelProvider: 'openai',
   };
 

@@ -36,9 +36,9 @@ describe('AI models', () => {
   });
 
   it('keeps the model used before the setting when no variable is set', () => {
-    expect(getAiModel(AiModelUse.CV_EXTRACTION)).toBe('o4-mini-2025-04-16');
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('o4-mini-2025-04-16');
-    expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('o4-mini-2025-04-16');
+    expect(getAiModel(AiModelUse.CV_EXTRACTION)).toBe('gpt-5-mini');
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-5-mini');
+    expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('gpt-5-mini');
     expect(getAiModel(AiModelUse.AI_ASSISTANT)).toBe('claude-sonnet-4-6');
     expect(getAiModel(AiModelUse.AI_ASSISTANT_CLASSIFIER)).toBe(
       'claude-haiku-4-5-20251001'
@@ -55,7 +55,7 @@ describe('AI models', () => {
     process.env.AI_MODEL_CV_BUILDING = 'gpt-4.1-mini';
 
     expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('gpt-4.1-mini');
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('o4-mini-2025-04-16');
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-5-mini');
     expect(getAiModel(AiModelUse.HELP_GROUPS_TITLE)).toBe(
       'claude-haiku-4-5-20251001'
     );
@@ -77,13 +77,13 @@ describe('AI models', () => {
   });
 
   it('reads the variable at every call, without caching it', () => {
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('o4-mini-2025-04-16');
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-5-mini');
 
     process.env.AI_MODEL_CV_READING = 'gpt-4.1-mini';
     expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-4.1-mini');
 
     delete process.env.AI_MODEL_CV_READING;
-    expect(getAiModel(AiModelUse.CV_READING)).toBe('o4-mini-2025-04-16');
+    expect(getAiModel(AiModelUse.CV_READING)).toBe('gpt-5-mini');
   });
 
   describe('reasoning effort', () => {

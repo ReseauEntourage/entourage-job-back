@@ -341,13 +341,13 @@ describe('OpenAiService - two-pass CV extraction', () => {
         {
           kind: 'llm',
           name: 'cv-reading',
-          modelName: 'o4-mini-2025-04-16',
+          modelName: 'gpt-5-mini',
           modelProvider: 'openai',
         },
         {
           kind: 'llm',
           name: 'cv-building',
-          modelName: 'o4-mini-2025-04-16',
+          modelName: 'gpt-5-mini',
           modelProvider: 'openai',
         },
       ]);
@@ -424,8 +424,8 @@ describe('OpenAiService - two-pass CV extraction', () => {
       await service.extractCVFromImages(['p1']);
 
       expect(llmMetrics.recordOpenAiUsage.mock.calls).toEqual([
-        ['o4-mini-2025-04-16', USAGE, 'cv_reading', 'cv_extraction'],
-        ['o4-mini-2025-04-16', USAGE, 'cv_building', 'cv_extraction'],
+        ['gpt-5-mini', USAGE, 'cv_reading', 'cv_extraction'],
+        ['gpt-5-mini', USAGE, 'cv_building', 'cv_extraction'],
       ]);
     });
   });
@@ -551,8 +551,8 @@ describe('OpenAiService - two-pass CV extraction', () => {
       await service.extractCVFromImages(['p1']);
 
       expect(create.mock.calls.map(([body]) => body.model)).toEqual([
-        'o4-mini-2025-04-16',
-        'o4-mini-2025-04-16',
+        'gpt-5-mini',
+        'gpt-5-mini',
       ]);
     });
 

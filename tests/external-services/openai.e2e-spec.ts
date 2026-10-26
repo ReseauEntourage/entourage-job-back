@@ -98,7 +98,7 @@ describe('OpenAiService.extractCVFromImages', () => {
     await service.extractCVFromImages(['p']);
 
     expect(llmMetrics.recordOpenAiUsage).toHaveBeenCalledWith(
-      'o4-mini-2025-04-16',
+      'gpt-5-mini',
       usage,
       'cv_extraction',
       'cv_extraction'

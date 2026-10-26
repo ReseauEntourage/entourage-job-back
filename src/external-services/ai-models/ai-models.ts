@@ -16,9 +16,9 @@ export enum AiModelUse {
 
 /** The model of each usage when its variable is not set. */
 const DEFAULT_AI_MODELS: Record<AiModelUse, string> = {
-  [AiModelUse.CV_EXTRACTION]: 'o4-mini-2025-04-16',
-  [AiModelUse.CV_READING]: 'o4-mini-2025-04-16',
-  [AiModelUse.CV_BUILDING]: 'o4-mini-2025-04-16',
+  [AiModelUse.CV_EXTRACTION]: 'gpt-5-mini',
+  [AiModelUse.CV_READING]: 'gpt-5-mini',
+  [AiModelUse.CV_BUILDING]: 'gpt-5-mini',
   [AiModelUse.AI_ASSISTANT]: 'claude-sonnet-4-6',
   [AiModelUse.AI_ASSISTANT_CLASSIFIER]: 'claude-haiku-4-5-20251001',
   [AiModelUse.PRESENTATION_GENERATION]: 'claude-haiku-4-5-20251001',
