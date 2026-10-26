@@ -2323,6 +2323,55 @@ describe('UserProfiles', () => {
           );
         });
 
+        it('Should return 200 if candidate replaces experiences and formations that have skills', async () => {
+          const withSkills = {
+            skills: [{ name: 'Rigueur' }, { name: 'Écoute' }],
+          };
+          const firstResponse: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send({
+              experiences: [
+                {
+                  title: 'Ancien poste',
+                  company: 'Ancienne SA',
+                  ...withSkills,
+                },
+              ],
+              formations: [
+                {
+                  title: 'Ancien diplôme',
+                  institution: 'Ancienne école',
+                  ...withSkills,
+                },
+              ],
+            });
+          expect(firstResponse.status).toBe(200);
+
+          // Same shape as a CV import: no ids, so every previous entry is dropped.
+          const secondResponse: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send({
+              experiences: [{ title: 'Nouveau poste', company: 'Nouvelle SA' }],
+              formations: [
+                { title: 'Nouveau diplôme', institution: 'Nouvelle école' },
+              ],
+            });
+
+          expect(secondResponse.status).toBe(200);
+          expect(secondResponse.body.experiences).toEqual([
+            expect.objectContaining({ title: 'Nouveau poste' }),
+          ]);
+          expect(secondResponse.body.formations).toEqual([
+            expect.objectContaining({ title: 'Nouveau diplôme' }),
+          ]);
+        });
+
         it('Should return 200 and valid data if candidate update his skills', async () => {
           const skills = await databaseHelper.createEntities(
             skillFactory,

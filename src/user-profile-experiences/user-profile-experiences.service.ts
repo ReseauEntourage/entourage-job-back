@@ -71,12 +71,25 @@ export class UserProfileExperiencesService {
       );
     }
 
-    // Delete experiences that are not in the new list
+    // Delete experiences that are not in the new list. Their skill links must
+    // go first: ExperienceSkills.experienceId has no ON DELETE CASCADE.
+    const keptExperienceIds = experiencesToKeep.map((e) => e.id);
+    const experienceIdsToDelete = existingExperiences
+      .map((experience) => experience.id)
+      .filter((id) => !keptExperienceIds.includes(id));
+
+    if (experienceIdsToDelete.length > 0) {
+      await this.experienceSkillModel.destroy({
+        where: { experienceId: experienceIdsToDelete },
+        transaction,
+      });
+    }
+
     await this.experienceModel.destroy({
       where: {
         userProfileId: userProfileToUpdate.id,
         id: {
-          [Op.notIn]: experiencesToKeep.map((e) => e.id),
+          [Op.notIn]: keptExperienceIds,
         },
       },
       transaction,
