@@ -404,7 +404,9 @@ export class ProfileGenerationService {
     } catch (error) {
       this.logger.error(
         `Failed to populate user profile from CV data (userId=${userId}): ${
-          error instanceof Error ? error.stack : String(error)
+          error instanceof Error
+            ? `${error.message}\n${error.stack}`
+            : String(error)
         }`
       );
       throw new InternalServerErrorException(
