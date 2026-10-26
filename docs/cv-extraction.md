@@ -174,7 +174,7 @@ pdftocairo -png -scale-to 1024 <input.pdf> <output_dir>/converted
 ### Étape 5 — Extraction IA (Anthropic)
 
 **Fichier :** `src/external-services/cv-extraction/cv-extraction.service.ts`
-**Modèles :** `AI_MODEL_CV_EXTRACTION` (un appel) et, avec `CV_EXTRACTION_TWO_PASSES=true`, `AI_MODEL_CV_READING` (lecture des pages, défaut `claude-sonnet-5-5`) puis `AI_MODEL_CV_BUILDING` (construction du profil depuis le texte, défaut `claude-haiku-5-5`)
+**Modèles :** `AI_MODEL_CV_EXTRACTION` (un appel) et, avec `CV_EXTRACTION_TWO_PASSES=true`, `AI_MODEL_CV_READING` (lecture des pages, défaut `claude-sonnet-5-5`) puis `AI_MODEL_CV_BUILDING` (construction du profil depuis le texte, défaut `claude-sonnet-5-5` : Haiku 5.5 a laissé des listes vides sur un CV de test)
 **Effort :** `AI_EFFORT_CV_EXTRACTION`, `AI_EFFORT_CV_READING`, `AI_EFFORT_CV_BUILDING` (`low` à `max`)
 **Max tokens :** `CV_EXTRACTION_MAX_TOKENS` (variable d'environnement, défaut 8 192, la réflexion du modèle en consomme une partie)
 

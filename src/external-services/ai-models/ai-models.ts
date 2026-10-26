@@ -17,10 +17,13 @@ export enum AiModelUse {
 /** The model of each usage when its variable is not set. */
 const DEFAULT_AI_MODELS: Record<AiModelUse, string> = {
   // The reading looks at the pages: the more capable vision model. Building
-  // and filling the schema from text need less.
+  // the profile from the text takes the same model: on a staging CV,
+  // claude-haiku-5-5 at a low effort stopped early and returned empty lists
+  // (no formation, language or interest, a missing experience), while
+  // claude-sonnet-5-5 returned every field.
   [AiModelUse.CV_EXTRACTION]: 'claude-sonnet-5-5',
   [AiModelUse.CV_READING]: 'claude-sonnet-5-5',
-  [AiModelUse.CV_BUILDING]: 'claude-haiku-5-5',
+  [AiModelUse.CV_BUILDING]: 'claude-sonnet-5-5',
   [AiModelUse.AI_ASSISTANT]: 'claude-sonnet-4-6',
   [AiModelUse.AI_ASSISTANT_CLASSIFIER]: 'claude-haiku-4-5-20251001',
   [AiModelUse.PRESENTATION_GENERATION]: 'claude-haiku-4-5-20251001',

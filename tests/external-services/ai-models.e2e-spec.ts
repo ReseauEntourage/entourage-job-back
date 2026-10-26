@@ -38,7 +38,7 @@ describe('AI models', () => {
   it('uses the default model of each usage when no variable is set', () => {
     expect(getAiModel(AiModelUse.CV_EXTRACTION)).toBe('claude-sonnet-5-5');
     expect(getAiModel(AiModelUse.CV_READING)).toBe('claude-sonnet-5-5');
-    expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('claude-haiku-5-5');
+    expect(getAiModel(AiModelUse.CV_BUILDING)).toBe('claude-sonnet-5-5');
     expect(getAiModel(AiModelUse.AI_ASSISTANT)).toBe('claude-sonnet-4-6');
     expect(getAiModel(AiModelUse.AI_ASSISTANT_CLASSIFIER)).toBe(
       'claude-haiku-4-5-20251001'

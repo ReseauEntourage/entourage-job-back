@@ -344,7 +344,7 @@ describe('CvExtractionService - two-pass CV extraction', () => {
         {
           kind: 'llm',
           name: 'cv-building',
-          modelName: 'claude-haiku-5-5',
+          modelName: 'claude-sonnet-5-5',
           modelProvider: 'anthropic',
         },
       ]);
@@ -425,7 +425,7 @@ describe('CvExtractionService - two-pass CV extraction', () => {
 
       expect(llmMetrics.recordAnthropicUsage.mock.calls).toEqual([
         ['claude-sonnet-5-5', USAGE, 'cv_reading', 'cv_extraction'],
-        ['claude-haiku-5-5', USAGE, 'cv_building', 'cv_extraction'],
+        ['claude-sonnet-5-5', USAGE, 'cv_building', 'cv_extraction'],
       ]);
     });
   });
@@ -496,7 +496,7 @@ describe('CvExtractionService - two-pass CV extraction', () => {
 
       expect(create.mock.calls.map(([body]) => body.model)).toEqual([
         'claude-sonnet-5-5',
-        'claude-haiku-5-5',
+        'claude-sonnet-5-5',
       ]);
     });
 
