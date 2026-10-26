@@ -368,12 +368,13 @@ export class WorkQueueProcessor extends WorkerHost {
       await this.usersService.findOneByMailWithRelations(addresseeEmail);
 
     if (!addressee) {
-      this.logger.error(
-        `Addressee with email ${addresseeEmail} not found in the system`
+      // The addressee may have deleted their account between the time the job
+      // was enqueued and its processing: this is expected, not an error, and
+      // retrying would never succeed.
+      this.logger.warn(
+        `Skipping staff messaging message: addressee with email ${addresseeEmail} not found in the system (account probably deleted)`
       );
-      throw new Error(
-        `Addressee with email ${addresseeEmail} not found in the system`
-      );
+      return `Skipped staff messaging message: addressee with email ${addresseeEmail} not found`;
     }
 
     const staffContactEmail = addressee.staffContact.entourageProEmail;
