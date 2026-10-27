@@ -1184,6 +1184,7 @@ describe('CronTasksProcessor', () => {
         alertName: 'Alert a1',
         newCandidatesCount: 2,
         companyAdminEmail: 'admin-of-a1@example.org',
+        companyAdminId: expect.any(String),
         firstName: 'Ada',
         zone: getZoneNameFromDepartment(undefined),
         staffContact: { name: 'Staff' },
@@ -1518,7 +1519,8 @@ describe('CronTasksProcessor', () => {
         '+33600' + '1',
         'Candidat',
         'Sam',
-        'sender-1'
+        'sender-1',
+        expect.any(String)
       );
       expect(result).toBe(
         'Sent 1 unanswered conversation SMS to Candidat, Sent 1 unanswered conversation SMS to Coach'

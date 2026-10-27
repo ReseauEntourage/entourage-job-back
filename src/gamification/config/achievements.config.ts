@@ -58,6 +58,7 @@ export interface AchievementContext {
 export interface AchievementCallbackUser {
   email: string;
   firstName: string;
+  id: string;
   staffContact: InternalStaffContact;
   zone: ZoneName | null;
 }

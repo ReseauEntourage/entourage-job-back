@@ -1,3 +1,4 @@
+import type { CommunicationMetadata } from 'src/communication-logs/communication-logs.types';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
 import {
   CandidateAccommodation,
@@ -154,13 +155,23 @@ type JobsData = {
 export type JobData<T extends Job> = JobsData[T];
 
 export interface SendMailJob extends CustomMailParams {
+  /** Identifiers of related entities, recorded in the communication history */
+  metadata?: CommunicationMetadata;
   templateId: MailjetTemplate;
+  /** Recipient user: without it, the email is not recorded in the history */
+  userId?: string;
   variables: object;
 }
 
 export interface SendSmsJob {
+  /** Identifiers of related entities, recorded in the communication history */
+  metadata?: CommunicationMetadata;
   text: string;
   to: string;
+  /** Kind of SMS, recorded in the communication history */
+  type?: string;
+  /** Recipient user: without it, the SMS is not recorded in the history */
+  userId?: string;
 }
 
 export type NewsletterSubscriptionJob = CustomContactParams;
