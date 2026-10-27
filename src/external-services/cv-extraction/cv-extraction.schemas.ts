@@ -1,5 +1,5 @@
 // Increment schema version on changes to make sure we dont reuse old saved schemas
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 // Increment when the instructions of the reading pass change, so that a text
 // read with older instructions is not reused to build a profile
@@ -122,7 +122,8 @@ export const cvSchema = {
           level: {
             type: 'string',
             enum: ['NOTIONS', 'INTERMEDIATE', 'FLUENT', 'NATIVE'],
-            description: 'Niveau de maîtrise de la langue',
+            description:
+              "Niveau de maîtrise de la langue tel qu'écrit dans le CV, à faire correspondre à l'échelle ci-dessous sans jamais surestimer : NOTIONS (notions, débutant, scolaire, CECRL A1-A2) ; INTERMEDIATE (intermédiaire, opérationnel, professionnel, CECRL B1-B2) ; FLUENT (courant, avancé, bilingue professionnel, CECRL C1-C2) ; NATIVE (langue maternelle, natif, bilingue natif). Ne pas remplir si aucun niveau n'est précisé dans le CV.",
           },
         },
         required: ['name', 'value'],
@@ -184,10 +185,10 @@ export interface CvSchemaType {
 
   // Languages
   languages?: Array<{
-    // Code ISO 639-1 de la langue
     level?: string;
-    name: string;
     // Nom de la langue en français
+    name: string;
+    // Code ISO 639-1 de la langue
     value: string;
   }>;
 
