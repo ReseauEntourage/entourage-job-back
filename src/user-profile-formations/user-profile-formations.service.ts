@@ -68,12 +68,25 @@ export class UserProfileFormationsService {
       );
     }
 
-    // Delete formations that are not in the new list
+    // Delete formations that are not in the new list. Their skill links must go
+    // first: FormationSkills.formationId has no ON DELETE CASCADE.
+    const keptFormationIds = formationsToKeep.map((e) => e.id);
+    const formationIdsToDelete = existingFormations
+      .map((formation) => formation.id)
+      .filter((id) => !keptFormationIds.includes(id));
+
+    if (formationIdsToDelete.length > 0) {
+      await this.formationSkillModel.destroy({
+        where: { formationId: formationIdsToDelete },
+        transaction,
+      });
+    }
+
     await this.formationModel.destroy({
       where: {
         userProfileId: userProfileToUpdate.id,
         id: {
-          [Op.notIn]: formationsToKeep.map((e) => e.id),
+          [Op.notIn]: keptFormationIds,
         },
       },
       transaction,
