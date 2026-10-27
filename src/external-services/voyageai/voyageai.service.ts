@@ -3,6 +3,9 @@ import { VoyageAIClient, VoyageAIError } from 'voyageai';
 
 import { LlmMetricsService } from '../llm-metrics/llm-metrics.service';
 import { EMBEDDING_MODEL } from 'src/embeddings/embedding.config';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
+import { embeddingTextForTrace } from 'src/external-services/llm-observability/embedding-trace';
+import { traceLlmCall } from 'src/external-services/llm-observability/llm-observability';
 
 @Injectable()
 export class VoyageAiService {
@@ -17,16 +20,33 @@ export class VoyageAiService {
 
   async generateEmbedding(data: string): Promise<number[]> {
     try {
-      const response = await this.voyageAi.embed({
-        input: data,
-        model: EMBEDDING_MODEL,
-      });
+      const response = await traceLlmCall(
+        {
+          kind: 'embedding',
+          name: 'voyageai-embed',
+          modelName: EMBEDDING_MODEL,
+          modelProvider: 'voyageai',
+        },
+        async (annotateCall) => {
+          const result = await this.voyageAi.embed({
+            input: data,
+            model: EMBEDDING_MODEL,
+          });
+          annotateCall({
+            metadata: { input: embeddingTextForTrace(data) },
+            ...(result.usage
+              ? { metrics: { totalTokens: result.usage.totalTokens } }
+              : {}),
+          });
+          return result;
+        }
+      );
       if (response.usage) {
         this.llmMetricsService.recordVoyageAiUsage(
           EMBEDDING_MODEL,
           response.usage,
           'embedding',
-          'profile_recommendation'
+          AiFeature.PROFILE_RECOMMENDATION
         );
       }
       return response.data[0].embedding;
@@ -60,17 +80,34 @@ export class VoyageAiService {
         `Generating batch of ${dataArray.length} embeddings with VoyageAI`
       );
 
-      const response = await this.voyageAi.embed({
-        input: dataArray,
-        model: EMBEDDING_MODEL,
-      });
+      const response = await traceLlmCall(
+        {
+          kind: 'embedding',
+          name: 'voyageai-embed',
+          modelName: EMBEDDING_MODEL,
+          modelProvider: 'voyageai',
+        },
+        async (annotateCall) => {
+          const result = await this.voyageAi.embed({
+            input: dataArray,
+            model: EMBEDDING_MODEL,
+          });
+          annotateCall({
+            metadata: { input: dataArray.map(embeddingTextForTrace) },
+            ...(result.usage
+              ? { metrics: { totalTokens: result.usage.totalTokens } }
+              : {}),
+          });
+          return result;
+        }
+      );
 
       if (response.usage) {
         this.llmMetricsService.recordVoyageAiUsage(
           EMBEDDING_MODEL,
           response.usage,
           'embedding',
-          'profile_recommendation'
+          AiFeature.PROFILE_RECOMMENDATION
         );
       }
 

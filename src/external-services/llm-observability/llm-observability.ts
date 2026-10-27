@@ -56,6 +56,8 @@ export interface LlmCallAnnotation {
 }
 
 interface LlmCallOptions {
+  /** Span kind sent to Datadog. Defaults to `'llm'`. */
+  kind?: 'llm' | 'embedding';
   modelName: string;
   modelProvider: string;
   name: string;
@@ -128,11 +130,11 @@ export const traceAiWorkflow = <T>(
  * the error is rethrown unchanged.
  */
 export const traceLlmCall = <T>(
-  { name, modelName, modelProvider, tags = {} }: LlmCallOptions,
+  { name, modelName, modelProvider, kind = 'llm', tags = {} }: LlmCallOptions,
   fn: (annotate: (annotation: LlmCallAnnotation) => void) => Promise<T>
 ): Promise<T> =>
   tracer.llmobs.trace(
-    { kind: 'llm', name, modelName, modelProvider },
+    { kind, name, modelName, modelProvider },
     async (span) => {
       let outcome: AiWorkflowOutcome | undefined;
       try {

@@ -8,4 +8,5 @@ export enum AiFeature {
   CV_EXTRACTION = 'cv_extraction',
   HELP_GROUPS_TITLE = 'help_groups_title',
   PRESENTATION_GENERATION = 'presentation_generation',
+  PROFILE_RECOMMENDATION = 'profile_recommendation',
 }
