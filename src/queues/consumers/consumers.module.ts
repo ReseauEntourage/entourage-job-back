@@ -29,6 +29,7 @@ import { CronTasksSlackReporterService } from './cron-tasks/cron-tasks-slack-rep
 import { CronTasksProcessor } from './cron-tasks/cron-tasks.processor';
 import { EmbeddingQueueProcessor } from './embedding-queue.processor';
 import { ProfileGeneratorProcessor } from './profile-generator.processor';
+import { QueuesMetricsRecorderService } from './queues-metrics-recorder.service';
 import { WorkQueueProcessor } from './work-queue.processor';
 
 @Module({
@@ -64,6 +65,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     CronTasksSlackReporterService,
     CronTasksProcessor,
     EmbeddingQueueProcessor,
+    QueuesMetricsRecorderService,
   ],
   exports: [
     WorkQueueProcessor,

@@ -23,11 +23,12 @@ import {
   UpdateSalesforceUserCompanyJob,
   UserNewsletterSubscriptionJob,
 } from 'src/queues/queues.types';
+import { WORKER_METRICS_OPTIONS } from 'src/queues/queues.utils';
 import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
 
-@Processor(Queues.WORK)
+@Processor(Queues.WORK, { metrics: WORKER_METRICS_OPTIONS })
 export class WorkQueueProcessor extends WorkerHost {
   private readonly logger = new Logger(WorkQueueProcessor.name);
 

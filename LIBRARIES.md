@@ -318,8 +318,8 @@ NestJS integration for BullMQ providing `BullModule`, `@Processor`, `@InjectQueu
 
 |                  |                                                                     |
 | ---------------- | ------------------------------------------------------------------- |
-| **Version**      | `^6.13.1`                                                           |
-| **Release date** | 2024                                                                |
+| **Version**      | `^9.10.5`                                                           |
+| **Release date** | 2026                                                                |
 | **Changelog**    | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
 
 Framework-agnostic API layer for the Bull Board queue monitoring UI.
@@ -334,8 +334,8 @@ Framework-agnostic API layer for the Bull Board queue monitoring UI.
 
 |                  |                                                                     |
 | ---------------- | ------------------------------------------------------------------- |
-| **Version**      | `^6.13.1`                                                           |
-| **Release date** | 2024                                                                |
+| **Version**      | `^9.10.5`                                                           |
+| **Release date** | 2026                                                                |
 | **Changelog**    | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
 
 Express adapter for Bull Board — serves the UI as an Express router.
@@ -350,13 +350,29 @@ Express adapter for Bull Board — serves the UI as an Express router.
 
 |                  |                                                                     |
 | ---------------- | ------------------------------------------------------------------- |
-| **Version**      | `^6.13.1`                                                           |
-| **Release date** | 2024                                                                |
+| **Version**      | `^9.10.5`                                                           |
+| **Release date** | 2026                                                                |
 | **Changelog**    | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
 
 NestJS adapter to mount Bull Board via `BullBoardModule`.
 
 **Used in:** `src/queues/producers/queues-board.module.ts`.
+
+**Alternatives:** —
+
+---
+
+### `@bull-board/metrics`
+
+|                  |                                                                     |
+| ---------------- | ------------------------------------------------------------------- |
+| **Version**      | `9.10.5` (pinned, beta)                                             |
+| **Release date** | 2026                                                                |
+| **Changelog**    | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
+
+Opt-in historical metrics for Bull Board: snapshots BullMQ's per-minute job counters into longer-retention Redis buckets (kept 30 days here) and feeds the board's "Metrics history" page. Beta: the storage layout may change in a minor release, hence the pinned version.
+
+**Used in:** `src/queues/consumers/queues-metrics-recorder.service.ts` (recorder, runs in the worker) and `src/queues/producers/queues-board.module.ts` (history provider, read by the board).
 
 **Alternatives:** —
 

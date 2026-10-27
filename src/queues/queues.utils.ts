@@ -1,4 +1,5 @@
 import { RegisterQueueOptions } from '@nestjs/bullmq';
+import { MetricsTime } from 'bullmq';
 import { QueuePriority, Queues } from './queues.types';
 
 export function getBullWorkQueueOptions(): RegisterQueueOptions {
@@ -60,3 +61,14 @@ export const getEmbeddingQueueOptions = (): RegisterQueueOptions => {
     },
   };
 };
+
+/**
+ * BullMQ native per-minute metrics buffer kept by each worker. It must be wide enough to
+ * cover a recorder downtime, since the board history recorder snapshots from this buffer.
+ */
+export const WORKER_METRICS_OPTIONS = {
+  maxDataPoints: MetricsTime.ONE_WEEK,
+};
+
+/** Retention (in days) of the hourly and daily history kept by the board metrics recorder. */
+export const QUEUES_METRICS_HISTORY_RETENTION_DAYS = 30;
