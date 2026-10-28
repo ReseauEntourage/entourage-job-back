@@ -47,6 +47,12 @@ export class CommunicationLog extends Model {
   @Column(DataType.JSONB)
   metadata: CommunicationMetadata | null;
 
+  // Id the provider gave to the message (Mailjet MessageID, Vonage message
+  // UUID); null when the provider did not communicate it
+  @AllowNull(true)
+  @Column(DataType.STRING(100))
+  providerMessageId: string | null;
+
   @AllowNull(false)
   @Column
   sentAt: Date;

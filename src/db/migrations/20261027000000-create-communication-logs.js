@@ -23,6 +23,9 @@ module.exports = {
           type: { allowNull: false, type: Sequelize.STRING(100) },
           // Identifiers of related entities only, keyed by role
           metadata: { allowNull: true, type: Sequelize.JSONB },
+          // Id the provider gave to the message (Mailjet MessageID, Vonage
+          // message UUID), kept to link a row to the provider's events later
+          providerMessageId: { allowNull: true, type: Sequelize.STRING(100) },
           sentAt: { allowNull: false, type: Sequelize.DATE },
           createdAt: {
             allowNull: false,

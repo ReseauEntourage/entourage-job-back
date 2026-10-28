@@ -34,3 +34,25 @@ export const getAcceptedMessageIndexes = (
     (index) => (messages[index] as { Status?: string })?.Status === 'success'
   );
 };
+
+/**
+ * Id Mailjet gave to the `index`-th message of a send: the `MessageID` of its
+ * first recipient (`To[0]`), the one the user is addressed by. Undefined when
+ * the answer does not detail it (no body, sandbox mode, copies only...).
+ */
+export const getMailjetMessageId = (
+  sendResult: unknown,
+  index: number
+): string | undefined => {
+  const messages = (sendResult as { body?: { Messages?: unknown } } | undefined)
+    ?.body?.Messages;
+  const messageId = (
+    Array.isArray(messages)
+      ? (messages[index] as { To?: { MessageID?: number | string }[] })
+      : undefined
+  )?.To?.[0]?.MessageID;
+
+  return messageId === undefined || messageId === null
+    ? undefined
+    : String(messageId);
+};

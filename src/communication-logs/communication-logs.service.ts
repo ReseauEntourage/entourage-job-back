@@ -24,13 +24,16 @@ export class CommunicationLogsService {
     try {
       const sentAt = new Date();
       await this.communicationLogModel.bulkCreate(
-        entries.map(({ userId, channel, type, metadata }) => ({
-          userId,
-          channel,
-          type,
-          metadata: metadata ?? null,
-          sentAt,
-        }))
+        entries.map(
+          ({ userId, channel, type, metadata, providerMessageId }) => ({
+            userId,
+            channel,
+            type,
+            metadata: metadata ?? null,
+            providerMessageId: providerMessageId ?? null,
+            sentAt,
+          })
+        )
       );
     } catch (error) {
       this.logger.error(

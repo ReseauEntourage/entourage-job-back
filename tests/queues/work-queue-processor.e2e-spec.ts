@@ -159,13 +159,18 @@ describe('WorkQueueProcessor', () => {
 
   describe('mail, SMS and newsletter jobs', () => {
     it('records in the communication history the mails sent to a user', async () => {
-      const { processor, communicationLogsService } = build();
+      const { processor, mailjetService, communicationLogsService } = build();
       const mail = {
         toEmail: 'a@example.org',
         templateId: MailjetTemplates.ACCOUNT_CREATED,
         userId: 'user-1',
         metadata: { authorId: 'author-1' },
       };
+      mailjetService.sendMail.mockResolvedValue({
+        body: {
+          Messages: [{ Status: 'success', To: [{ MessageID: 123456789 }] }],
+        },
+      });
 
       await processor.processSendMail(job(Jobs.SEND_MAIL, mail));
 
@@ -175,7 +180,27 @@ describe('WorkQueueProcessor', () => {
           channel: 'email',
           type: 'ACCOUNT_CREATED',
           metadata: { authorId: 'author-1' },
+          providerMessageId: '123456789',
         },
+      ]);
+    });
+
+    it('records a mail without provider id when Mailjet does not detail it', async () => {
+      const { processor, communicationLogsService } = build();
+
+      await processor.processSendMail(
+        job(Jobs.SEND_MAIL, {
+          toEmail: 'a@example.org',
+          templateId: MailjetTemplates.ACCOUNT_CREATED,
+          userId: 'user-1',
+        })
+      );
+
+      expect(communicationLogsService.recordSent).toHaveBeenCalledWith([
+        expect.objectContaining({
+          userId: 'user-1',
+          providerMessageId: undefined,
+        }),
       ]);
     });
 
@@ -276,7 +301,8 @@ describe('WorkQueueProcessor', () => {
     });
 
     it('records in the communication history the SMS sent to a user', async () => {
-      const { processor, communicationLogsService } = build();
+      const { processor, vonageService, communicationLogsService } = build();
+      vonageService.sendSms.mockResolvedValue('vonage-uuid-1');
 
       await processor.processSendSms(
         job(Jobs.SEND_SMS, {
@@ -294,6 +320,7 @@ describe('WorkQueueProcessor', () => {
           channel: 'sms',
           type: 'UNANSWERED_CONVERSATION_REMINDER',
           metadata: { senderId: 'sender-1' },
+          providerMessageId: 'vonage-uuid-1',
         },
       ]);
     });

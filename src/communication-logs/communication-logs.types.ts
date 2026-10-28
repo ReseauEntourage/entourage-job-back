@@ -16,6 +16,8 @@ export type CommunicationMetadata = Record<string, string>;
 export interface CommunicationLogEntry {
   channel: CommunicationChannel;
   metadata?: CommunicationMetadata;
+  /** Id the provider gave to the message, when it communicated one */
+  providerMessageId?: string;
   type: string;
   userId: string;
 }

@@ -74,6 +74,7 @@ describe('CommunicationLogs', () => {
         channel: CommunicationChannels.SMS,
         type: 'UNANSWERED_CONVERSATION_REMINDER',
         metadata: { senderId: authorId },
+        providerMessageId: 'vonage-uuid-1',
       },
     ]);
 
@@ -88,6 +89,7 @@ describe('CommunicationLogs', () => {
         channel: 'email',
         type: 'ACCOUNT_CREATED',
         metadata: null,
+        providerMessageId: null,
       })
     );
     expect(rows[0].sentAt).toBeInstanceOf(Date);
@@ -96,6 +98,7 @@ describe('CommunicationLogs', () => {
         channel: 'sms',
         type: 'UNANSWERED_CONVERSATION_REMINDER',
         metadata: { senderId: authorId },
+        providerMessageId: 'vonage-uuid-1',
       })
     );
   });

@@ -9,6 +9,7 @@ import {
 import {
   getAcceptedMessageIndexes,
   getEmailCommunicationType,
+  getMailjetMessageId,
 } from 'src/communication-logs/communication-logs.utils';
 import { CompaniesService } from 'src/companies/companies.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
@@ -446,11 +447,17 @@ export class WorkQueueProcessor extends WorkerHost {
 
   async processSendSms(job: Job<SendSmsJob>) {
     const { to, text, userId, type, metadata } = job.data;
-    await this.vonageService.sendSms(to, text);
+    const messageUuid = await this.vonageService.sendSms(to, text);
 
     if (userId && type) {
       await this.communicationLogsService.recordSent([
-        { userId, channel: CommunicationChannels.SMS, type, metadata },
+        {
+          userId,
+          channel: CommunicationChannels.SMS,
+          type,
+          metadata,
+          providerMessageId: messageUuid,
+        },
       ]);
     }
 
@@ -474,6 +481,7 @@ export class WorkQueueProcessor extends WorkerHost {
               channel: CommunicationChannels.EMAIL,
               type: getEmailCommunicationType(templateId),
               metadata,
+              providerMessageId: getMailjetMessageId(sendResult, index),
             },
           ]
         : [];
