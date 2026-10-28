@@ -39,7 +39,7 @@ export class LlmMetricsService {
     model: string,
     usage: EmbedResponseUsage,
     operation: string,
-    feature: string
+    feature: AiFeature
   ): void {
     const tags = { model, provider: 'voyageai', operation, feature };
     tracer.dogstatsd.increment('ai.tokens.input', usage.totalTokens ?? 0, tags);

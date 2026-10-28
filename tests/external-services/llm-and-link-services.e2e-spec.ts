@@ -145,7 +145,12 @@ describe('LlmMetricsService', () => {
       'op',
       AiFeature.AI_ASSISTANT
     );
-    service.recordVoyageAiUsage('voyage', {} as never, 'op', 'feat');
+    service.recordVoyageAiUsage(
+      'voyage',
+      {} as never,
+      'op',
+      AiFeature.PROFILE_RECOMMENDATION
+    );
 
     expect(increment).toHaveBeenNthCalledWith(
       1,

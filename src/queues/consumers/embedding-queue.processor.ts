@@ -2,6 +2,8 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { EmbeddingBuilder } from 'src/embeddings/embedding.builder';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
+import { traceAiWorkflow } from 'src/external-services/llm-observability/llm-observability';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import {
   PusherChannels,
@@ -66,6 +68,20 @@ export class EmbeddingQueueProcessor extends WorkerHost {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     const { userId, embeddingTypes } = job.data;
 
+    return traceAiWorkflow(
+      {
+        feature: AiFeature.PROFILE_RECOMMENDATION,
+        name: 'user-profile-embedding',
+        tags: { userId },
+      },
+      async () => this.runGenerateUserProfileEmbeddings(userId, embeddingTypes)
+    );
+  }
+
+  private async runGenerateUserProfileEmbeddings(
+    userId: string,
+    embeddingTypes: UpdateUserProfileEmbeddingsJob['embeddingTypes']
+  ) {
     try {
       const user = await this.usersService.findOne(userId);
       const userProfile = await this.userProfilesService.findOneByUserId(
@@ -147,6 +163,21 @@ export class EmbeddingQueueProcessor extends WorkerHost {
     );
     const { userIds, embeddingTypes } = job.data;
 
+    return traceAiWorkflow(
+      {
+        feature: AiFeature.PROFILE_RECOMMENDATION,
+        name: 'user-profile-embedding',
+        tags: { batchSize: String(userIds.length) },
+      },
+      async () =>
+        this.runGenerateUserProfileEmbeddingsBatch(userIds, embeddingTypes)
+    );
+  }
+
+  private async runGenerateUserProfileEmbeddingsBatch(
+    userIds: string[],
+    embeddingTypes: UpdateUserProfileEmbeddingsBatchJob['embeddingTypes']
+  ) {
     // Retrieve all users and their profiles
     const usersData = await Promise.all(
       userIds.map(async (userId: string) => {
