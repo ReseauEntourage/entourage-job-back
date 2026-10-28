@@ -34,8 +34,17 @@ export class VoyageAiService {
           });
           annotateCall({
             metadata: { input: embeddingTextForTrace(data) },
+            // VoyageAI bills embeddings entirely as input tokens (no output
+            // is generated): Datadog's cost estimator needs `inputTokens` to
+            // price the span against its voyage-4-lite rate card, `totalTokens`
+            // alone is not enough.
             ...(result.usage
-              ? { metrics: { totalTokens: result.usage.totalTokens } }
+              ? {
+                  metrics: {
+                    inputTokens: result.usage.totalTokens,
+                    totalTokens: result.usage.totalTokens,
+                  },
+                }
               : {}),
           });
           return result;
@@ -95,7 +104,12 @@ export class VoyageAiService {
           annotateCall({
             metadata: { input: dataArray.map(embeddingTextForTrace) },
             ...(result.usage
-              ? { metrics: { totalTokens: result.usage.totalTokens } }
+              ? {
+                  metrics: {
+                    inputTokens: result.usage.totalTokens,
+                    totalTokens: result.usage.totalTokens,
+                  },
+                }
               : {}),
           });
           return result;

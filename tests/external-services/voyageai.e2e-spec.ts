@@ -84,7 +84,7 @@ describe('VoyageAiService', () => {
         metadata: {
           input: '[5 caractères de profil non joints à la trace]',
         },
-        metrics: { totalTokens: 12 },
+        metrics: { inputTokens: 12, totalTokens: 12 },
       });
     });
 
@@ -99,7 +99,7 @@ describe('VoyageAiService', () => {
 
       expect(annotate).toHaveBeenCalledWith(span, {
         metadata: { input: 'hello' },
-        metrics: { totalTokens: 12 },
+        metrics: { inputTokens: 12, totalTokens: 12 },
       });
     });
 
@@ -178,7 +178,7 @@ describe('VoyageAiService', () => {
             '[2 caractères de profil non joints à la trace]',
           ],
         },
-        metrics: { totalTokens: 4 },
+        metrics: { inputTokens: 4, totalTokens: 4 },
       });
     });
 
