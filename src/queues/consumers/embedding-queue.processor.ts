@@ -13,6 +13,7 @@ import {
   UpdateUserProfileEmbeddingsJob,
   UpdateUserProfileEmbeddingsBatchJob,
 } from 'src/queues/queues.types';
+import { WORKER_METRICS_OPTIONS } from 'src/queues/queues.utils';
 import { UserProfileEmbeddingsService } from 'src/user-profile-embeddings/user-profile-embeddings.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
@@ -20,6 +21,7 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 
 @Processor(Queues.EMBEDDING, {
+  metrics: WORKER_METRICS_OPTIONS,
   limiter: {
     max: 120,
     duration: 1 * 60 * 1000, // 120 jobs per minute (~240 VoyageAI RPM max, well within the 2,000 RPM quota)

@@ -1,6 +1,7 @@
 import { createLink } from '@short.io/client-node';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
 import { ShortioService } from 'src/external-services/shortio/shortio.service';
 import { Jobs } from 'src/queues/queues.types';
 import { SmsService } from 'src/sms/sms.service';
@@ -15,10 +16,12 @@ jest.mock('@short.io/client-node', () => ({
 
 const mockMessagesCreate = jest.fn();
 const mockMessagesStream = jest.fn();
+const mockPost = jest.fn();
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
     messages: { create: mockMessagesCreate, stream: mockMessagesStream },
+    post: mockPost,
   })),
 }));
 
@@ -108,7 +111,7 @@ describe('LlmMetricsService', () => {
         cache_creation_input_tokens: 2,
       } as never,
       'classify',
-      'ai_assistant'
+      AiFeature.AI_ASSISTANT
     );
 
     const tags = {
@@ -129,31 +132,10 @@ describe('LlmMetricsService', () => {
       'model-a',
       { input_tokens: 1, output_tokens: 1 } as never,
       'op',
-      'feat'
+      AiFeature.AI_ASSISTANT
     );
 
     expect(increment).toHaveBeenCalledTimes(2);
-  });
-
-  it('records the OpenAI tokens', () => {
-    service.recordOpenAiUsage(
-      'gpt',
-      { prompt_tokens: 7, completion_tokens: 4 } as never,
-      'op',
-      'feat'
-    );
-
-    expect(increment).toHaveBeenCalledWith(
-      'ai.tokens.input',
-      7,
-      expect.objectContaining({ provider: 'openai' })
-    );
-    expect(increment).toHaveBeenCalledWith(
-      'ai.tokens.output',
-      4,
-      expect.objectContaining({ provider: 'openai' })
-    );
-    expect(flush).toHaveBeenCalled();
   });
 
   it('records the VoyageAI tokens, defaulting to zero', () => {
@@ -161,7 +143,7 @@ describe('LlmMetricsService', () => {
       'voyage',
       { totalTokens: 9 } as never,
       'op',
-      'feat'
+      AiFeature.AI_ASSISTANT
     );
     service.recordVoyageAiUsage('voyage', {} as never, 'op', 'feat');
 
@@ -188,7 +170,33 @@ describe('AnthropicService', () => {
   beforeEach(() => {
     mockMessagesCreate.mockReset();
     mockMessagesStream.mockReset();
+    mockPost.mockReset();
     llmMetrics.recordAnthropicUsage.mockReset();
+  });
+
+  describe('createMessageUntraced', () => {
+    it('posts the request to the messages endpoint, not through messages.create', async () => {
+      // Datadog's automatic LLM span only wraps `messages.create`
+      mockPost.mockResolvedValue({ id: 'msg_1' });
+      const body = { model: 'm', max_tokens: 10, messages: [] } as never;
+      const signal = new AbortController().signal;
+
+      const message = await buildService().createMessageUntraced(body, {
+        signal,
+      });
+
+      expect(message).toEqual({ id: 'msg_1' });
+      expect(mockPost).toHaveBeenCalledWith('/v1/messages', { body, signal });
+      expect(mockMessagesCreate).not.toHaveBeenCalled();
+    });
+
+    it('lets the errors of the SDK through', async () => {
+      mockPost.mockRejectedValue(new Error('rate limited'));
+
+      await expect(
+        buildService().createMessageUntraced({} as never)
+      ).rejects.toThrow('rate limited');
+    });
   });
 
   it('createStream asks the SDK for a streamed answer with the system blocks', () => {
@@ -200,6 +208,80 @@ describe('AnthropicService', () => {
     expect(mockMessagesStream).toHaveBeenCalledWith(
       expect.objectContaining({ max_tokens: 4096, system, messages })
     );
+  });
+
+  describe('model of each usage', () => {
+    const envBackup = { ...process.env };
+
+    afterEach(() => {
+      process.env = { ...envBackup };
+    });
+
+    it('streams the assistant answer with the assistant model of the setting', () => {
+      mockMessagesStream.mockReturnValue('stream');
+      process.env.AI_MODEL_AI_ASSISTANT = 'claude-sonnet-5-5';
+
+      buildService().createStream([], []);
+
+      expect(mockMessagesStream).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-sonnet-5-5' })
+      );
+    });
+
+    it('streams the assistant answer with the default model without a setting', () => {
+      mockMessagesStream.mockReturnValue('stream');
+      delete process.env.AI_MODEL_AI_ASSISTANT;
+
+      buildService().createStream([], []);
+
+      expect(mockMessagesStream).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-sonnet-4-6' })
+      );
+    });
+
+    it('classifies with the classifier model of the setting by default, and records that model', async () => {
+      mockMessagesCreate.mockResolvedValue({
+        content: [{ type: 'text', text: 'NON' }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+      });
+      process.env.AI_MODEL_AI_ASSISTANT_CLASSIFIER = 'claude-haiku-5-5';
+
+      await buildService().generateText('system', 'user');
+
+      expect(mockMessagesCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-haiku-5-5' }),
+        undefined
+      );
+      expect(llmMetrics.recordAnthropicUsage).toHaveBeenCalledWith(
+        'claude-haiku-5-5',
+        expect.anything(),
+        'classify',
+        'ai_assistant'
+      );
+    });
+
+    it('calls the model given by the caller, and records that model', async () => {
+      mockMessagesCreate.mockResolvedValue({
+        content: [{ type: 'text', text: 'text' }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+      });
+      process.env.AI_MODEL_AI_ASSISTANT_CLASSIFIER = 'claude-haiku-5-5';
+
+      await buildService().generateText('system', 'user', {
+        model: 'claude-sonnet-5-5',
+      });
+
+      expect(mockMessagesCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-sonnet-5-5' }),
+        undefined
+      );
+      expect(llmMetrics.recordAnthropicUsage).toHaveBeenCalledWith(
+        'claude-sonnet-5-5',
+        expect.anything(),
+        expect.any(String),
+        expect.any(String)
+      );
+    });
   });
 
   it('generateText returns the text block and records the usage with default options', async () => {
@@ -233,7 +315,7 @@ describe('AnthropicService', () => {
       timeoutMs: 1500,
       maxTokens: 50,
       operation: 'summarize',
-      feature: 'custom',
+      feature: AiFeature.PRESENTATION_GENERATION,
     });
 
     expect(text).toBe('');
@@ -245,7 +327,7 @@ describe('AnthropicService', () => {
       expect.any(String),
       {},
       'summarize',
-      'custom'
+      AiFeature.PRESENTATION_GENERATION
     );
   });
 
@@ -255,7 +337,7 @@ describe('AnthropicService', () => {
       maxTokens: 100,
       timeoutMs: 5000,
       operation: 'generate',
-      feature: 'help_groups_title',
+      feature: AiFeature.HELP_GROUPS_TITLE,
     };
 
     it('asks for the JSON schema, disables the retries, records the usage and returns the parsed JSON', async () => {
@@ -288,6 +370,56 @@ describe('AnthropicService', () => {
         'generate',
         'help_groups_title'
       );
+    });
+
+    describe('model', () => {
+      const envBackup = { ...process.env };
+      const answer = {
+        content: [{ type: 'text', text: '{"title":"Mon titre"}' }],
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 1, output_tokens: 1 },
+      };
+
+      afterEach(() => {
+        process.env = { ...envBackup };
+      });
+
+      it('calls the model given by the caller, and records that model', async () => {
+        mockMessagesCreate.mockResolvedValue(answer);
+
+        await buildService().generateStructured('system', 'user', schema, {
+          ...options,
+          model: 'claude-haiku-5-5',
+        });
+
+        expect(mockMessagesCreate).toHaveBeenCalledWith(
+          expect.objectContaining({ model: 'claude-haiku-5-5' }),
+          expect.anything()
+        );
+        expect(llmMetrics.recordAnthropicUsage).toHaveBeenCalledWith(
+          'claude-haiku-5-5',
+          expect.anything(),
+          'generate',
+          'help_groups_title'
+        );
+      });
+
+      it('defaults to the model of the classifier setting', async () => {
+        mockMessagesCreate.mockResolvedValue(answer);
+        process.env.AI_MODEL_AI_ASSISTANT_CLASSIFIER = 'claude-haiku-5-5';
+
+        await buildService().generateStructured(
+          'system',
+          'user',
+          schema,
+          options
+        );
+
+        expect(mockMessagesCreate).toHaveBeenCalledWith(
+          expect.objectContaining({ model: 'claude-haiku-5-5' }),
+          expect.anything()
+        );
+      });
     });
 
     it('rejects an invalid JSON answer', async () => {

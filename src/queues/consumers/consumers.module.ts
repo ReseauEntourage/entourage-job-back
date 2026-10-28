@@ -4,8 +4,8 @@ import { CheckinModule } from 'src/checkin/checkin.module';
 import { CommunicationLogsModule } from 'src/communication-logs/communication-logs.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { EmbeddingsModule } from 'src/embeddings/embeddings.module';
+import { CvExtractionModule } from 'src/external-services/cv-extraction/cv-extraction.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
-import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
@@ -30,6 +30,7 @@ import { CronTasksSlackReporterService } from './cron-tasks/cron-tasks-slack-rep
 import { CronTasksProcessor } from './cron-tasks/cron-tasks.processor';
 import { EmbeddingQueueProcessor } from './embedding-queue.processor';
 import { ProfileGeneratorProcessor } from './profile-generator.processor';
+import { QueuesMetricsRecorderService } from './queues-metrics-recorder.service';
 import { WorkQueueProcessor } from './work-queue.processor';
 
 @Module({
@@ -40,7 +41,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     BullModule.registerQueue(getEmbeddingQueueOptions()),
     MailjetModule,
     VonageModule,
-    OpenAiModule,
+    CvExtractionModule,
     SalesforceModule,
     ProfileGenerationModule,
     CompaniesModule,
@@ -66,6 +67,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     CronTasksSlackReporterService,
     CronTasksProcessor,
     EmbeddingQueueProcessor,
+    QueuesMetricsRecorderService,
   ],
   exports: [
     WorkQueueProcessor,

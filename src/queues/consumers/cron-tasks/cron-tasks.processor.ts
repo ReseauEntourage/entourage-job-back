@@ -28,6 +28,7 @@ import {
   ManualLinkSalesforceContactJob,
   Queues,
 } from 'src/queues/queues.types';
+import { WORKER_METRICS_OPTIONS } from 'src/queues/queues.utils';
 import { RecruitementAlertsService } from 'src/recruitement-alerts/recruitement-alerts.service';
 import { tracer } from 'src/tracer';
 import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
@@ -45,7 +46,7 @@ import { getZoneNameFromDepartment } from 'src/utils/misc';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
-@Processor(Queues.CRON_TASKS)
+@Processor(Queues.CRON_TASKS, { metrics: WORKER_METRICS_OPTIONS })
 export class CronTasksProcessor extends WorkerHost {
   private readonly logger = new Logger(CronTasksProcessor.name);
 

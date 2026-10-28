@@ -118,7 +118,7 @@ src/<domain>/
 
 Le domaine **utilisateur** est volontairement éclaté en modules à responsabilité unique plutôt qu'en un gros `UsersModule` — `users`, `users-creation`, `users-deletion`, `users-stats`, `user-profiles`, et une famille `user-profile-*` (experiences, formations, skills, languages, interests, media, embeddings, recommendations, moderation, analytics, contracts, nudges, shares, sector-occupations…).
 
-Les intégrations tierces sont regroupées sous [src/external-services/](src/external-services/) : `mailjet`, `salesforce`, `slack`, `vonage`, `pusher`, `openai`, `anthropic`, `voyageai`, `linkedin`, `shortio`, `aws`, plus l'observabilité LLM (`ai-observability`, `llm-metrics`).
+Les intégrations tierces sont regroupées sous [src/external-services/](src/external-services/) : `mailjet`, `salesforce`, `slack`, `vonage`, `pusher`, `anthropic`, `cv-extraction`, `voyageai`, `linkedin`, `shortio`, `aws`, plus l'observabilité LLM (`ai-observability`, `llm-metrics`).
 
 À côté des dossiers de domaine, [src/](src/) contient :
 
@@ -257,12 +257,12 @@ Toutes les variables sont listées dans [.env.dist](.env.dist), à copier en `.e
 | **Stockage AWS** | `AWSS3_*`, `CDN_ID`, `CV_PDF_GENERATION_AWS_URL` |
 | **Mail (Mailjet)** | `MAILJET_*` (dont `MAILJET_RELAY_URL` et `MAILJET_RELAY_SECRET` : relais Lambda optionnel, appel direct à Mailjet s'il est absent), et les `STAFF_CONTACT_*` par territoire |
 | **SMS / temps réel** | `VONAGE_API_*`, `PUSHER_*` |
-| **IA** | `OPENAI_API_KEY`, `OPENAI_MAX_COMPLETION_TOKENS`, `ANTHROPIC_API_KEY`, `VOYAGEAI_API_KEY` |
+| **IA** | `ANTHROPIC_API_KEY`, `CV_EXTRACTION_MAX_TOKENS`, `VOYAGEAI_API_KEY` |
 | **CRM** | `ENABLE_SF`, `SALESFORCE_*`, `SF_*` |
 | **Divers** | `SLACK_*`, `SHORTIO_*`, `LINKEDIN_*`, `WHATSAPP_*_URL_*`, `TOOLBOX_*_URL` |
 | **Observabilité** | `DD_*` (Datadog APM via [src/tracer.ts](src/tracer.ts), importé en tout premier dans `main.ts` et `worker.ts`) |
 
-`ENABLE_SF=false` et `OPENAI_API_KEY` vide permettent de travailler en local sans consommer les intégrations payantes.
+`ENABLE_SF=false` et `ANTHROPIC_API_KEY` vide permettent de travailler en local sans consommer les intégrations payantes.
 
 Les territoires couverts (`ZoneName`) structurent une partie de la configuration : Paris, Lyon, Lille, Lorient, Rennes, Sud-Ouest, et hors-zone (`HZ`).
 

@@ -1,3 +1,5 @@
+import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
+
 /**
  * Prompt configuration of the title proposed for a help group discussion,
  * from the message written by the member (RG-8.10: the title speaks like the
@@ -11,14 +13,13 @@
 export const HELP_GROUP_TITLE_MAX_LENGTH = 120;
 
 export const HELP_GROUP_TITLE_CONFIG = {
-  model: 'claude-haiku-4-5-20251001',
   // A 120 characters French title fits in ~40 tokens, the JSON envelope of the
   // structured output adds ~20 more
   maxTokens: 100,
   // The proposal never blocks the publication: past this budget, the member
   // writes their title
   timeoutMs: 5000,
-  feature: 'help_groups_title',
+  feature: AiFeature.HELP_GROUPS_TITLE,
   operation: 'generate',
 };
 

@@ -32,7 +32,7 @@ graph LR
     end
 
     subgraph AI["IA"]
-        OpenAI ~~~ VoyageAI
+        Anthropic ~~~ VoyageAI
     end
 
     subgraph Externes["Services externes"]
@@ -122,7 +122,7 @@ graph TB
     subgraph Worker["Background Worker — NestJS 9 / Node 20"]
         subgraph Queues["Processeurs BullMQ"]
             WPROC["WorkQueueProcessor\n(queue: work)\nmail · SF sync · onboarding\nmessaging · newsletter"]
-            PPROC["ProfileGeneratorProcessor\n(queue: profile-generation)\nPDF→images→OpenAI→profil"]
+            PPROC["ProfileGeneratorProcessor\n(queue: profile-generation)\nPDF→images→Claude→profil"]
             EPROC["EmbeddingQueueProcessor\n(queue: embedding)\nVoyageAI vectors\n(1 job/min — rate limit)"]
             CPROC["CronTasksProcessor\n(queue: cron-tasks)\ntâches planifiées"]
         end
@@ -150,7 +150,7 @@ graph TB
     subgraph ExtSvc["Services externes"]
         SF["Salesforce CRM\n(OAuth2 / jsforce)"]
         MJ["Mailjet\n(emails transactionnels + newsletter)\nvia la Lambda relais si MAILJET_RELAY_URL"]
-        OAI["OpenAI\n(vision + chat — extraction CV)"]
+        CLAUDE["Anthropic Claude\n(vision + chat — extraction CV, assistant)"]
         VAI["VoyageAI\n(embeddings texte)"]
         PUSHER["Pusher\n(push temps réel)"]
         SLACK["Slack\n(alertes internes)"]
@@ -177,7 +177,7 @@ graph TB
     WPROC -->|"envoi email"| MJ
     WPROC -->|"sync CRM"| SF
     WPROC -->|"abonnement newsletter"| MJ
-    PPROC -->|"extraction CV"| OAI
+    PPROC -->|"extraction CV"| CLAUDE
     PPROC -->|"téléchargement PDF"| S3
     PPROC -->|"notification fin traitement"| PUSHER
     EPROC -->|"génération embeddings"| VAI
@@ -201,7 +201,7 @@ graph TB
 | `work`               | `on_onboarding_completed`                              | `WorkQueueProcessor`        | Post-onboarding : envoi message de bienvenue staff + mail recommandations                                        |
 | `work`               | `send_staff_messaging_message`                         | `WorkQueueProcessor`        | Envoie un message de messagerie interne depuis un contact staff                                                  |
 | `work`               | `bulk_send_staff_messaging_message`                    | `WorkQueueProcessor`        | Envoi en masse de messages staff (décomposé en jobs individuels)                                                 |
-| `profile-generation` | `generate_profile_from_pdf`                            | `ProfileGeneratorProcessor` | Télécharge le PDF depuis S3, convertit en images, extrait le CV via OpenAI Vision, hydrate le profil utilisateur |
+| `profile-generation` | `generate_profile_from_pdf`                            | `ProfileGeneratorProcessor` | Télécharge le PDF depuis S3, convertit en images, extrait le CV via Claude (vision), hydrate le profil utilisateur |
 | `embedding`          | `update_user_profile_embeddings`                       | `EmbeddingQueueProcessor`   | Calcule les vecteurs VoyageAI pour un profil utilisateur (1 job/min)                                             |
 | `embedding`          | `update_user_profile_embeddings_batch`                 | `EmbeddingQueueProcessor`   | Calcule les vecteurs VoyageAI pour un lot d'utilisateurs                                                         |
 | `cron-tasks`         | `delete_inactive_users`                                | `CronTasksProcessor`        | Supprime les utilisateurs inactifs depuis trop longtemps                                                         |
@@ -240,7 +240,7 @@ graph TB
 | ------------------ | ------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------- |
 | **AWS S3**         | Stockage de fichiers (CVs, logos, médias)               | Access Key / Secret Key (env)       | `MediasModule`, `ExternalCvsModule`, `ProfileGeneratorProcessor` |
 | **AWS CloudFront** | CDN et invalidation de cache                            | Clé privée CloudFront (env)         | `MediasModule`                                                   |
-| **OpenAI**         | Extraction de CV par vision (PDF → données structurées) | API Key (env)                       | `ProfileGeneratorProcessor`, `ReadDocumentsModule`               |
+| **Anthropic**      | Extraction de CV par vision (PDF → données structurées), assistant IA | API Key (env)                       | `ProfileGeneratorProcessor`, `AiAssistantModule`                 |
 | **VoyageAI**       | Génération d'embeddings texte pour le matching          | API Key (env)                       | `EmbeddingQueueProcessor`, `EmbeddingsModule`                    |
 | **Salesforce**     | CRM — synchronisation utilisateurs et entreprises       | OAuth2 / jsforce (env)              | `WorkQueueProcessor`, `SalesforceModule`                         |
 | **Mailjet**        | Envoi d'emails transactionnels par template (via la Lambda relais `mailjet-relay-pro` si `MAILJET_RELAY_URL` est défini, appel direct sinon) | API Key + Secret (env) ; `MAILJET_RELAY_SECRET` pour le relais | `WorkQueueProcessor`, `MailsModule`                              |
@@ -263,7 +263,7 @@ graph TB
 - **Queue engine** : BullMQ 5 — 4 queues nommées (`work`, `profile-generation`, `embedding`, `cron-tasks`) ; Redis comme backing store
 - **Priorités de queue** : `HIGH=1`, `NORMAL=10`, `LOW=100` (plus la valeur est basse, plus la priorité est haute)
 - **Cron** : `@nestjs/schedule` (node-cron), tourne uniquement dans le processus Worker
-- **IA** : OpenAI SDK v4 (vision + chat), VoyageAI SDK — traitements asynchrones via queues dédiées
+- **IA** : Anthropic SDK (vision + chat), VoyageAI SDK — traitements asynchrones via queues dédiées
 - **Monitoring** : Datadog APM (`dd-trace`) initialisé dans `src/tracer.ts`
 - **Auth** : JWT (passport-jwt) + stratégie locale ; Bull Board protégé par Basic Auth si `QUEUES_ADMIN_PASSWORD` est défini
 - **Rate limiting** : ThrottlerGuard global — 100 requêtes / 60 s

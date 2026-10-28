@@ -823,7 +823,7 @@ describe('WorkQueueProcessor', () => {
       expect(result).toContain('staff@entourage.social');
     });
 
-    it('fails when the addressee does not exist', async () => {
+    it('skips the message without failing when the addressee does not exist anymore', async () => {
       const { processor, usersService, messagingService } = build();
       usersService.findOneByMailWithRelations.mockResolvedValue(null);
 
@@ -831,7 +831,7 @@ describe('WorkQueueProcessor', () => {
         processor.processSendStaffMessagingMessage(
           job(Jobs.SEND_STAFF_MESSAGING_MESSAGE, data)
         )
-      ).rejects.toThrow('Addressee with email user@example.org not found');
+      ).resolves.toContain('addressee with email user@example.org not found');
       expect(
         messagingService.createMessageWithConversation
       ).not.toHaveBeenCalled();
