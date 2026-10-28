@@ -288,6 +288,7 @@ export class GamificationService {
               user: {
                 firstName: user.firstName,
                 email: user.email,
+                id: user.id,
                 zone: user.zone,
                 staffContact: user.staffContact,
               },
@@ -378,6 +379,7 @@ export class GamificationService {
           user: {
             firstName: user.firstName,
             email: user.email,
+            id: user.id,
             zone: user.zone,
             staffContact: user.staffContact,
           },
@@ -510,6 +512,7 @@ export class GamificationService {
           {
             email: user.email,
             firstName: user.firstName,
+            id: user.id,
             zone: user.zone,
             staffContact: user.staffContact,
           },

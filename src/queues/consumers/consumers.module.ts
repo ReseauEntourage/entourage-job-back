@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { CheckinModule } from 'src/checkin/checkin.module';
+import { CommunicationLogsModule } from 'src/communication-logs/communication-logs.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { EmbeddingsModule } from 'src/embeddings/embeddings.module';
 import { CvExtractionModule } from 'src/external-services/cv-extraction/cv-extraction.module';
@@ -57,6 +58,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     CheckinModule,
     HelpGroupsModule,
     NotificationsModule,
+    CommunicationLogsModule,
   ],
   providers: [
     WorkQueueProcessor,

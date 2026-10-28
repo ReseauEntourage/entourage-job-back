@@ -1921,13 +1921,15 @@ export class UsersService {
     recipientPhone: string,
     recipientRole: NormalUserRole,
     senderFirstName: string,
-    senderId: string
+    senderId: string,
+    recipientId: string
   ) {
     return this.smsService.sendUnansweredConversationSms(
       recipientPhone,
       recipientRole,
       senderFirstName,
-      senderId
+      senderId,
+      recipientId
     );
   }
 
@@ -1981,6 +1983,7 @@ export class UsersService {
     alertId: string;
     alertName: string;
     companyAdminEmail: string;
+    companyAdminId: string;
     firstName: string;
     newCandidatesCount: number;
     staffContact: User['staffContact'];

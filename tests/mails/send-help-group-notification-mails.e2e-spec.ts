@@ -65,6 +65,7 @@ describe('MailsService - help groups notifications', () => {
         Jobs.SEND_MAIL,
         {
           toEmail: 'julien@example.com',
+          userId: 'user-id',
           subject,
           templateId: MailjetTemplates.HELP_GROUP_NOTIFICATION,
           variables: expect.objectContaining({
@@ -128,6 +129,7 @@ describe('MailsService - help groups notifications', () => {
     });
     expect(queuesService.addToWorkQueue).toHaveBeenCalledWith(Jobs.SEND_MAIL, {
       toEmail: 'julien@example.com',
+      userId: 'user-id',
       subject: 'Nouvelles discussions dans vos groupes',
       templateId: MailjetTemplates.HELP_GROUPS_DAILY_DISCUSSIONS,
       variables: expect.objectContaining({

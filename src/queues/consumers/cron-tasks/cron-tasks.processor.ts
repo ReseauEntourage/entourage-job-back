@@ -873,6 +873,7 @@ export class CronTasksProcessor extends WorkerHost {
       alertId: string;
       alertName: string;
       companyAdminEmail: string;
+      companyAdminId: string;
       firstName: string;
       newCandidatesCount: number;
       staffContact: User['staffContact'];
@@ -908,6 +909,7 @@ export class CronTasksProcessor extends WorkerHost {
         alertName: alert.name,
         newCandidatesCount: newMatchingUsers.length,
         companyAdminEmail: adminUser.email,
+        companyAdminId: adminUser.id,
         firstName: adminUser.firstName,
         zone: getZoneNameFromDepartment(adminUser.userProfile?.department),
         staffContact: adminUser.staffContact,
@@ -1866,7 +1868,8 @@ export class CronTasksProcessor extends WorkerHost {
           row.recipientPhone,
           recipientRole,
           row.senderFirstName,
-          row.senderId
+          row.senderId,
+          row.recipientId
         );
       })
     );
