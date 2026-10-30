@@ -145,7 +145,12 @@ describe('LlmMetricsService', () => {
       'op',
       AiFeature.AI_ASSISTANT
     );
-    service.recordVoyageAiUsage('voyage', {} as never, 'op', 'feat');
+    service.recordVoyageAiUsage(
+      'voyage',
+      {} as never,
+      'op',
+      AiFeature.PROFILE_RECOMMENDATION
+    );
 
     expect(increment).toHaveBeenNthCalledWith(
       1,
@@ -503,7 +508,8 @@ describe('SmsService', () => {
         '+33600000000',
         recipientRole,
         'Alice',
-        'sender-1'
+        'sender-1',
+        'recipient-1'
       );
 
       expect(result).toEqual({ id: 'job-1' });
@@ -513,6 +519,9 @@ describe('SmsService', () => {
       expect(queuesService.addToWorkQueue).toHaveBeenCalledWith(Jobs.SEND_SMS, {
         to: '+33600000000',
         text: `Alice, ${senderRole} sur Entourage Pro, vous a envoyé un message. Répondre à son message : https://s.invalid/x`,
+        userId: 'recipient-1',
+        type: 'UNANSWERED_CONVERSATION_REMINDER',
+        metadata: { senderId: 'sender-1' },
       });
       expect(tracer.dogstatsd.increment).toHaveBeenCalledWith(
         'sms.reminder.sent',
@@ -534,7 +543,8 @@ describe('SmsService', () => {
         '+33600000000',
         UserRoles.COACH,
         'Alice',
-        'sender-1'
+        'sender-1',
+        'recipient-1'
       )
     ).rejects.toThrow('short.io down');
     expect(queuesService.addToWorkQueue).not.toHaveBeenCalled();

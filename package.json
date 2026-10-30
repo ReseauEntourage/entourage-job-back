@@ -1,6 +1,6 @@
 {
   "name": "entourage-pro-backend",
-  "version": "2.35.2",
+  "version": "2.35.3",
   "license": "ISC",
   "engines": {
     "node": "24.x"
@@ -45,9 +45,10 @@
     "@aws-sdk/client-s3": "^3.142.0",
     "@aws-sdk/lib-storage": "^3.180.0",
     "@aws-sdk/s3-request-presigner": "^3.142.0",
-    "@bull-board/api": "^8.1.2",
-    "@bull-board/express": "^8.1.2",
-    "@bull-board/nestjs": "^8.1.2",
+    "@bull-board/api": "^9.10.5",
+    "@bull-board/express": "^9.10.5",
+    "@bull-board/metrics": "9.10.5",
+    "@bull-board/nestjs": "^9.10.5",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",
@@ -80,7 +81,7 @@
     "lodash": "^4.17.21",
     "moment": "^2.31.0",
     "moment-timezone": "^0.5.43",
-    "multer": "2.4.0",
+    "multer": "2.5.0",
     "node-mailjet": "^6.0.4",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.0",

@@ -28,6 +28,7 @@ export class MailsService {
   async sendPasswordResetLinkMail(user: User, token: string) {
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       templateId: MailjetTemplates.PASSWORD_RESET,
       variables: {
@@ -49,6 +50,7 @@ export class MailsService {
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: staffContactEmail,
       templateId: MailjetTemplates.ACCOUNT_CREATED,
       variables: {
@@ -70,6 +72,7 @@ export class MailsService {
       );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
+        userId: user.id,
         replyTo: user.staffContact.email,
         templateId: MailjetTemplates.WELCOME_COACH_COMPANY_ADMIN,
         variables: {
@@ -91,6 +94,7 @@ export class MailsService {
       );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
+        userId: user.id,
         replyTo: user.staffContact.email,
         templateId: MailjetTemplates.WELCOME_REFERER,
         variables: {
@@ -110,6 +114,7 @@ export class MailsService {
       );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
+        userId: user.id,
         replyTo: user.staffContact.email,
         templateId: MailjetTemplates.WELCOME_CANDIDATE_COACH,
         variables: {
@@ -134,11 +139,13 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
       variables: {
         firstName: user.firstName,
         toEmail: user.email,
+        userId: user.id,
         token,
         zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
@@ -153,6 +160,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.ONBOARDING_J1_BAO,
       variables: {
         firstName: user.firstName,
@@ -170,6 +178,7 @@ export class MailsService {
     const roleString = getRoleString(user);
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.ONBOARDING_J4_CONTACT_ADVICE,
       variables: {
         subject:
@@ -234,6 +243,8 @@ export class MailsService {
 
         return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
           toEmail: addressee.email,
+          userId: addressee.id,
+          metadata: { authorId: message.authorId },
           templateId: MailjetTemplates.MESSAGING_MESSAGE,
           variables: {
             // Sender
@@ -279,6 +290,7 @@ export class MailsService {
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addressee.email,
+      userId: addressee.id,
       replyTo: addressee.staffContact.email,
       templateId: MailjetTemplates.MAILER_CONVERSATION_CHECKIN_INVITATION,
       variables: {
@@ -310,6 +322,7 @@ export class MailsService {
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addressee.email,
+      userId: addressee.id,
       replyTo: addressee.staffContact.email,
       templateId: MailjetTemplates.MAILER_CONVERSATION_CHECKIN_RELANCE,
       variables: {
@@ -351,6 +364,7 @@ export class MailsService {
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addressee.email,
+      userId: addressee.id,
       subject,
       templateId: MailjetTemplates.HELP_GROUP_NOTIFICATION,
       variables: {
@@ -387,6 +401,7 @@ export class MailsService {
     // Mailjet rejects a variable set to null (400): a null value is left out
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addressee.email,
+      userId: addressee.id,
       subject,
       templateId: MailjetTemplates.HELP_GROUPS_DAILY_DISCUSSIONS,
       variables: {
@@ -423,6 +438,7 @@ export class MailsService {
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addressee.email,
+      userId: addressee.id,
       replyTo: addressee.staffContact.email,
       templateId: MailjetTemplates.UNVERIFIED_ACCOUNT_RELAUNCH,
       variables: {
@@ -455,6 +471,7 @@ export class MailsService {
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addressee.email,
+      userId: addressee.id,
       replyTo: addressee.staffContact.email,
       templateId: MailjetTemplates.MAILER_CONVERSATION_CHECKIN_NOTE,
       variables: {
@@ -477,6 +494,7 @@ export class MailsService {
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: candidate.email,
+      userId: candidate.id,
       templateId: MailjetTemplates.REFERED_CANDIDATE_FINALIZE_ACCOUNT,
       variables: {
         id: candidate.id,
@@ -505,6 +523,8 @@ export class MailsService {
         to: candidate.referer.email,
         bcc: staffContactEmail,
       },
+      userId: candidate.referer.id,
+      metadata: { candidateId: candidate.id },
       replyTo: staffContactEmail,
       templateId: MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT,
       variables: {
@@ -540,6 +560,7 @@ export class MailsService {
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.USER_ACCOUNT_DELETED,
       variables: { role: getRoleString(user) },
     });
@@ -587,6 +608,7 @@ export class MailsService {
     const promises = companyAdmins.map((admin) => {
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: admin.email,
+        userId: admin.id,
         templateId: MailjetTemplates.COMPANY_INVITATION_USED,
         variables: {
           createdUserFirstName: createdUser.firstName,
@@ -607,6 +629,7 @@ export class MailsService {
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.ELEARNING_ALL_UNITS_COMPLETED,
       variables: {
         firstName: user.firstName,
@@ -626,6 +649,7 @@ export class MailsService {
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.ELEARNING_COMPLETION_REMINDER,
       variables: {
         staffContact: user.staffContact,
@@ -645,6 +669,7 @@ export class MailsService {
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.ONBOARDING_REMINDER,
       variables: {
         firstName: user.firstName,
@@ -670,6 +695,7 @@ export class MailsService {
       );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.ONBOARDING_COMPLETED,
       variables: {
         firstName: user.firstName,
@@ -690,6 +716,7 @@ export class MailsService {
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.NOT_COMPLETED_PROFILE_REMINDER,
       variables: {
         firstName: user.firstName,
@@ -717,6 +744,7 @@ export class MailsService {
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.NO_RESPONSE_TO_FIRST_MESSAGE,
       variables: {
         firstName: user.firstName,
@@ -748,6 +776,7 @@ export class MailsService {
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       subject:
         user.role === UserRoles.CANDIDATE
           ? "Besoin d'un coup de pouce ? Voici 3 coachs prêts à vous aider"
@@ -773,6 +802,7 @@ export class MailsService {
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.AUTO_SET_UNAVAILABLE,
       variables: {
         firstName: user.firstName,
@@ -800,6 +830,7 @@ export class MailsService {
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: messageAuthor.email,
+      userId: messageAuthor.id,
       templateId: MailjetTemplates.MAILER_UNAVAILABLE_SENDER_NOTIFICATION,
       variables: {
         // Sender (the recipient of this mail — the message author)
@@ -825,6 +856,7 @@ export class MailsService {
     );
     return await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: coach.email,
+      userId: coach.id,
       replyTo: coach.staffContact.email,
       templateId: MailjetTemplates.MAILER_LINKEDIN_SHARE_PROFILE,
       variables: {
@@ -845,6 +877,7 @@ export class MailsService {
     );
     return await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       templateId: MailjetTemplates.FOLLOW_UP_MUTUALLY_REPLIED_CONVERSATION,
       variables: {
@@ -929,6 +962,7 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
+      id: string;
       staffContact: InternalStaffContact;
       zone: ZoneName | null;
     },
@@ -952,6 +986,7 @@ export class MailsService {
     const ctaUrl = `https://www.linkedin.com/profile/add?${ctaUrlParams.toString()}`;
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT,
       variables: {
         FirstName: user.firstName,
@@ -970,6 +1005,7 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
+      id: string;
       staffContact: InternalStaffContact;
       zone: ZoneName | null;
     },
@@ -985,6 +1021,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT_REMINDER,
       variables: {
         FirstName: user.firstName,
@@ -1003,6 +1040,7 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
+      id: string;
       staffContact: InternalStaffContact;
       zone: ZoneName | null;
     },
@@ -1013,6 +1051,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT_EXPIRED,
       variables: {
         FirstName: user.firstName,
@@ -1031,6 +1070,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       templateId: MailjetTemplates.MAILER_CHURN_USERS_FEEDBACK,
       variables: {
@@ -1049,6 +1089,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       templateId: MailjetTemplates.MAILER_WARN_ACCOUNT_DELETION,
       variables: {
@@ -1064,6 +1105,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       templateId: MailjetTemplates.MAILER_INACTIVE_REFERERS,
       variables: {
@@ -1088,6 +1130,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: refererUser.email,
+      userId: refererUser.id,
       replyTo: refererUser.staffContact.email,
       templateId: MailjetTemplates.MAILER_INACTIVE_REFERED_CANDIDATE,
       variables: {
@@ -1111,6 +1154,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       templateId: MailjetTemplates.MAILER_COMMITTED_USERS_FEEDBACK,
       variables: {
@@ -1135,6 +1179,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       subject: getUnansweredConversationsSubject(
         days,
@@ -1161,6 +1206,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      userId: user.id,
       replyTo: user.staffContact.email,
       subject: 'Une petite pause ?',
       templateId: MailjetTemplates.MAILER_UNAVAILABLE_USER,
@@ -1181,6 +1227,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: adminUser.email,
+      userId: adminUser.id,
       replyTo: adminUser.staffContact.email,
       templateId: MailjetTemplates.MAILER_COMPANY_NO_ALERTS_REMINDER,
       variables: {
@@ -1199,6 +1246,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: adminUser.email,
+      userId: adminUser.id,
       replyTo: adminUser.staffContact.email,
       templateId: MailjetTemplates.MAILER_REMIND_COMPANY_INVITATION,
       variables: {
@@ -1220,6 +1268,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: adminUser.email,
+      userId: adminUser.id,
       replyTo: adminUser.staffContact.email,
       templateId: MailjetTemplates.MAILER_INACTIVE_COLLABORATORS,
       variables: {
@@ -1239,6 +1288,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: adminUser.email,
+      userId: adminUser.id,
       replyTo: adminUser.staffContact.email,
       templateId: MailjetTemplates.MAILER_NOT_COMPLETED_COMPANY,
       variables: {
@@ -1261,6 +1311,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: adminUser.email,
+      userId: adminUser.id,
       replyTo: adminUser.staffContact.email,
       templateId: MailjetTemplates.MAILER_FOLLOW_COLLAB_COMPANY,
       variables: {
@@ -1279,6 +1330,7 @@ export class MailsService {
     alertId: string;
     alertName: string;
     companyAdminEmail: string;
+    companyAdminId: string;
     firstName: string;
     newCandidatesCount: number;
     staffContact: User['staffContact'];
@@ -1289,6 +1341,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: alert.companyAdminEmail,
+      userId: alert.companyAdminId,
       replyTo: alert.staffContact?.email,
       templateId: MailjetTemplates.MAILER_RECRUITMENT_ALERT,
       variables: {

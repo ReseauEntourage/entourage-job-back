@@ -4,11 +4,26 @@ import {
 } from 'src/external-services/pusher/pusher.types';
 import { EmbeddingQueueProcessor } from 'src/queues/consumers/embedding-queue.processor';
 import { Jobs } from 'src/queues/queues.types';
+import { tracer } from 'src/tracer';
+
+// Pure unit tests (no database, no network): the Datadog tracer is mocked.
+jest.mock('src/tracer', () => ({
+  tracer: { llmobs: { trace: jest.fn(), annotate: jest.fn() } },
+}));
+
+const span = { name: 'workflow-span' };
+const trace = tracer.llmobs.trace as jest.Mock;
+const annotate = tracer.llmobs.annotate as jest.Mock;
 
 const job = <T>(name: string, data: T) =>
   ({ id: 'job-1', name, data }) as never;
 
 describe('EmbeddingQueueProcessor', () => {
+  beforeEach(() => {
+    trace.mockReset().mockImplementation((_options, fn) => fn(span));
+    annotate.mockReset();
+  });
+
   const build = () => {
     const usersService = {
       findOne: jest
@@ -145,6 +160,17 @@ describe('EmbeddingQueueProcessor', () => {
       expect(result).toBe(
         'Embeddings updated for user u1 with embedding types: profile, needs'
       );
+      expect(trace).toHaveBeenCalledWith(
+        { kind: 'workflow', name: 'user-profile-embedding' },
+        expect.any(Function)
+      );
+      expect(annotate).toHaveBeenCalledWith(span, {
+        tags: {
+          userId: 'u1',
+          feature: 'profile_recommendation',
+          outcome: 'success',
+        },
+      });
     });
 
     it.each([
@@ -211,6 +237,13 @@ describe('EmbeddingQueueProcessor', () => {
         PusherEvents.EMBEDDING_READY,
         { success: false }
       );
+      expect(annotate).toHaveBeenCalledWith(span, {
+        tags: {
+          userId: 'u1',
+          feature: 'profile_recommendation',
+          outcome: 'error',
+        },
+      });
     });
 
     it('still reports the original error when the cleanup itself fails', async () => {
@@ -268,6 +301,17 @@ describe('EmbeddingQueueProcessor', () => {
       expect(result).toBe(
         'Batch completed: 2 embeddings updated for 2 users. Invalid users: 0'
       );
+      expect(trace).toHaveBeenCalledWith(
+        { kind: 'workflow', name: 'user-profile-embedding' },
+        expect.any(Function)
+      );
+      expect(annotate).toHaveBeenCalledWith(span, {
+        tags: {
+          batchSize: '2',
+          feature: 'profile_recommendation',
+          outcome: 'success',
+        },
+      });
     });
 
     it('makes one VoyageAI call per embedding type', async () => {
@@ -334,6 +378,13 @@ describe('EmbeddingQueueProcessor', () => {
         'needs',
         '[1]'
       );
+      expect(annotate).toHaveBeenCalledWith(span, {
+        tags: {
+          batchSize: '1',
+          feature: 'profile_recommendation',
+          outcome: 'error',
+        },
+      });
     });
 
     it('fails the job and names the users whose embedding could not be saved', async () => {

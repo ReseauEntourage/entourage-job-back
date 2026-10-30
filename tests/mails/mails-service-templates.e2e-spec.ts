@@ -279,6 +279,7 @@ describe('MailsService (mail templates)', () => {
 
         const mail = lastMail(queuesService);
         expect(mail.toEmail).toBe(user.email);
+        expect(mail.userId).toBe(user.id);
         expect(mail.templateId).toBe(template);
         expect(mail.variables).toEqual(
           expect.objectContaining(variables(user))
@@ -429,6 +430,7 @@ describe('MailsService (mail templates)', () => {
 
       const mail = lastMail(queuesService);
       expect(mail.toEmail).toBe('contact@example.org');
+      expect(mail.userId).toBeUndefined();
       expect(mail.templateId).toBe(MailjetTemplates.CONTACT_FORM);
       expect(mail.variables).toEqual(
         expect.objectContaining({
@@ -478,6 +480,9 @@ describe('MailsService (mail templates)', () => {
         ([, mail]) => mail
       );
       expect(mails[0].toEmail).toBe('a1@example.org');
+      expect(mails[0].userId).toBe('a1');
+      expect(mails[0].metadata).toEqual({ authorId: 'author-1' });
+      expect(mails[1].userId).toBe('a2');
       expect(mails[0].templateId).toBe(MailjetTemplates.MESSAGING_MESSAGE);
       expect(mails[0].variables).toEqual(
         expect.objectContaining({
@@ -674,6 +679,8 @@ describe('MailsService (mail templates)', () => {
         to: 'ref@example.org',
         bcc: STAFF_CONTACT.email,
       });
+      expect(mail.userId).toBe('ref-1');
+      expect(mail.metadata).toEqual({ candidateId: candidate.id });
       expect(mail.templateId).toBe(
         MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT
       );
@@ -700,6 +707,8 @@ describe('MailsService (mail templates)', () => {
 
       const mail = lastMail(queuesService);
       expect(mail.toEmail).toBe(STAFF_CONTACT.email);
+      // The recipient is the staff mailbox, not a user
+      expect(mail.userId).toBeUndefined();
       expect(mail.templateId).toBe(
         MailjetTemplates.ADMIN_NEW_REFERER_NOTIFICATION
       );
@@ -722,6 +731,8 @@ describe('MailsService (mail templates)', () => {
 
       const mail = lastMail(queuesService);
       expect(mail.toEmail).toBe('invited@example.org');
+      // The invited collaborator is not a user yet
+      expect(mail.userId).toBeUndefined();
       expect(mail.templateId).toBe(
         MailjetTemplates.COMPANY_COLLABORATORS_INVITATION
       );
@@ -763,6 +774,7 @@ describe('MailsService (mail templates)', () => {
         alertId: 'alert-1',
         alertName: 'Cooks',
         companyAdminEmail: 'admin@example.org',
+        companyAdminId: 'admin-id',
         firstName: 'Ad',
         newCandidatesCount: 4,
         staffContact: undefined,
@@ -771,6 +783,7 @@ describe('MailsService (mail templates)', () => {
 
       const mail = lastMail(queuesService);
       expect(mail.toEmail).toBe('admin@example.org');
+      expect(mail.userId).toBe('admin-id');
       expect(mail.replyTo).toBeUndefined();
       expect(mail.templateId).toBe(MailjetTemplates.MAILER_RECRUITMENT_ALERT);
       expect(mail.variables).toEqual(
@@ -1088,6 +1101,7 @@ describe('MailsService (mail templates)', () => {
     const achievementUser = {
       email: 'coach@example.org',
       firstName: 'Coach',
+      id: 'user-1',
       staffContact: STAFF_CONTACT,
       zone: ZoneName.IDF,
     };

@@ -1,3 +1,4 @@
+import { MailjetTemplates } from 'src/external-services/mailjet/mailjet.types';
 import { WorkQueueProcessor } from 'src/queues/consumers/work-queue.processor';
 import { Jobs } from 'src/queues/queues.types';
 
@@ -53,6 +54,9 @@ describe('WorkQueueProcessor', () => {
         .fn()
         .mockResolvedValue('help group mail sent'),
     };
+    const communicationLogsService = {
+      recordSent: jest.fn().mockResolvedValue(undefined),
+    };
 
     const processor = new WorkQueueProcessor(
       workQueue as never,
@@ -65,7 +69,8 @@ describe('WorkQueueProcessor', () => {
       messagingService as never,
       userProfileRecommendationsService as never,
       slackService as never,
-      helpGroupNotificationEmailsService as never
+      helpGroupNotificationEmailsService as never,
+      communicationLogsService as never
     );
 
     return {
@@ -81,6 +86,7 @@ describe('WorkQueueProcessor', () => {
       userProfileRecommendationsService,
       slackService,
       helpGroupNotificationEmailsService,
+      communicationLogsService,
     };
   };
 
@@ -152,6 +158,96 @@ describe('WorkQueueProcessor', () => {
   });
 
   describe('mail, SMS and newsletter jobs', () => {
+    it('records in the communication history the mails sent to a user', async () => {
+      const { processor, mailjetService, communicationLogsService } = build();
+      const mail = {
+        toEmail: 'a@example.org',
+        templateId: MailjetTemplates.ACCOUNT_CREATED,
+        userId: 'user-1',
+        metadata: { authorId: 'author-1' },
+      };
+      mailjetService.sendMail.mockResolvedValue({
+        body: {
+          Messages: [{ Status: 'success', To: [{ MessageID: 123456789 }] }],
+        },
+      });
+
+      await processor.processSendMail(job(Jobs.SEND_MAIL, mail));
+
+      expect(communicationLogsService.recordSent).toHaveBeenCalledWith([
+        {
+          userId: 'user-1',
+          channel: 'email',
+          type: 'ACCOUNT_CREATED',
+          metadata: { authorId: 'author-1' },
+          providerMessageId: '123456789',
+        },
+      ]);
+    });
+
+    it('records a mail without provider id when Mailjet does not detail it', async () => {
+      const { processor, communicationLogsService } = build();
+
+      await processor.processSendMail(
+        job(Jobs.SEND_MAIL, {
+          toEmail: 'a@example.org',
+          templateId: MailjetTemplates.ACCOUNT_CREATED,
+          userId: 'user-1',
+        })
+      );
+
+      expect(communicationLogsService.recordSent).toHaveBeenCalledWith([
+        expect.objectContaining({
+          userId: 'user-1',
+          providerMessageId: undefined,
+        }),
+      ]);
+    });
+
+    it('records nothing for a mail that targets no user', async () => {
+      const { processor, communicationLogsService } = build();
+
+      await processor.processSendMail(
+        job(Jobs.SEND_MAIL, { toEmail: 'a@example.org', templateId: 42 })
+      );
+
+      expect(communicationLogsService.recordSent).toHaveBeenCalledWith([]);
+    });
+
+    it('records only the mails of a batch that Mailjet accepted', async () => {
+      const { processor, mailjetService, communicationLogsService } = build();
+      mailjetService.sendMail.mockResolvedValue({
+        body: { Messages: [{ Status: 'success' }, { Status: 'error' }] },
+      });
+      const mails = [
+        { toEmail: 'a@example.org', templateId: 1, userId: 'user-1' },
+        { toEmail: 'b@example.org', templateId: 2, userId: 'user-2' },
+      ];
+
+      await processor.processSendMail(job(Jobs.SEND_MAIL, mails));
+
+      expect(communicationLogsService.recordSent).toHaveBeenCalledWith([
+        expect.objectContaining({ userId: 'user-1', type: '1' }),
+      ]);
+    });
+
+    it('records nothing when Mailjet fails', async () => {
+      const { processor, mailjetService, communicationLogsService } = build();
+      mailjetService.sendMail.mockRejectedValue(new Error('mailjet down'));
+
+      await expect(
+        processor.processSendMail(
+          job(Jobs.SEND_MAIL, {
+            toEmail: 'a@example.org',
+            templateId: 1,
+            userId: 'user-1',
+          })
+        )
+      ).rejects.toThrow('mailjet down');
+
+      expect(communicationLogsService.recordSent).not.toHaveBeenCalled();
+    });
+
     it('sends a single mail through Mailjet', async () => {
       const { processor, mailjetService } = build();
       const mail = { toEmail: 'a@example.org', templateId: 42 };
@@ -202,6 +298,59 @@ describe('WorkQueueProcessor', () => {
         'Hello'
       );
       expect(result).toBe('SMS sent to +33600000000');
+    });
+
+    it('records in the communication history the SMS sent to a user', async () => {
+      const { processor, vonageService, communicationLogsService } = build();
+      vonageService.sendSms.mockResolvedValue('vonage-uuid-1');
+
+      await processor.processSendSms(
+        job(Jobs.SEND_SMS, {
+          to: '+33600000000',
+          text: 'Hello',
+          userId: 'user-1',
+          type: 'UNANSWERED_CONVERSATION_REMINDER',
+          metadata: { senderId: 'sender-1' },
+        })
+      );
+
+      expect(communicationLogsService.recordSent).toHaveBeenCalledWith([
+        {
+          userId: 'user-1',
+          channel: 'sms',
+          type: 'UNANSWERED_CONVERSATION_REMINDER',
+          metadata: { senderId: 'sender-1' },
+          providerMessageId: 'vonage-uuid-1',
+        },
+      ]);
+    });
+
+    it('records nothing for an SMS that targets no user', async () => {
+      const { processor, communicationLogsService } = build();
+
+      await processor.processSendSms(
+        job(Jobs.SEND_SMS, { to: '+33600000000', text: 'Hello' })
+      );
+
+      expect(communicationLogsService.recordSent).not.toHaveBeenCalled();
+    });
+
+    it('records nothing when Vonage fails', async () => {
+      const { processor, vonageService, communicationLogsService } = build();
+      vonageService.sendSms.mockRejectedValue(new Error('vonage down'));
+
+      await expect(
+        processor.processSendSms(
+          job(Jobs.SEND_SMS, {
+            to: '+33600000000',
+            text: 'Hello',
+            userId: 'user-1',
+            type: 'UNANSWERED_CONVERSATION_REMINDER',
+          })
+        )
+      ).rejects.toThrow('vonage down');
+
+      expect(communicationLogsService.recordSent).not.toHaveBeenCalled();
     });
 
     it('subscribes a landing-page contact to the newsletter', async () => {
@@ -674,7 +823,7 @@ describe('WorkQueueProcessor', () => {
       expect(result).toContain('staff@entourage.social');
     });
 
-    it('fails when the addressee does not exist', async () => {
+    it('skips the message without failing when the addressee does not exist anymore', async () => {
       const { processor, usersService, messagingService } = build();
       usersService.findOneByMailWithRelations.mockResolvedValue(null);
 
@@ -682,7 +831,7 @@ describe('WorkQueueProcessor', () => {
         processor.processSendStaffMessagingMessage(
           job(Jobs.SEND_STAFF_MESSAGING_MESSAGE, data)
         )
-      ).rejects.toThrow('Addressee with email user@example.org not found');
+      ).resolves.toContain('addressee with email user@example.org not found');
       expect(
         messagingService.createMessageWithConversation
       ).not.toHaveBeenCalled();

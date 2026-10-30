@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { CheckinModule } from 'src/checkin/checkin.module';
+import { CommunicationLogsModule } from 'src/communication-logs/communication-logs.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { EmbeddingsModule } from 'src/embeddings/embeddings.module';
 import { CvExtractionModule } from 'src/external-services/cv-extraction/cv-extraction.module';
@@ -29,6 +30,7 @@ import { CronTasksSlackReporterService } from './cron-tasks/cron-tasks-slack-rep
 import { CronTasksProcessor } from './cron-tasks/cron-tasks.processor';
 import { EmbeddingQueueProcessor } from './embedding-queue.processor';
 import { ProfileGeneratorProcessor } from './profile-generator.processor';
+import { QueuesMetricsRecorderService } from './queues-metrics-recorder.service';
 import { WorkQueueProcessor } from './work-queue.processor';
 
 @Module({
@@ -56,6 +58,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     CheckinModule,
     HelpGroupsModule,
     NotificationsModule,
+    CommunicationLogsModule,
   ],
   providers: [
     WorkQueueProcessor,
@@ -64,6 +67,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     CronTasksSlackReporterService,
     CronTasksProcessor,
     EmbeddingQueueProcessor,
+    QueuesMetricsRecorderService,
   ],
   exports: [
     WorkQueueProcessor,

@@ -26,6 +26,7 @@ describe('AiFeature', () => {
       'cv_extraction',
       'help_groups_title',
       'presentation_generation',
+      'profile_recommendation',
     ]);
   });
 });
@@ -150,6 +151,15 @@ describe('traceLlmCall', () => {
 
     expect(trace).toHaveBeenCalledWith(
       { kind: 'llm', ...options },
+      expect.any(Function)
+    );
+  });
+
+  it('opens an embedding span when given kind: "embedding"', async () => {
+    await traceLlmCall({ ...options, kind: 'embedding' }, async () => 'done');
+
+    expect(trace).toHaveBeenCalledWith(
+      { kind: 'embedding', ...options },
       expect.any(Function)
     );
   });

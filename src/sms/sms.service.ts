@@ -15,6 +15,10 @@ const METRIC_ROLE_TAG: Record<NormalUserRole, string> = {
   [UserRoles.COACH]: 'coach',
 };
 
+/** Kind of SMS recorded in the communication history. */
+const UNANSWERED_CONVERSATION_REMINDER_TYPE =
+  'UNANSWERED_CONVERSATION_REMINDER';
+
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
@@ -28,7 +32,8 @@ export class SmsService {
     recipientPhone: string,
     recipientRole: NormalUserRole,
     senderFirstName: string,
-    senderId: string
+    senderId: string,
+    recipientId: string
   ) {
     const senderRole = SENDER_ROLE_BY_RECIPIENT[recipientRole];
     const conversationUrl = `${process.env.FRONT_URL}/backoffice/messaging?userId=${senderId}`;
@@ -43,6 +48,9 @@ export class SmsService {
     const result = await this.queuesService.addToWorkQueue(Jobs.SEND_SMS, {
       to: recipientPhone,
       text,
+      userId: recipientId,
+      type: UNANSWERED_CONVERSATION_REMINDER_TYPE,
+      metadata: { senderId },
     });
 
     tracer.dogstatsd.increment('sms.reminder.sent', 1, {

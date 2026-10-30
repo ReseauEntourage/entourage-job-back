@@ -1,6 +1,16 @@
 import { Processor, WorkerHost, InjectQueue } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
+import { CommunicationLogsService } from 'src/communication-logs/communication-logs.service';
+import {
+  CommunicationChannels,
+  CommunicationLogEntry,
+} from 'src/communication-logs/communication-logs.types';
+import {
+  getAcceptedMessageIndexes,
+  getEmailCommunicationType,
+  getMailjetMessageId,
+} from 'src/communication-logs/communication-logs.utils';
 import { CompaniesService } from 'src/companies/companies.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
@@ -23,11 +33,12 @@ import {
   UpdateSalesforceUserCompanyJob,
   UserNewsletterSubscriptionJob,
 } from 'src/queues/queues.types';
+import { WORKER_METRICS_OPTIONS } from 'src/queues/queues.utils';
 import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
 
-@Processor(Queues.WORK)
+@Processor(Queues.WORK, { metrics: WORKER_METRICS_OPTIONS })
 export class WorkQueueProcessor extends WorkerHost {
   private readonly logger = new Logger(WorkQueueProcessor.name);
 
@@ -42,7 +53,8 @@ export class WorkQueueProcessor extends WorkerHost {
     private messagingService: MessagingService,
     private userProfileRecommendationsService: UserProfileRecommendationsService,
     private slackService: SlackService,
-    private helpGroupNotificationEmailsService: HelpGroupsNotificationEmailsService
+    private helpGroupNotificationEmailsService: HelpGroupsNotificationEmailsService,
+    private communicationLogsService: CommunicationLogsService
   ) {
     super();
   }
@@ -115,7 +127,8 @@ export class WorkQueueProcessor extends WorkerHost {
       emails = [data];
     }
 
-    await this.mailjetService.sendMail(emails);
+    const sendResult = await this.mailjetService.sendMail(emails);
+    await this.recordSentEmails(emails, sendResult);
 
     return `Mail sent to '${JSON.stringify(
       emails.map(({ toEmail }) => {
@@ -368,12 +381,13 @@ export class WorkQueueProcessor extends WorkerHost {
       await this.usersService.findOneByMailWithRelations(addresseeEmail);
 
     if (!addressee) {
-      this.logger.error(
-        `Addressee with email ${addresseeEmail} not found in the system`
+      // The addressee may have deleted their account between the time the job
+      // was enqueued and its processing: this is expected, not an error, and
+      // retrying would never succeed.
+      this.logger.warn(
+        `Skipping staff messaging message: addressee with email ${addresseeEmail} not found in the system (account probably deleted)`
       );
-      throw new Error(
-        `Addressee with email ${addresseeEmail} not found in the system`
-      );
+      return `Skipped staff messaging message: addressee with email ${addresseeEmail} not found`;
     }
 
     const staffContactEmail = addressee.staffContact.entourageProEmail;
@@ -434,8 +448,47 @@ export class WorkQueueProcessor extends WorkerHost {
   }
 
   async processSendSms(job: Job<SendSmsJob>) {
-    const { to, text } = job.data;
-    await this.vonageService.sendSms(to, text);
+    const { to, text, userId, type, metadata } = job.data;
+    const messageUuid = await this.vonageService.sendSms(to, text);
+
+    if (userId && type) {
+      await this.communicationLogsService.recordSent([
+        {
+          userId,
+          channel: CommunicationChannels.SMS,
+          type,
+          metadata,
+          providerMessageId: messageUuid,
+        },
+      ]);
+    }
+
     return `SMS sent to ${to}`;
+  }
+
+  /**
+   * Records in the communication history the emails Mailjet accepted, for the
+   * messages that target a user. Never throws: recording must not fail a send.
+   */
+  private async recordSentEmails(emails: SendMailJob[], sendResult: unknown) {
+    const entries = getAcceptedMessageIndexes(
+      sendResult,
+      emails.length
+    ).flatMap((index): CommunicationLogEntry[] => {
+      const { userId, templateId, metadata } = emails[index];
+      return userId
+        ? [
+            {
+              userId,
+              channel: CommunicationChannels.EMAIL,
+              type: getEmailCommunicationType(templateId),
+              metadata,
+              providerMessageId: getMailjetMessageId(sendResult, index),
+            },
+          ]
+        : [];
+    });
+
+    await this.communicationLogsService.recordSent(entries);
   }
 }

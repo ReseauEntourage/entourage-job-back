@@ -18,7 +18,8 @@ export class VonageService {
     });
   }
 
-  async sendSms(to: string, text: string): Promise<void> {
+  /** Resolves with the provider message id once the SMS is accepted. */
+  async sendSms(to: string, text: string): Promise<string> {
     const normalizedTo = to.replace(/\s+/g, '').replace(/^\+/, '');
 
     this.logger.log(`Sending SMS to ${normalizedTo}`);
@@ -35,6 +36,8 @@ export class VonageService {
       this.logger.log(
         `SMS sent successfully to ${normalizedTo} (uuid: ${messageUUID})`
       );
+
+      return messageUUID;
     } catch (error) {
       const errorCode = (error as { code?: string })?.code;
       const errorStatus = (error as { response?: { status?: number } })

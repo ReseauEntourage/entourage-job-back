@@ -80,7 +80,7 @@ mainWorker: pnpm worker:start
 
 - **Framework / ORM**: NestJS 9.4.1, Sequelize 6.29.0 + `pg`, `@nestjs/config`, `@nestjs/jwt`.
 - **Auth**: Passport JWT + Local (v0.6.0 / v4.0.0), `express-basic-auth`.
-- **Queue**: BullMQ 5.70.4, `@nestjs/bullmq`, Bull-Board.
+- **Queue**: BullMQ 5.70.4, `@nestjs/bullmq`, Bull-Board 9 (with `@bull-board/metrics`: 30-day job history recorded by the worker).
 - **Cache**: `ioredis`, `cache-manager`, `cache-manager-ioredis`.
 - **AWS**: `@aws-sdk/client-s3`, `@aws-sdk/client-cloudfront`, `@aws-sdk/lib-storage`, `@aws-sdk/s3-request-presigner` (all v3.142.0).
 - **Integrations**: `jsforce` 1.11 (Salesforce), `node-mailjet` 6.0.4, `@anthropic-ai/sdk` 0.91.1, `voyageai` 0.2.1, `@slack/bolt` 3.19, `pusher` 5.1.1-beta, `@vonage/server-sdk` 2.11.2, `bitly` 7.1.2.
