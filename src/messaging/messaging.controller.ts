@@ -173,6 +173,18 @@ export class MessagingController {
   }
 
   @UseGuards(UserInConversation)
+  @Post('conversations/:conversationId/dismiss-ai-assistant-banner')
+  async dismissAiAssistantBanner(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('conversationId', new ParseUUIDPipe()) conversationId: string
+  ) {
+    return this.messagingService.dismissAiAssistantBanner(
+      conversationId,
+      userId
+    );
+  }
+
+  @UseGuards(UserInConversation)
   @Post('conversations/:conversationId/report')
   async reportMessageAbuse(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,

@@ -44,6 +44,14 @@ export class ConversationParticipant extends Model {
   @Column
   archivedAt: Date;
 
+  // Set independently by each participant when they dismiss the AI assistant banner
+  // ("Non merci"); has no effect on the other participant, and persists across sessions
+  // and devices.
+  @IsDate
+  @Default(null)
+  @Column
+  assistantBannerDismissedAt: Date;
+
   @ApiProperty()
   @IsString()
   @IsUUID(4)

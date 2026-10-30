@@ -2187,4 +2187,51 @@ describe('MESSAGING', () => {
       ).toBe(1);
     });
   });
+
+  describe('Masquage du bandeau assistant IA - /messaging/conversations/:conversationId/dismiss-ai-assistant-banner', () => {
+    it('should dismiss the banner for the requesting participant only, and persist it', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      const response = await request(server)
+        .post(
+          `/messaging/conversations/${conversation.id}/dismiss-ai-assistant-banner`
+        )
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+
+      expect(response.status).toBe(201);
+
+      const conversationForCoach = await messagingService.getConversationById(
+        conversation.id,
+        loggedInCoach.user.id
+      );
+      const conversationForCandidate =
+        await messagingService.getConversationById(
+          conversation.id,
+          loggedInCandidate.user.id
+        );
+
+      expect(conversationForCoach?.assistantBannerDismissedAt).not.toBeNull();
+      expect(conversationForCandidate?.assistantBannerDismissedAt).toBeNull();
+    });
+
+    it('should return 401 when the requesting user is not a participant of the conversation', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInOtherCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      const response = await request(server)
+        .post(
+          `/messaging/conversations/${conversation.id}/dismiss-ai-assistant-banner`
+        )
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(response.status).toBe(401);
+    });
+  });
 });

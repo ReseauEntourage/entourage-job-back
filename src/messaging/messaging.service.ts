@@ -342,6 +342,7 @@ export class MessagingService {
           updatedAt: cp.updatedAt,
           seenAt: cp.seenAt,
           archivedAt: cp.archivedAt,
+          assistantBannerDismissedAt: cp.assistantBannerDismissedAt,
         };
       });
   }
@@ -412,6 +413,7 @@ export class MessagingService {
       updatedAt: cp.updatedAt,
       seenAt: cp.seenAt,
       archivedAt: cp.archivedAt,
+      assistantBannerDismissedAt: cp.assistantBannerDismissedAt,
     };
   }
 
@@ -618,6 +620,27 @@ export class MessagingService {
       });
     if (conversationParticipant) {
       conversationParticipant.archivedAt = archived ? new Date() : null;
+      await conversationParticipant.save();
+    }
+    return conversationParticipant;
+  }
+
+  /**
+   * Dismisses the AI assistant banner ("Besoin d'aide pour répondre ?") for a single
+   * participant, for the remainder of this conversation. Only affects that participant's
+   * own `ConversationParticipant.assistantBannerDismissedAt` and has no effect on the
+   * other participant, nor on other conversations.
+   */
+  async dismissAiAssistantBanner(conversationId: string, userId: string) {
+    const conversationParticipant =
+      await this.conversationParticipantModel.findOne({
+        where: {
+          conversationId,
+          userId,
+        },
+      });
+    if (conversationParticipant) {
+      conversationParticipant.assistantBannerDismissedAt = new Date();
       await conversationParticipant.save();
     }
     return conversationParticipant;
