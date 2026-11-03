@@ -6,6 +6,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { Job, Queue } from 'bullmq';
+import { ProfileGenerationCancelledError } from '../../profile-generation/profile-generation.error';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
 import { isTwoPassExtractionEnabled } from 'src/external-services/cv-extraction/cv-extraction.config';
 import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
@@ -26,8 +27,6 @@ import { WORKER_METRICS_OPTIONS } from 'src/queues/queues.utils';
 import { detectPdftocairoPath } from 'src/utils/misc/pdf-to-cairo';
 
 const CANCELLATION_CHECK_INTERVAL_MS = 2000;
-
-class ProfileGenerationCancelledError extends Error {}
 
 @Processor(Queues.PROFILE_GENERATION, {
   metrics: WORKER_METRICS_OPTIONS,
@@ -56,6 +55,25 @@ export class ProfileGeneratorProcessor extends WorkerHost {
     }
     const freshJob = await this.profileGenerationQueue.getJob(jobId);
     return !!freshJob?.data?.cancelled;
+  }
+
+  /**
+   * Time between the start of the processing and the cancellation request, as
+   * recorded by the cancellation (see ProfileGenerationService). Best effort:
+   * observability must never change the outcome of the job.
+   */
+  private async getCancelledAfterMs(
+    jobId: string | undefined
+  ): Promise<number | undefined> {
+    if (!jobId) {
+      return undefined;
+    }
+    try {
+      const freshJob = await this.profileGenerationQueue.getJob(jobId);
+      return freshJob?.data?.cancelledAfterMs;
+    } catch {
+      return undefined;
+    }
   }
 
   async process(job: Job): Promise<void> {
@@ -148,6 +166,13 @@ export class ProfileGeneratorProcessor extends WorkerHost {
           tags: { userProfileId, fileHash, s3Key },
         },
         async ({ setOutcome, annotate }) => {
+          const markCancelled = async () => {
+            setOutcome('cancelled');
+            const cancelledAfterMs = await this.getCancelledAfterMs(job.id);
+            if (cancelledAfterMs !== undefined) {
+              annotate({ metadata: { cancelledAfterMs } });
+            }
+          };
           annotate({
             metadata: reusableTranscript
               ? { reusedTranscript: true, textChars: reusableTranscript.length }
@@ -167,12 +192,12 @@ export class ProfileGeneratorProcessor extends WorkerHost {
                   abortController.signal
                 );
             if (cancelledDuringWait) {
-              setOutcome('cancelled');
+              await markCancelled();
             }
             return result;
           } catch (error) {
             if (abortController.signal.aborted) {
-              setOutcome('cancelled');
+              await markCancelled();
             }
             throw error;
           }
@@ -248,6 +273,12 @@ export class ProfileGeneratorProcessor extends WorkerHost {
           userProfileId,
         }
       );
+
+      // A cancellation is not a failure: the job ends normally, so that neither
+      // the job nor its traces are reported as errors.
+      if (isCancelled) {
+        return;
+      }
       throw error;
     } finally {
       clearInterval(cancellationCheckInterval);

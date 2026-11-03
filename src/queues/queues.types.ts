@@ -242,6 +242,8 @@ export interface BulkSendStaffMessagingMessageJob {
 
 export interface GenerateProfileFromPDFJob {
   cancelled?: boolean;
+  /** Milliseconds between the start of the processing and the cancellation. */
+  cancelledAfterMs?: number;
   fileHash: string;
   s3Key: string;
   userId: string;

@@ -1,4 +1,6 @@
+import { CvExtractionCancelledError } from 'src/external-services/cv-extraction/cv-extraction.error';
 import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
+import { AiFlowCancelledError } from 'src/external-services/llm-observability/ai-flow-cancelled.error';
 
 describe('CvExtractionService.extractCVFromImages', () => {
   const anthropic = { createMessageUntraced: jest.fn() };
@@ -235,20 +237,32 @@ describe('CvExtractionService.extractCVFromImages', () => {
     const { service, create } = build();
     create.mockRejectedValue(new Error('rate limited'));
 
-    await expect(service.extractCVFromImages(['p'])).rejects.toThrow(
+    const error = await service
+      .extractCVFromImages(['p'])
+      .catch((caught: unknown) => caught);
+
+    expect((error as Error).message).toBe(
       "Impossible d'extraire les données du CV à partir d'images: rate limited"
     );
+    // A real failure is never mistaken for a cancellation
+    expect(error).not.toBeInstanceOf(AiFlowCancelledError);
   });
 
-  it('wraps an abort as a regular failure', async () => {
+  it('throws a cancellation, not a failure, when the job is aborted', async () => {
     const { service, create } = build();
     const controller = new AbortController();
     controller.abort();
-    create.mockRejectedValue(new Error('aborted'));
+    const aborted = new Error('Request was aborted.');
+    create.mockRejectedValue(aborted);
 
-    await expect(
-      service.extractCVFromImages(['p'], controller.signal)
-    ).rejects.toThrow('aborted');
+    const error = await service
+      .extractCVFromImages(['p'], controller.signal)
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(CvExtractionCancelledError);
+    expect(error).toBeInstanceOf(AiFlowCancelledError);
+    expect((error as Error).message).toContain('Request was aborted.');
+    expect((error as AiFlowCancelledError).cause).toBe(aborted);
   });
 
   it('wraps a failure that is not an Error', async () => {

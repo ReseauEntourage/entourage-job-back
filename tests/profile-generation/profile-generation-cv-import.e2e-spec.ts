@@ -1,6 +1,10 @@
 import { createHash } from 'crypto';
 import { Server } from 'http';
-import { InternalServerErrorException, INestApplication } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  INestApplication,
+  Logger,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { S3Service } from 'src/external-services/aws/s3.service';
@@ -207,9 +211,11 @@ describe('ProfileGeneration - CV import', () => {
   describe('POST /profile-generation/:jobId/cancel', () => {
     const job = (
       data: Record<string, unknown>,
-      state: 'waiting' | 'active'
+      state: 'waiting' | 'active',
+      processedOn?: number
     ) => ({
       data,
+      processedOn,
       isWaiting: jest.fn().mockResolvedValue(state === 'waiting'),
       isDelayed: jest.fn().mockResolvedValue(false),
       remove: jest.fn().mockResolvedValue(undefined),
@@ -257,6 +263,53 @@ describe('ProfileGeneration - CV import', () => {
         userProfileId: 'p',
         cancelled: true,
       });
+      // The start of the processing is unknown: no duration is recorded
+      expect(active.updateData.mock.calls[0][0]).not.toHaveProperty(
+        'cancelledAfterMs'
+      );
+    });
+
+    it('records how long the processing ran before the cancellation, in the job and in the log', async () => {
+      const user = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+      const warn = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
+      const active = job(
+        { userId: user.user.id, userProfileId: 'p' },
+        'active',
+        Date.now() - 12000
+      );
+      queuesService.getProfileGenerationJob.mockResolvedValue(active);
+
+      await cancel(user);
+
+      const [data] = active.updateData.mock.calls[0];
+      expect(data).toMatchObject({ cancelled: true });
+      // 12 s of processing, plus the little time the request took
+      expect(data.cancelledAfterMs).toBeGreaterThanOrEqual(12000);
+      expect(data.cancelledAfterMs).toBeLessThan(17000);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(`annulée après ${data.cancelledAfterMs} ms`)
+      );
+      warn.mockRestore();
+    });
+
+    it('records no duration for a job that has not started yet', async () => {
+      const user = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+      const waiting = job(
+        { userId: user.user.id, userProfileId: 'p' },
+        'waiting'
+      );
+      queuesService.getProfileGenerationJob.mockResolvedValue(waiting);
+
+      await cancel(user);
+
+      expect(waiting.remove).toHaveBeenCalledTimes(1);
+      expect(waiting.updateData).not.toHaveBeenCalled();
     });
 
     it('never cancels the job of another user', async () => {
