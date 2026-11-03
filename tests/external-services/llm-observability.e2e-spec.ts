@@ -1,4 +1,5 @@
 import { AiFeature } from 'src/external-services/llm-observability/ai-feature.enum';
+import { AiFlowCancelledError } from 'src/external-services/llm-observability/ai-flow-cancelled.error';
 import {
   traceAiWorkflow,
   traceLlmCall,
@@ -14,8 +15,19 @@ const span = { name: 'span' };
 const trace = tracer.llmobs.trace as jest.Mock;
 const annotate = tracer.llmobs.annotate as jest.Mock;
 
+// Like the real tracer, the double flags a span as failed when its callback rejects
+const erroredSpans: string[] = [];
+
 beforeEach(() => {
-  trace.mockReset().mockImplementation((_options, fn) => fn(span));
+  erroredSpans.length = 0;
+  trace.mockReset().mockImplementation(async (options, fn) => {
+    try {
+      return await fn(span);
+    } catch (error) {
+      erroredSpans.push(options.name);
+      throw error;
+    }
+  });
   annotate.mockReset();
 });
 
@@ -123,6 +135,37 @@ describe('traceAiWorkflow', () => {
     expect(annotate).toHaveBeenCalledWith(span, {
       tags: { feature: 'cv_extraction', outcome: 'cancelled' },
     });
+  });
+
+  it('closes the span without an error when the flow is cancelled, and rethrows the cancellation', async () => {
+    const cancellation = new AiFlowCancelledError('cancelled by the user');
+
+    await expect(
+      traceAiWorkflow(
+        { feature: AiFeature.CV_EXTRACTION, name: 'cv-extraction' },
+        async () => {
+          throw cancellation;
+        }
+      )
+    ).rejects.toBe(cancellation);
+
+    expect(erroredSpans).toEqual([]);
+    expect(annotate).toHaveBeenCalledWith(span, {
+      tags: { feature: 'cv_extraction', outcome: 'cancelled' },
+    });
+  });
+
+  it('still flags the span as failed when the flow throws something else', async () => {
+    await expect(
+      traceAiWorkflow(
+        { feature: AiFeature.CV_EXTRACTION, name: 'cv-extraction' },
+        async () => {
+          throw new Error('boom');
+        }
+      )
+    ).rejects.toThrow('boom');
+
+    expect(erroredSpans).toEqual(['cv-extraction']);
   });
 
   it('does not fail the flow when the annotation fails', async () => {
@@ -240,6 +283,53 @@ describe('traceLlmCall', () => {
     ).rejects.toThrow('aborted');
     expect(annotate).toHaveBeenLastCalledWith(span, {
       tags: { outcome: 'cancelled' },
+    });
+  });
+
+  it('closes the span without an error when the call is cancelled, and rethrows the cancellation', async () => {
+    const cancellation = new AiFlowCancelledError('cancelled by the user');
+
+    await expect(
+      traceLlmCall(options, async () => {
+        throw cancellation;
+      })
+    ).rejects.toBe(cancellation);
+
+    expect(erroredSpans).toEqual([]);
+    expect(annotate).toHaveBeenLastCalledWith(span, {
+      tags: { outcome: 'cancelled' },
+    });
+  });
+
+  it('still flags the span as failed when the call throws something else', async () => {
+    await expect(
+      traceLlmCall(options, async () => {
+        throw new Error('rate limited');
+      })
+    ).rejects.toThrow('rate limited');
+
+    expect(erroredSpans).toEqual([options.name]);
+  });
+
+  it('keeps the whole trace free of errors when a cancellation crosses a workflow and its call', async () => {
+    const cancellation = new AiFlowCancelledError('cancelled by the user');
+
+    await expect(
+      traceAiWorkflow(
+        { feature: AiFeature.CV_EXTRACTION, name: 'cv-extraction' },
+        async () =>
+          traceLlmCall(options, async () => {
+            throw cancellation;
+          })
+      )
+    ).rejects.toBe(cancellation);
+
+    expect(erroredSpans).toEqual([]);
+    expect(annotate).toHaveBeenCalledWith(span, {
+      tags: { outcome: 'cancelled' },
+    });
+    expect(annotate).toHaveBeenCalledWith(span, {
+      tags: { feature: 'cv_extraction', outcome: 'cancelled' },
     });
   });
 
