@@ -19,6 +19,7 @@ export const UserAttributes = [
   'onboardingStatus',
   'onboardingCompletedAt',
   'onboardingWebinarSkippedAt',
+  'onboardingProfileSkippedAt',
   'elearningCompletedAt',
 ] as const;
 

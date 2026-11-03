@@ -13,5 +13,6 @@ export class UpdateUserAdminDto extends PartialType(
     'OrganizationId',
     'onboardingStatus',
     'onboardingWebinarSkippedAt',
+    'onboardingProfileSkippedAt',
   ] as const)
 ) {}

@@ -214,6 +214,13 @@ export class User extends HistorizedModel {
   @Column
   onboardingWebinarSkippedAt: Date;
 
+  // Set when the user chose "Je le remplis plus tard" on the onboarding profile step
+  @IsOptional()
+  @IsDateString()
+  @AllowNull(true)
+  @Column
+  onboardingProfileSkippedAt: Date;
+
   @AllowNull(true)
   @Column
   linkedinId: string;

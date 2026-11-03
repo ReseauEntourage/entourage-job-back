@@ -9,5 +9,6 @@ export class UpdateUserRestrictedDto extends PartialType(
     'phone',
     'onboardingStatus',
     'onboardingWebinarSkippedAt',
+    'onboardingProfileSkippedAt',
   ] as const)
 ) {}

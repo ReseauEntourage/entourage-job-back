@@ -52,6 +52,7 @@ export const generateCurrentUserDto = (
     onboardingStatus: user.onboardingStatus,
     onboardingCompletedAt: user.onboardingCompletedAt,
     onboardingWebinarSkippedAt: user.onboardingWebinarSkippedAt,
+    onboardingProfileSkippedAt: user.onboardingProfileSkippedAt,
   } as CurrentUserDto;
 
   if (user.company) {

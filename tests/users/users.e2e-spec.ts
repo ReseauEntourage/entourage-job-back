@@ -873,6 +873,68 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
 
+        it('Should return 200 and set onboardingProfileSkippedAt, exposed by /current, when a candidate skips the profile step', async () => {
+          const skippedAt = new Date().toISOString();
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingProfileSkippedAt: skippedAt,
+              });
+          expect(response.status).toBe(200);
+          expect(
+            new Date(response.body.onboardingProfileSkippedAt).toISOString()
+          ).toBe(skippedAt);
+
+          const currentResponse = await request(server)
+            .get('/current')
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+          expect(currentResponse.status).toBe(200);
+          expect(
+            new Date(
+              currentResponse.body.onboardingProfileSkippedAt
+            ).toISOString()
+          ).toBe(skippedAt);
+        });
+
+        it('Should return 200 and set onboardingProfileSkippedAt when a coach skips the profile step', async () => {
+          const skippedAt = new Date().toISOString();
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCoach.user.id}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
+              .send({
+                onboardingProfileSkippedAt: skippedAt,
+              });
+          expect(response.status).toBe(200);
+          expect(
+            new Date(response.body.onboardingProfileSkippedAt).toISOString()
+          ).toBe(skippedAt);
+        });
+
+        it('Should return 403 when a user sets onboardingProfileSkippedAt on another account', async () => {
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
+              .send({
+                onboardingProfileSkippedAt: new Date().toISOString(),
+              });
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 400 when onboardingProfileSkippedAt is not a valid date', async () => {
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingProfileSkippedAt: 'not-a-date',
+              });
+          expect(response.status).toBe(400);
+        });
+
         it('Should handle onboarding transition end-to-end (status + completedAt + job)', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,
