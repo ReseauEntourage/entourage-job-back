@@ -17,10 +17,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 import { UserPayload } from 'src/auth/guards';
 import { Timeout } from 'src/common/decorators/timeout.decorator';
-import { UserInConversation } from 'src/messaging/guards/user-in-conversation';
 import { AiAssistantService } from './ai-assistant.service';
 import { AiStreamDto } from './dto/ai-stream.dto';
 import { AiStreamPipe } from './dto/ai-stream.pipe';
+import { AssistantRecipientGuard } from './guards/assistant-recipient.guard';
 import { AiAssistantMessage } from './models/ai-assistant-message.model';
 
 export const AI_ASSISTANT_STREAM_TIMEOUT_MS = 120000;
@@ -33,44 +33,44 @@ export class AiAssistantController {
 
   constructor(private readonly aiAssistantService: AiAssistantService) {}
 
-  @UseGuards(UserInConversation)
-  @Get('conversations/:conversationId/session')
+  @UseGuards(AssistantRecipientGuard)
+  @Get('recipients/:recipientId/session')
   async getSession(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Param('conversationId', new ParseUUIDPipe()) conversationId: string
+    @Param('recipientId', new ParseUUIDPipe()) recipientId: string
   ) {
     const session = await this.aiAssistantService.getSession(
-      conversationId,
+      recipientId,
       userId
     );
     return session ?? { messages: [] as AiAssistantMessage[] };
   }
 
-  @UseGuards(UserInConversation)
-  @Post('conversations/:conversationId/stream')
+  @UseGuards(AssistantRecipientGuard)
+  @Post('recipients/:recipientId/stream')
   @Sse()
   // The global TimeoutInterceptor errors after 30s without emission, which
   // would cut the stream if the model pauses (slow first token, provider hiccup).
   @Timeout(AI_ASSISTANT_STREAM_TIMEOUT_MS)
   streamResponse(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Param('conversationId', new ParseUUIDPipe()) conversationId: string,
+    @Param('recipientId', new ParseUUIDPipe()) recipientId: string,
     @Body(new AiStreamPipe()) dto: AiStreamDto
   ): Observable<MessageEvent> {
     return this.aiAssistantService.streamResponse(
-      conversationId,
+      recipientId,
       userId,
       dto.message
     );
   }
 
-  @UseGuards(UserInConversation)
-  @Delete('conversations/:conversationId/session/messages')
+  @UseGuards(AssistantRecipientGuard)
+  @Delete('recipients/:recipientId/session/messages')
   @HttpCode(HttpStatus.NO_CONTENT)
   async resetSession(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Param('conversationId', new ParseUUIDPipe()) conversationId: string
+    @Param('recipientId', new ParseUUIDPipe()) recipientId: string
   ) {
-    await this.aiAssistantService.resetSession(conversationId, userId);
+    await this.aiAssistantService.resetSession(recipientId, userId);
   }
 }
