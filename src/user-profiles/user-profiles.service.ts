@@ -575,10 +575,19 @@ export class UserProfilesService {
     };
   }
 
+  /**
+   * Counts and samples the available profiles of the opposite role that match
+   * the given sectors and nudges.
+   * @param onlyVisibleProfiles When true, only profiles that the app itself
+   * shows to others are considered (onboarding and eLearning completed, see
+   * `profileVisibilityEligibilityWhere`). Defaults to false so the
+   * pre-registration wizard keeps its current counts.
+   */
   async findPreRegistrationCompatibleProfiles(
     role: UserRole,
     nudgeIds: string[] = [],
-    businessSectorIds: string[] = []
+    businessSectorIds: string[] = [],
+    onlyVisibleProfiles = false
   ): Promise<{
     broadened: boolean;
     count: number;
@@ -591,7 +600,10 @@ export class UserProfilesService {
     const userInclude = {
       model: User,
       as: 'user',
-      where: { role: targetRole },
+      where: {
+        role: targetRole,
+        ...(onlyVisibleProfiles && profileVisibilityEligibilityWhere),
+      },
       required: true,
       attributes: [] as string[],
     };

@@ -14,6 +14,7 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { RecommendationDto } from 'src/user-profile-recommendations/dto/recommendations.dto';
 import { MatchingReason } from 'src/user-profile-recommendations/user-profile-recommendation.types';
+import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { User } from 'src/users/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { getZoneDisplayLabel } from 'src/utils/constants/zones';
@@ -663,22 +664,50 @@ export class MailsService {
     );
   }
 
-  async sendReminderToCompleteOnboarding(user: User) {
+  /**
+   * Sends the one-shot reminder to users who have not completed their
+   * onboarding. When at least `ONBOARDING_REMINDER_PROFILES_COUNT` compatible
+   * profiles are available, the mail shows the real number of compatible
+   * profiles and that many of them; otherwise it is sent without any profile.
+   * @returns Whether the version with profiles was sent
+   */
+  async sendReminderToCompleteOnboarding(
+    user: User,
+    compatibleProfiles: { count: number; profiles: PublicProfileDto[] }
+  ): Promise<{ withProfiles: boolean }> {
     this.logger.log(
       `Sending reminder to complete onboarding mail to user with email ${user.email}`
     );
+
+    const { count, profiles } = compatibleProfiles;
+    const shownProfiles = profiles.slice(0, ONBOARDING_REMINDER_PROFILES_COUNT);
+    const withProfiles =
+      count >= ONBOARDING_REMINDER_PROFILES_COUNT &&
+      shownProfiles.length === ONBOARDING_REMINDER_PROFILES_COUNT;
+    const formattedProfiles = withProfiles
+      ? shownProfiles.map(formatPublicProfileForMail)
+      : [];
+
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       userId: user.id,
-      templateId: MailjetTemplates.ONBOARDING_REMINDER,
+      subject: getOnboardingReminderSubject(user.role, withProfiles, count),
+      templateId: MailjetTemplates.ONBOARDING_REMINDER_WITH_PROFILES,
       variables: {
         firstName: user.firstName,
         ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
         role: getRoleString(user),
-        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
+        nbCompatible: count,
+        nbOthers: Math.max(count - ONBOARDING_REMINDER_PROFILES_COUNT, 0),
+        nbReco: formattedProfiles.length,
+        reco1: formattedProfiles[0] || null,
+        reco2: formattedProfiles[1] || null,
+        reco3: formattedProfiles[2] || null,
       },
     });
+
+    return { withProfiles };
   }
 
   async sendOnboardingCompletedMail(
@@ -898,10 +927,6 @@ export class MailsService {
     user: User,
     recommendationsDto: RecommendationDto[]
   ) {
-    const awsS3Url = process.env.AWSS3_URL || '';
-    const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
-    const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
-
     const formatReason = (user: User, reason: MatchingReason): string => {
       if (user.role === UserRoles.CANDIDATE) {
         switch (reason) {
@@ -932,30 +957,10 @@ export class MailsService {
       }
     };
 
-    return (recommendationsDto || []).map((recommendation) => {
-      const publicProfile = recommendation.publicProfile;
-      return {
-        imageUrl: publicProfile.hasPicture
-          ? `${imageBasePath}${publicProfile.id}.profile.jpg`
-          : `${imageBasePath}profile-placeholder.png`,
-        firstName: publicProfile?.firstName || '',
-        zone: getZoneDisplayLabel(publicProfile?.zone),
-        department: publicProfile?.department || '',
-        workTitle:
-          publicProfile.role === UserRoles.CANDIDATE
-            ? publicProfile?.sectorOccupations?.[0]?.occupation?.name ||
-              'Je suis ouvert à toutes les opportunités'
-            : publicProfile?.currentJob || '',
-        businessSector1:
-          publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
-        businessSector2:
-          publicProfile?.sectorOccupations?.[1]?.businessSector?.name || '',
-        businessSector3:
-          publicProfile?.sectorOccupations?.[2]?.businessSector?.name || '',
-        profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
-        reason: formatReason(user, recommendation.reason),
-      };
-    });
+    return (recommendationsDto || []).map((recommendation) => ({
+      ...formatPublicProfileForMail(recommendation.publicProfile),
+      reason: formatReason(user, recommendation.reason),
+    }));
   }
 
   async sendSuperEngagedAchievementMail(
@@ -1375,6 +1380,53 @@ const getUnansweredConversationsSubject = (
     return `Toujours ${count} conversation(s) en attente… Et si vous y répondiez aujourd'hui ? 💡`;
   }
   return `Vous avez ${count} conversation(s) en attente 🕘`;
+};
+
+/** Number of compatible profiles shown in the onboarding reminder mail. */
+const ONBOARDING_REMINDER_PROFILES_COUNT = 3;
+
+const getOnboardingReminderSubject = (
+  role: UserRole,
+  withProfiles: boolean,
+  count: number
+): string => {
+  if (!withProfiles) {
+    return 'Il vous reste quelques étapes sur Entourage Pro';
+  }
+  return role === UserRoles.COACH
+    ? `${count} candidats cherchent un coup de pouce sur Entourage Pro`
+    : `${count} coachs peuvent vous donner un coup de pouce`;
+};
+
+/**
+ * Formats a public profile for the profile blocks (`reco1`..`reco3`) shared by
+ * the mails that show other members. Without a picture, the default image is used.
+ */
+const formatPublicProfileForMail = (publicProfile: PublicProfileDto) => {
+  const awsS3Url = process.env.AWSS3_URL || '';
+  const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
+  const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
+
+  return {
+    imageUrl: publicProfile.hasPicture
+      ? `${imageBasePath}${publicProfile.id}.profile.jpg`
+      : `${imageBasePath}profile-placeholder.png`,
+    firstName: publicProfile?.firstName || '',
+    zone: getZoneDisplayLabel(publicProfile?.zone),
+    department: publicProfile?.department || '',
+    workTitle:
+      publicProfile.role === UserRoles.CANDIDATE
+        ? publicProfile?.sectorOccupations?.[0]?.occupation?.name ||
+          'Je suis ouvert à toutes les opportunités'
+        : publicProfile?.currentJob || '',
+    businessSector1:
+      publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
+    businessSector2:
+      publicProfile?.sectorOccupations?.[1]?.businessSector?.name || '',
+    businessSector3:
+      publicProfile?.sectorOccupations?.[2]?.businessSector?.name || '',
+    profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
+  };
 };
 
 const getRoleStringFromRole = (role: UserRole): string => {

@@ -137,12 +137,6 @@ describe('MailsService (mail templates)', () => {
         variables: () => ({ role: 'Candidat', firstName: 'Jean' }),
       },
       {
-        name: 'sendReminderToCompleteOnboarding',
-        template: MailjetTemplates.ONBOARDING_REMINDER,
-        call: (s, u) => s.sendReminderToCompleteOnboarding(u),
-        variables: () => ({ ctaUrl: `${FRONT_URL}/backoffice/dashboard` }),
-      },
-      {
         name: 'sendReminderToCompleteProfile',
         template: MailjetTemplates.NOT_COMPLETED_PROFILE_REMINDER,
         call: (s, u) => s.sendReminderToCompleteProfile(u),
@@ -308,6 +302,190 @@ describe('MailsService (mail templates)', () => {
       );
 
       expect(lastMail(queuesService).variables.role).toBe('Coach');
+    });
+  });
+
+  describe('sendReminderToCompleteOnboarding', () => {
+    const buildProfile = (index: number, props: Record<string, unknown> = {}) =>
+      ({
+        id: `profile-${index}`,
+        firstName: `Prenom${index}`,
+        role: UserRoles.COACH,
+        zone: ZoneName.IDF,
+        department: 'Paris (75)',
+        hasPicture: true,
+        currentJob: 'Responsable RH',
+        sectorOccupations: [
+          { businessSector: { name: 'Commerce' }, occupation: { name: 'RH' } },
+        ],
+        ...props,
+      }) as never;
+
+    const threeCoaches = [1, 2, 3].map((index) => buildProfile(index));
+
+    it('sends the version with profiles to a candidate who has at least 3 compatible profiles', async () => {
+      const { mailsService, queuesService } = build();
+      const user = buildUser({ role: UserRoles.CANDIDATE });
+
+      const result = await mailsService.sendReminderToCompleteOnboarding(user, {
+        count: 128,
+        profiles: [...threeCoaches, buildProfile(4)],
+      });
+
+      expect(result).toEqual({ withProfiles: true });
+      const mail = lastMail(queuesService);
+      expect(mail.templateId).toBe(
+        MailjetTemplates.ONBOARDING_REMINDER_WITH_PROFILES
+      );
+      expect(mail.templateId).not.toBe(7718674);
+      expect(mail.toEmail).toBe(user.email);
+      expect(mail.subject).toBe(
+        '128 coachs peuvent vous donner un coup de pouce'
+      );
+      expect(mail.variables).toEqual({
+        firstName: 'Jean',
+        ctaUrl: `${FRONT_URL}/backoffice/dashboard`,
+        role: 'Candidat',
+        staffContact: STAFF_CONTACT,
+        nbCompatible: 128,
+        nbOthers: 125,
+        nbReco: 3,
+        reco1: expect.objectContaining({
+          firstName: 'Prenom1',
+          department: 'Paris (75)',
+          workTitle: 'Responsable RH',
+          businessSector1: 'Commerce',
+          imageUrl: 'https://s3.example.org/images/profile-1.profile.jpg',
+          profileUrl: `${FRONT_URL}/backoffice/profile/profile-1`,
+        }),
+        reco2: expect.objectContaining({ firstName: 'Prenom2' }),
+        reco3: expect.objectContaining({ firstName: 'Prenom3' }),
+      });
+    });
+
+    it('sends the version with profiles to a coach, with the candidates subject', async () => {
+      const { mailsService, queuesService } = build();
+      const candidates = [1, 2, 3].map((index) =>
+        buildProfile(index, {
+          role: UserRoles.CANDIDATE,
+          currentJob: undefined,
+          sectorOccupations: [
+            {
+              businessSector: { name: 'Informatique' },
+              occupation: { name: 'développeur web' },
+            },
+          ],
+        })
+      );
+
+      const result = await mailsService.sendReminderToCompleteOnboarding(
+        buildUser({ role: UserRoles.COACH }),
+        { count: 3, profiles: candidates }
+      );
+
+      expect(result).toEqual({ withProfiles: true });
+      const mail = lastMail(queuesService);
+      expect(mail.subject).toBe(
+        '3 candidats cherchent un coup de pouce sur Entourage Pro'
+      );
+      expect(mail.variables).toEqual(
+        expect.objectContaining({
+          role: 'Coach',
+          nbCompatible: 3,
+          nbOthers: 0,
+          nbReco: 3,
+          reco1: expect.objectContaining({ workTitle: 'développeur web' }),
+        })
+      );
+    });
+
+    it.each([
+      [
+        'two profiles',
+        { count: 2, profiles: [1, 2].map((i) => buildProfile(i)) },
+      ],
+      ['no profile', { count: 0, profiles: [] }],
+      [
+        'a count of 3 but fewer profiles loaded',
+        { count: 3, profiles: [buildProfile(1)] },
+      ],
+    ])(
+      'sends the version without profiles when there are %s',
+      async (_label, compatibleProfiles) => {
+        const { mailsService, queuesService } = build();
+
+        const result = await mailsService.sendReminderToCompleteOnboarding(
+          buildUser(),
+          compatibleProfiles
+        );
+
+        expect(result).toEqual({ withProfiles: false });
+        const mail = lastMail(queuesService);
+        expect(mail.templateId).toBe(
+          MailjetTemplates.ONBOARDING_REMINDER_WITH_PROFILES
+        );
+        expect(mail.subject).toBe(
+          'Il vous reste quelques étapes sur Entourage Pro'
+        );
+        expect(mail.variables).toEqual(
+          expect.objectContaining({
+            nbReco: 0,
+            reco1: null,
+            reco2: null,
+            reco3: null,
+          })
+        );
+      }
+    );
+
+    it('uses the default image for a profile without picture', async () => {
+      const { mailsService, queuesService } = build();
+
+      await mailsService.sendReminderToCompleteOnboarding(buildUser(), {
+        count: 3,
+        profiles: [
+          buildProfile(1, { hasPicture: false }),
+          buildProfile(2),
+          buildProfile(3),
+        ],
+      });
+
+      expect(lastMail(queuesService).variables.reco1.imageUrl).toBe(
+        'https://s3.example.org/images/profile-placeholder.png'
+      );
+    });
+
+    it('falls back when a profile has missing data', async () => {
+      const { mailsService, queuesService } = build();
+
+      await mailsService.sendReminderToCompleteOnboarding(buildUser(), {
+        count: 3,
+        profiles: [
+          buildProfile(1, { currentJob: undefined, sectorOccupations: [] }),
+          buildProfile(2, {
+            role: UserRoles.CANDIDATE,
+            sectorOccupations: [],
+          }),
+          buildProfile(3),
+        ],
+      });
+
+      const { reco1, reco2 } = lastMail(queuesService).variables;
+      expect(reco1).toEqual(
+        expect.objectContaining({ workTitle: '', businessSector1: '' })
+      );
+      expect(reco2.workTitle).toBe('Je suis ouvert à toutes les opportunités');
+    });
+
+    it('never sends the old reminder template', async () => {
+      const { mailsService, queuesService } = build();
+
+      await mailsService.sendReminderToCompleteOnboarding(buildUser(), {
+        count: 0,
+        profiles: [],
+      });
+
+      expect(lastMail(queuesService).templateId).not.toBe(7718674);
     });
   });
 

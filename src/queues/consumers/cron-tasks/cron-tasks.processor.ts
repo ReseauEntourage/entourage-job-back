@@ -224,13 +224,13 @@ export class CronTasksProcessor extends WorkerHost {
   /**
    * Process the job to send a reminder to users that have not completed onboarding.
    * This method is called by the CronService every day at 9 AM.
-   * It will send a reminder to users that have not completed onboarding after 7 days.
+   * It will send a one-shot reminder to users that have not completed onboarding, the day after their account creation.
    * It will also send a message to the technical monitoring channel on Slack with the number of users that have not completed onboarding.
    * @param job - Job containing mail data to be sent
    * @returns A message indicating the result of the operation
    */
   async remindUsersNotCompletedOnboarding() {
-    const DAY_DELAY_BEFORE_SENDING_REMINDER = 3;
+    const DAY_DELAY_BEFORE_SENDING_REMINDER = 1;
 
     this.logger.log(
       'Sending reminder to users that have not completed onboarding...'
@@ -245,7 +245,7 @@ export class CronTasksProcessor extends WorkerHost {
     const results = await Promise.allSettled(
       users.map(async (user) => {
         this.logger.log(`Sending reminder to user ${user.id}`);
-        await this.usersService.sendReminderToCompleteOnboarding(user);
+        return this.usersService.sendReminderToCompleteOnboarding(user);
       })
     );
 
@@ -257,6 +257,11 @@ export class CronTasksProcessor extends WorkerHost {
       }
     );
 
+    // Reminders sent without compatible profiles (fewer than 3 were found)
+    const withoutProfilesCount = results.filter(
+      (result) => result.status === 'fulfilled' && !result.value.withProfiles
+    ).length;
+
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
       '📬 Send reminder to users that have not completed onboarding',
@@ -265,7 +270,11 @@ export class CronTasksProcessor extends WorkerHost {
         success: successIds.length,
         failure: failures.length,
       },
-      failures
+      failures,
+      undefined,
+      undefined,
+      [],
+      [{ label: 'Without profiles', value: withoutProfilesCount }]
     );
 
     if (!succeeded) {

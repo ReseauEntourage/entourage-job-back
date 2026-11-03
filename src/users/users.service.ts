@@ -3,6 +3,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment-timezone';
@@ -31,6 +32,7 @@ import {
   RecommendationsDto,
 } from 'src/user-profile-recommendations/dto/recommendations.dto';
 import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
+import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
@@ -77,6 +79,8 @@ export type UnavailableSenderNotificationResultDto = {
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
@@ -916,8 +920,45 @@ export class UsersService {
     );
   }
 
-  async sendReminderToCompleteOnboarding(user: User) {
-    return this.mailsService.sendReminderToCompleteOnboarding(user);
+  /**
+   * Sends the onboarding reminder with the compatible profiles found for the
+   * criteria already persisted on the user's profile. Only the profiles that
+   * the app shows to others are considered. A failure while looking for
+   * profiles is logged and the reminder is sent without profiles.
+   * @returns Whether the version with profiles was sent
+   */
+  async sendReminderToCompleteOnboarding(
+    user: User
+  ): Promise<{ withProfiles: boolean }> {
+    let compatibleProfiles: { count: number; profiles: PublicProfileDto[] } = {
+      count: 0,
+      profiles: [],
+    };
+
+    try {
+      const { businessSectorIds, nudgeIds } =
+        await this.userProfilesService.getPreRegistrationCriteriaForUser(
+          user.id
+        );
+      const { count, profiles } =
+        await this.userProfilesService.findPreRegistrationCompatibleProfiles(
+          user.role as UserRole,
+          nudgeIds,
+          businessSectorIds,
+          true
+        );
+      compatibleProfiles = { count, profiles };
+    } catch (error) {
+      this.logger.error(
+        `Failed to find compatible profiles for the onboarding reminder of user ${user.id}, sending the version without profiles`,
+        error
+      );
+    }
+
+    return this.mailsService.sendReminderToCompleteOnboarding(
+      user,
+      compatibleProfiles
+    );
   }
 
   async sendOnboardingBAOMailToUser(user: User) {
