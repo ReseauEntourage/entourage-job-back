@@ -217,6 +217,10 @@ describe('MESSAGING - extras', () => {
         () => request(server).post(`/messaging/conversations/${id}/archive`),
         () => request(server).post(`/messaging/conversations/${id}/unarchive`),
         () =>
+          request(server).post(
+            `/messaging/conversations/${id}/dismiss-ai-assistant-banner`
+          ),
+        () =>
           request(server)
             .post(`/messaging/conversations/${id}/report`)
             .send({ reason: 'SPAM' }),
@@ -251,6 +255,7 @@ describe('MESSAGING - extras', () => {
       ['archive', 'post'],
       ['unarchive', 'post'],
       ['seen', 'post'],
+      ['dismiss-ai-assistant-banner', 'post'],
     ])(
       'refuses %s to a user outside the conversation (referer, admin)',
       async (action) => {
