@@ -192,7 +192,7 @@ export class MessagingService {
    * Returns an existing conversation id whose participants match EXACTLY the given set.
    * Order does not matter; duplicates are ignored by the caller via normalizeParticipantIds.
    */
-  private async findConversationIdByExactParticipants(
+  async findConversationIdByExactParticipants(
     participantIds: string[],
     options?: { transaction?: Transaction }
   ): Promise<string | null> {

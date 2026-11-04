@@ -53,7 +53,8 @@ const parseSSEData = (body: string): unknown[] =>
     });
 
 // Complements tests/ai-assistant/ai-assistant.e2e-spec.ts: session read/reset, rate limit,
-// suggestions, escalation and the role matrix of the three endpoints.
+// suggestions, escalation and the access matrix of the three endpoints, which are
+// addressed by recipient (the candidate) rather than by conversation.
 describe('AI ASSISTANT - extras', () => {
   let app: INestApplication;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,6 +73,7 @@ describe('AI ASSISTANT - extras', () => {
   let referer: LoggedInUser;
   let admin: LoggedInUser;
   let outsider: LoggedInUser;
+  let ineligibleCoach: LoggedInUser;
   let conversationId: string;
 
   const envBackup = { ...process.env };
@@ -81,9 +83,9 @@ describe('AI ASSISTANT - extras', () => {
     generateText: jest.fn(),
   };
 
-  const postStream = (token: string, id = conversationId) =>
+  const postStream = (token: string, id = candidate.user.id) =>
     request(server)
-      .post(`/ai-assistant/conversations/${id}/stream`)
+      .post(`/ai-assistant/recipients/${id}/stream`)
       .send({ message: 'Propose-moi une réponse' })
       .set('authorization', `Bearer ${token}`)
       .buffer(true)
@@ -139,6 +141,10 @@ describe('AI ASSISTANT - extras', () => {
     referer = await usersHelper.createLoggedInUser({ role: UserRoles.REFERER });
     admin = await usersHelper.createLoggedInUser({ role: UserRoles.ADMIN });
     outsider = await usersHelper.createLoggedInUser({ role: UserRoles.COACH });
+    ineligibleCoach = await usersHelper.createLoggedInUser({
+      role: UserRoles.COACH,
+      elearningCompletedAt: null,
+    });
 
     const conversation = await conversationFactory.create();
     conversationId = conversation.id;
@@ -156,21 +162,20 @@ describe('AI ASSISTANT - extras', () => {
     await databaseHelper.resetTestDB();
   });
 
-  describe('GET /ai-assistant/conversations/:id/session', () => {
+  describe('GET /ai-assistant/recipients/:recipientId/session', () => {
     it('returns 401 for an anonymous user', async () => {
       const response = await request(server).get(
-        `/ai-assistant/conversations/${conversationId}/session`
+        `/ai-assistant/recipients/${candidate.user.id}/session`
       );
       expect(response.status).toBe(401);
     });
 
     it.each([
-      ['referer', () => referer],
-      ['admin', () => admin],
-      ['coach outside the conversation', () => outsider],
+      ['candidate', () => candidate],
+      ['coach who has not completed the eLearning', () => ineligibleCoach],
     ])('returns 401 for a %s', async (_label, user) => {
       const response = await request(server)
-        .get(`/ai-assistant/conversations/${conversationId}/session`)
+        .get(`/ai-assistant/recipients/${candidate.user.id}/session`)
         .set('authorization', `Bearer ${user().token}`);
 
       expect(response.status).toBe(401);
@@ -178,7 +183,7 @@ describe('AI ASSISTANT - extras', () => {
 
     it('returns an empty session when the coach never used the assistant', async () => {
       const response = await request(server)
-        .get(`/ai-assistant/conversations/${conversationId}/session`)
+        .get(`/ai-assistant/recipients/${candidate.user.id}/session`)
         .set('authorization', `Bearer ${coach.token}`);
 
       expect(response.status).toBe(200);
@@ -192,32 +197,32 @@ describe('AI ASSISTANT - extras', () => {
       await postStream(coach.token);
 
       const own = await request(server)
-        .get(`/ai-assistant/conversations/${conversationId}/session`)
+        .get(`/ai-assistant/recipients/${candidate.user.id}/session`)
         .set('authorization', `Bearer ${coach.token}`);
-      const candidateView = await request(server)
-        .get(`/ai-assistant/conversations/${conversationId}/session`)
-        .set('authorization', `Bearer ${candidate.token}`);
+      const otherCoachView = await request(server)
+        .get(`/ai-assistant/recipients/${candidate.user.id}/session`)
+        .set('authorization', `Bearer ${outsider.token}`);
 
       expect(own.status).toBe(200);
       expect(
         own.body.messages.map(({ role }: { role: string }) => role)
       ).toEqual(['user', 'assistant']);
-      expect(candidateView.body).toEqual({ messages: [] });
+      expect(otherCoachView.status).toBe(200);
+      expect(otherCoachView.body).toEqual({ messages: [] });
     });
   });
 
-  describe('DELETE /ai-assistant/conversations/:id/session/messages', () => {
+  describe('DELETE /ai-assistant/recipients/:recipientId/session/messages', () => {
     it('returns 401 for an anonymous user', async () => {
       const response = await request(server).delete(
-        `/ai-assistant/conversations/${conversationId}/session/messages`
+        `/ai-assistant/recipients/${candidate.user.id}/session/messages`
       );
       expect(response.status).toBe(401);
     });
 
     it.each([
-      ['referer', () => referer],
-      ['admin', () => admin],
-      ['coach outside the conversation', () => outsider],
+      ['candidate', () => candidate],
+      ['coach who has not completed the eLearning', () => ineligibleCoach],
     ])('returns 401 for a %s and keeps the messages', async (_label, user) => {
       anthropicServiceMock.createStream.mockReturnValue(
         createFakeStream(['Une réponse'])
@@ -226,7 +231,7 @@ describe('AI ASSISTANT - extras', () => {
 
       const response = await request(server)
         .delete(
-          `/ai-assistant/conversations/${conversationId}/session/messages`
+          `/ai-assistant/recipients/${candidate.user.id}/session/messages`
         )
         .set('authorization', `Bearer ${user().token}`);
 
@@ -243,7 +248,7 @@ describe('AI ASSISTANT - extras', () => {
 
       const response = await request(server)
         .delete(
-          `/ai-assistant/conversations/${conversationId}/session/messages`
+          `/ai-assistant/recipients/${candidate.user.id}/session/messages`
         )
         .set('authorization', `Bearer ${coach.token}`);
 
@@ -252,10 +257,35 @@ describe('AI ASSISTANT - extras', () => {
       expect(await sessionModel.count()).toBe(1);
     });
 
+    it('only clears the thread of the recipient, not the ones of other candidates', async () => {
+      const otherCandidate = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+      anthropicServiceMock.createStream.mockReturnValue(
+        createFakeStream(['Une réponse'])
+      );
+      await postStream(coach.token);
+      await postStream(coach.token, otherCandidate.user.id);
+      expect(await messageModel.count()).toBe(4);
+
+      const response = await request(server)
+        .delete(
+          `/ai-assistant/recipients/${candidate.user.id}/session/messages`
+        )
+        .set('authorization', `Bearer ${coach.token}`);
+
+      expect(response.status).toBe(204);
+      const remaining = await request(server)
+        .get(`/ai-assistant/recipients/${otherCandidate.user.id}/session`)
+        .set('authorization', `Bearer ${coach.token}`);
+      expect(remaining.body.messages).toHaveLength(2);
+      expect(await messageModel.count()).toBe(2);
+    });
+
     it('returns 204 when there is nothing to reset', async () => {
       const response = await request(server)
         .delete(
-          `/ai-assistant/conversations/${conversationId}/session/messages`
+          `/ai-assistant/recipients/${candidate.user.id}/session/messages`
         )
         .set('authorization', `Bearer ${coach.token}`);
 
@@ -263,23 +293,50 @@ describe('AI ASSISTANT - extras', () => {
     });
   });
 
-  describe('POST /ai-assistant/conversations/:id/stream', () => {
-    it('returns 401 for an anonymous user, a referer and an admin outside the conversation', async () => {
+  describe('POST /ai-assistant/recipients/:recipientId/stream', () => {
+    it('returns 401 for an anonymous user, a candidate and a coach who has not completed the eLearning', async () => {
       const anonymous = await request(server)
-        .post(`/ai-assistant/conversations/${conversationId}/stream`)
+        .post(`/ai-assistant/recipients/${candidate.user.id}/stream`)
         .send({ message: 'hello' });
       expect(anonymous.status).toBe(401);
 
-      for (const user of [referer, admin]) {
+      for (const user of [candidate, ineligibleCoach]) {
         const response = await postStream(user.token);
         expect(response.status).toBe(401);
       }
       expect(anthropicServiceMock.createStream).not.toHaveBeenCalled();
     });
 
-    it('returns 400 for an empty message', async () => {
+    it('returns 404 when the recipient does not exist or is not a candidate', async () => {
+      const unknown = await postStream(
+        coach.token,
+        '00000000-0000-4000-8000-000000000000'
+      );
+      const notACandidate = await postStream(coach.token, outsider.user.id);
+
+      expect(unknown.status).toBe(404);
+      expect(notACandidate.status).toBe(404);
+      expect(anthropicServiceMock.createStream).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for a recipient id that is not a UUID', async () => {
+      const response = await postStream(coach.token, 'not-a-uuid');
+
+      expect(response.status).toBe(400);
+    });
+
+    it('no longer serves the former per-conversation route', async () => {
       const response = await request(server)
         .post(`/ai-assistant/conversations/${conversationId}/stream`)
+        .send({ message: 'hello' })
+        .set('authorization', `Bearer ${coach.token}`);
+
+      expect(response.status).toBe(404);
+    });
+
+    it('returns 400 for an empty message', async () => {
+      const response = await request(server)
+        .post(`/ai-assistant/recipients/${candidate.user.id}/stream`)
         .send({ message: '' })
         .set('authorization', `Bearer ${coach.token}`);
 
@@ -492,11 +549,7 @@ describe('AI ASSISTANT - extras', () => {
       });
     });
 
-    it('streams for an admin participant of the conversation', async () => {
-      await messagingHelper.associationParticipantsToConversation(
-        conversationId,
-        [admin.user.id]
-      );
+    it('streams for an eligible admin who is not a participant of any conversation', async () => {
       anthropicServiceMock.createStream.mockReturnValue(
         createFakeStream(['réponse admin'])
       );
@@ -506,6 +559,85 @@ describe('AI ASSISTANT - extras', () => {
       expect(parseSSEData(response.body)).toContainEqual({
         content: 'réponse admin',
       });
+    });
+
+    it('streams for an eligible referer, whatever the conversations of the candidate', async () => {
+      anthropicServiceMock.createStream.mockReturnValue(
+        createFakeStream(['réponse référent'])
+      );
+
+      const response = await postStream(referer.token);
+
+      expect(parseSSEData(response.body)).toContainEqual({
+        content: 'réponse référent',
+      });
+    });
+
+    describe('without a conversation between the coach and the candidate', () => {
+      let newCandidate: LoggedInUser;
+
+      beforeEach(async () => {
+        newCandidate = await usersHelper.createLoggedInUser({
+          role: UserRoles.CANDIDATE,
+          zone: ZoneName.IDF,
+        });
+      });
+
+      it('streams the answer and tells the model there is no recent message', async () => {
+        anthropicServiceMock.createStream.mockReturnValue(
+          createFakeStream(['Bonjour !'])
+        );
+
+        const response = await postStream(coach.token, newCandidate.user.id);
+
+        expect(parseSSEData(response.body)).toContainEqual({
+          content: 'Bonjour !',
+        });
+        const systemBlocks = anthropicServiceMock.createStream.mock
+          .calls[0][0] as { text: string }[];
+        expect(systemBlocks.map(({ text }) => text).join('\n')).toContain(
+          'Aucun message récent.'
+        );
+      });
+
+      it('keeps the same thread once the conversation is created', async () => {
+        anthropicServiceMock.createStream.mockReturnValue(
+          createFakeStream(['Une réponse'])
+        );
+        await postStream(coach.token, newCandidate.user.id);
+
+        const newConversation = await conversationFactory.create();
+        await messagingHelper.associationParticipantsToConversation(
+          newConversation.id,
+          [coach.user.id, newCandidate.user.id]
+        );
+
+        const response = await request(server)
+          .get(`/ai-assistant/recipients/${newCandidate.user.id}/session`)
+          .set('authorization', `Bearer ${coach.token}`);
+
+        expect(
+          response.body.messages.map(({ role }: { role: string }) => role)
+        ).toEqual(['user', 'assistant']);
+        expect(await sessionModel.count()).toBe(1);
+      });
+    });
+
+    it('does not depend on the eLearning status of the candidate', async () => {
+      const unfinishedCandidate = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+        elearningCompletedAt: null,
+      });
+      anthropicServiceMock.createStream.mockReturnValue(
+        createFakeStream(['ok'])
+      );
+
+      const response = await postStream(
+        coach.token,
+        unfinishedCandidate.user.id
+      );
+
+      expect(parseSSEData(response.body)).toContainEqual({ content: 'ok' });
     });
 
     it('proposes to escalate to the staff referent when the classifier says so', async () => {

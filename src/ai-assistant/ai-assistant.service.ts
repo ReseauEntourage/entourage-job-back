@@ -25,6 +25,7 @@ import {
   traceAiWorkflow,
 } from 'src/external-services/llm-observability/llm-observability';
 import { Formation } from 'src/formations/models';
+import { userAttributes } from 'src/messaging/messaging.attributes';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { Occupation } from 'src/occupations/models';
 import { Organization } from 'src/organizations/models';
@@ -64,9 +65,9 @@ export class AiAssistantService {
     @Inject(REDIS_CLIENT) private readonly redis: Redis
   ) {}
 
-  async getSession(conversationId: string, userId: string) {
+  async getSession(recipientId: string, userId: string) {
     const session = await this.sessionModel.findOne({
-      where: { conversationId, userId },
+      where: { recipientId, userId },
       include: [
         {
           model: AiAssistantMessage,
@@ -80,17 +81,17 @@ export class AiAssistantService {
     return session;
   }
 
-  async getOrCreateSession(conversationId: string, userId: string) {
+  async getOrCreateSession(recipientId: string, userId: string) {
     const [session] = await this.sessionModel.findOrCreate({
-      where: { conversationId, userId },
-      defaults: { conversationId, userId },
+      where: { recipientId, userId },
+      defaults: { recipientId, userId },
     });
     return session;
   }
 
-  async resetSession(conversationId: string, userId: string) {
+  async resetSession(recipientId: string, userId: string) {
     const session = await this.sessionModel.findOne({
-      where: { conversationId, userId },
+      where: { recipientId, userId },
     });
 
     if (!session) {
@@ -101,23 +102,21 @@ export class AiAssistantService {
   }
 
   streamResponse(
-    conversationId: string,
+    recipientId: string,
     userId: string,
     message: string
   ): Observable<MessageEvent> {
     return new Observable((subscriber) => {
-      this.doStream(subscriber, conversationId, userId, message).catch(
-        (error) => {
-          this.logger.error(
-            `AI stream error: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
-          subscriber.next({ data: { error: 'Une erreur est survenue.' } });
-          subscriber.next({ data: '[DONE]' });
-          subscriber.complete();
-        }
-      );
+      this.doStream(subscriber, recipientId, userId, message).catch((error) => {
+        this.logger.error(
+          `AI stream error: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        subscriber.next({ data: { error: 'Une erreur est survenue.' } });
+        subscriber.next({ data: '[DONE]' });
+        subscriber.complete();
+      });
     });
   }
 
@@ -149,26 +148,20 @@ export class AiAssistantService {
    */
   private doStream(
     subscriber: Subscriber<MessageEvent>,
-    conversationId: string,
+    recipientId: string,
     userId: string,
     message: string
   ) {
     return traceAiWorkflow(
       { feature: AiFeature.AI_ASSISTANT, name: 'ai-assistant' },
       ({ setOutcome }) =>
-        this.streamAnswer(
-          subscriber,
-          conversationId,
-          userId,
-          message,
-          setOutcome
-        )
+        this.streamAnswer(subscriber, recipientId, userId, message, setOutcome)
     );
   }
 
   private async streamAnswer(
     subscriber: Subscriber<MessageEvent>,
-    conversationId: string,
+    recipientId: string,
     userId: string,
     message: string,
     setOutcome: AiWorkflowContext['setOutcome']
@@ -196,21 +189,33 @@ export class AiAssistantService {
 
     subscriber.next({ data: { type: 'rate_limit_info', remaining } });
 
-    const session = await this.getOrCreateSession(conversationId, userId);
+    const session = await this.getOrCreateSession(recipientId, userId);
 
-    const conversation =
-      await this.messagingService.findConversationWithRecentMessages(
-        conversationId,
-        MAX_CONVERSATION_CONTEXT_MESSAGES
-      );
+    // The recipient is loaded by id: no conversation is required, and the
+    // zone attributes are what `staffContact` (escalation) relies on.
+    const candidateUser = await this.userModel.findOne({
+      where: { id: recipientId, role: UserRoles.CANDIDATE },
+      attributes: userAttributes,
+    });
 
-    if (!conversation) {
-      throw new NotFoundException('Conversation introuvable.');
+    if (!candidateUser) {
+      throw new NotFoundException('Destinataire introuvable.');
     }
 
-    const candidateUser = conversation.participants.find(
-      (p) => p.role === UserRoles.CANDIDATE
-    );
+    // The direct conversation of the pair, if it already exists: without it,
+    // the assistant simply gets no recent messages.
+    const conversationId =
+      await this.messagingService.findConversationIdByExactParticipants([
+        userId,
+        recipientId,
+      ]);
+
+    const conversation = conversationId
+      ? await this.messagingService.findConversationWithRecentMessages(
+          conversationId,
+          MAX_CONVERSATION_CONTEXT_MESSAGES
+        )
+      : null;
 
     const candidateProfile = candidateUser
       ? await this.userProfileModel.findOne({
@@ -258,7 +263,7 @@ export class AiAssistantService {
       content: message,
     });
 
-    const recentConversationMessages = (conversation.messages ?? [])
+    const recentConversationMessages = (conversation?.messages ?? [])
       .slice(0, MAX_CONVERSATION_CONTEXT_MESSAGES)
       .reverse();
 
@@ -317,7 +322,7 @@ export class AiAssistantService {
 
     if (finalMessage.stop_reason === 'max_tokens') {
       this.logger.warn(
-        `AI assistant response truncated by max_tokens (conversation ${conversationId}, ${finalMessage.usage.output_tokens} output tokens)`
+        `AI assistant response truncated by max_tokens (recipient ${recipientId}, ${finalMessage.usage.output_tokens} output tokens)`
       );
       setOutcome('truncated');
       subscriber.next({ data: { type: 'truncated' } });

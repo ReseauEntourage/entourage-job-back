@@ -13,10 +13,13 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { Conversation } from 'src/messaging/models/conversation.model';
 import { User } from 'src/users/models';
 import { AiAssistantMessage } from './ai-assistant-message.model';
 
+/**
+ * One AI assistant thread per (user, recipient): it exists independently of
+ * any conversation, so it can be used before the first message is sent.
+ */
 @Table({ tableName: 'AiAssistantSessions' })
 export class AiAssistantSession extends Model {
   @IsUUID(4)
@@ -26,16 +29,16 @@ export class AiAssistantSession extends Model {
   id: string;
 
   @IsUUID(4)
-  @ForeignKey(() => Conversation)
+  @ForeignKey(() => User)
   @AllowNull(false)
   @Column
-  conversationId: string;
+  userId: string;
 
   @IsUUID(4)
   @ForeignKey(() => User)
   @AllowNull(false)
   @Column
-  userId: string;
+  recipientId: string;
 
   @CreatedAt
   createdAt: Date;
@@ -43,11 +46,11 @@ export class AiAssistantSession extends Model {
   @UpdatedAt
   updatedAt: Date;
 
-  @BelongsTo(() => Conversation, 'conversationId')
-  conversation: Conversation;
-
   @BelongsTo(() => User, 'userId')
   user: User;
+
+  @BelongsTo(() => User, 'recipientId')
+  recipient: User;
 
   @HasMany(() => AiAssistantMessage, 'sessionId')
   messages: AiAssistantMessage[];
