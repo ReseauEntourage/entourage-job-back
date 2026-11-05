@@ -173,7 +173,7 @@ export class WorkQueueProcessor extends WorkerHost {
    * - and the user is the company admin (creating it), create or update the Company account
    *   through a separate job (CREATE_OR_UPDATE_SALESFORCE_COMPANY), unchanged
    * - otherwise, enqueue UPDATE_SALESFORCE_USER_COMPANY directly so the coach goes through the
-   *   same gated Company account lookup/fallback logic as `PUT /user/company`
+   *   same gated Company account lookup/fallback logic as `PUT /users/me/company`
    * @param job - Job containing user data to create or update in Salesforce
    * @returns A message indicating the result of the operation
    */

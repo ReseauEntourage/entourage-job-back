@@ -36,7 +36,7 @@ describe('Users', () => {
   let businessSector1: BusinessSector;
   let businessSector2: BusinessSector;
 
-  const route = '/user';
+  const route = '/users';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -961,7 +961,7 @@ describe('Users', () => {
         });
         it('Should return 401 if not connected', async () => {
           const response: APIResponse<UsersController['updatePassword']> =
-            await request(server).put(`${route}/changePwd`).send({
+            await request(server).put(`${route}/me/password`).send({
               oldPassword: password,
               newPassword: 'Candidat123?',
             });
@@ -970,7 +970,7 @@ describe('Users', () => {
         it('Should return 401 if old password is invalid', async () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
-              .put(`${route}/changePwd`)
+              .put(`${route}/me/password`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 oldPassword: 'falsePassword123!',
@@ -981,7 +981,7 @@ describe('Users', () => {
         it("Should return 400 if new password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
-              .put(`${route}/changePwd`)
+              .put(`${route}/me/password`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 oldPassword: password,
@@ -992,7 +992,7 @@ describe('Users', () => {
         it('Should return 200 and updated user', async () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
-              .put(`${route}/changePwd`)
+              .put(`${route}/me/password`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 email: loggedInCandidate.user.email,

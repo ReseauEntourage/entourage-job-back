@@ -49,7 +49,7 @@ describe('UserCreation', () => {
   let nudgeNetwork: Nudge;
   let nudgeInterview: Nudge;
 
-  const route = '/user';
+  const route = '/users';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -135,7 +135,7 @@ describe('UserCreation', () => {
     }
   });
 
-  describe('POST /user - From admin', () => {
+  describe('POST /users - From admin', () => {
     let loggedInAdmin: LoggedInUser;
     let loggedInCandidate: LoggedInUser;
     let organization: Organization;
@@ -1051,7 +1051,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(201);
@@ -1083,7 +1083,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send({
           firstName: user.firstName,
@@ -1148,7 +1148,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(201);
@@ -1201,7 +1201,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(400);
@@ -1253,7 +1253,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(400);
@@ -1305,7 +1305,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(400);
@@ -1357,7 +1357,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(400);
@@ -1409,7 +1409,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInCandidate.token}`)
         .send(userToSend);
       expect(response.status).toBe(403);
@@ -1461,7 +1461,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInCoach.token}`)
         .send(userToSend);
       expect(response.status).toBe(403);
@@ -1509,7 +1509,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(409);

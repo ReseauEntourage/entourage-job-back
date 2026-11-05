@@ -16,7 +16,7 @@ import { UsersDeletionService } from './users-deletion.service';
 // TODO change to users
 @ApiTags('Users')
 @ApiBearerAuth()
-@Controller('user')
+@Controller('users')
 export class UsersDeletionController {
   constructor(
     private readonly usersDeletionService: UsersDeletionService,
