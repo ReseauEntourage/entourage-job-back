@@ -8,6 +8,7 @@ import { BusinessSector } from 'src/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { UsersByIdController } from 'src/users/users-by-id.controller';
 import { UsersController } from 'src/users/users.controller';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
@@ -146,12 +147,12 @@ describe('Users', () => {
             {},
             true
           );
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server).get(`${route}/${candidate.email}`);
           expect(response.status).toBe(401);
         });
         it('Should return 200 when logged in candidate gets himself', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`);
@@ -159,7 +160,7 @@ describe('Users', () => {
           expect(response.body.email).toEqual(loggedInCandidate.user.email);
         });
         it('Should return 200 when logged in coach get himself', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCoach.user.email}`)
               .set('authorization', `Bearer ${loggedInCoach.token}`);
@@ -167,7 +168,7 @@ describe('Users', () => {
           expect(response.body.email).toEqual(loggedInCoach.user.email);
         });
         it('Should return 200 when logged in referer gets himself', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInReferer.user.email}`)
               .set('authorization', `Bearer ${loggedInReferer.token}`);
@@ -175,21 +176,21 @@ describe('Users', () => {
           expect(response.body.email).toEqual(loggedInReferer.user.email);
         });
         it('Should return 403 when logged in coach get a candidate', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 when logged in referer get a candidate', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and get a user by email when logged in as admin', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
@@ -198,7 +199,7 @@ describe('Users', () => {
           expect(receivedUser.email).toEqual(loggedInCandidate.user.email);
         });
         it('Should return 200 and get a user by id when logged in as admin', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
@@ -206,7 +207,7 @@ describe('Users', () => {
           expect(response.body.id).toEqual(loggedInCandidate.user.id);
         });
         it('Should return 404 if user not found', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${uuid()}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
@@ -880,7 +881,7 @@ describe('Users', () => {
             onboardingCompletedAt: null,
           });
           // Default values right after registration
-          const initialResponse: APIResponse<UsersController['findUser']> =
+          const initialResponse: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`);
