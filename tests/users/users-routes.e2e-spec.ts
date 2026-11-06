@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { Server } from 'http';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -12,6 +13,9 @@ import { UserRoles } from 'src/users/users.types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
+
+// Generated at runtime (no hardcoded credential, which secret scanners flag).
+const buildRandomPassword = () => `Aa1!${randomBytes(8).toString('hex')}`;
 
 describe('Users API routes convention (EN-8409)', () => {
   let app: INestApplication;
@@ -203,7 +207,10 @@ describe('Users API routes convention (EN-8409)', () => {
       const candidate = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
       });
-      const body = { oldPassword: 'wrong', newPassword: 'Aa1!whatever99' };
+      const body = {
+        oldPassword: buildRandomPassword(),
+        newPassword: buildRandomPassword(),
+      };
 
       const legacy = await request(server)
         .put('/user/changePwd')
