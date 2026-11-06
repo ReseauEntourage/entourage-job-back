@@ -51,6 +51,7 @@ import { RevisionsModule } from './revisions/revisions.module';
 import { UserProfileSharesModule } from './user-profile-shares/user-profile-shares.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
+import { UsersByIdModule } from './users/users-by-id.module';
 import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
@@ -126,7 +127,6 @@ export function getSequelizeOptions(
     ...(process.env.QUEUES_ADMIN_PASSWORD ? [QueuesBoardModule] : []),
     RevisionsModule,
     UserProfilesModule,
-    // Put UserProfilesModule before UsersModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
@@ -171,6 +171,9 @@ export function getSequelizeOptions(
     FeatureFlagsModule,
     GamificationModule,
     CheckinModule,
+    // Keep LAST: `GET /users/:id` must be registered after every static
+    // `/users/...` route (see UsersByIdController).
+    UsersByIdModule,
   ],
   providers: [
     {

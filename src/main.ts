@@ -3,6 +3,7 @@ import './tracer';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { legacyUserRoutesMiddleware } from './legacy-user-routes/legacy-user-routes.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,6 +22,9 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);
   }
+
+  // Temporary: serve the pre-EN-8409 `/user/...` URLs (see the middleware).
+  app.use(legacyUserRoutesMiddleware);
 
   app.enableCors();
   /*

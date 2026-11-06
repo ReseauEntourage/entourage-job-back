@@ -84,7 +84,7 @@ describe('UserProfiles', () => {
   let departmentRhone: Department;
   let departmentParis: Department;
 
-  const route = '/user';
+  const route = '/users';
 
   async function createProfileEmbedding(userProfileId: string) {
     await userProfileEmbeddingModel.create({
@@ -236,12 +236,12 @@ describe('UserProfiles', () => {
 
   describe('UserProfiles General Tests', () => {
     describe('READ', () => {
-      describe('GET /user/profile', () => {
+      describe('GET /users/profiles', () => {
         describe('/profile?limit=&offset= - Read all profiles', () => {
           it('Should return 401 if user is not logged in', async () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server).get(
-                `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
+                `${route}/profiles?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
               );
             expect(response.status).toBe(401);
           });
@@ -251,7 +251,7 @@ describe('UserProfiles', () => {
             });
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
-                .get(`${route}/profile`)
+                .get(`${route}/profiles`)
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(400);
           });
@@ -262,7 +262,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -274,7 +274,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -286,7 +286,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCoach.token}`);
             expect(response.status).toBe(200);
@@ -298,7 +298,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInReferer.token}`);
             expect(response.status).toBe(200);
@@ -309,7 +309,7 @@ describe('UserProfiles', () => {
             });
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
-                .get(`${route}/profile?role=${UserRoles.CANDIDATE}`)
+                .get(`${route}/profiles?role=${UserRoles.CANDIDATE}`)
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(400);
           });
@@ -319,7 +319,7 @@ describe('UserProfiles', () => {
             });
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
-                .get(`${route}/profile?offset=0&limit=25`)
+                .get(`${route}/profiles?offset=0&limit=25`)
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(400);
           });
@@ -337,7 +337,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
@@ -360,7 +360,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.COACH}`
                 )
                 .set(
                   'authorization',
@@ -385,7 +385,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -414,7 +414,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}&sort=relevance`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.COACH}&sort=relevance`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -443,7 +443,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}&sort=relevance`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.COACH}&sort=relevance`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
@@ -461,7 +461,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role=${UserRoles.ADMIN}`
+                  `${route}/profiles?offset=0&limit=25&role=${UserRoles.ADMIN}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
@@ -584,7 +584,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=1&offset=5&role=${UserRoles.CANDIDATE}`
+                  `${route}/profiles?limit=1&offset=5&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -599,7 +599,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=2&offset=0&role=${UserRoles.CANDIDATE}`
+                  `${route}/profiles?limit=2&offset=0&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -625,7 +625,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=2&offset=0&role=${UserRoles.REFERER}`
+                  `${route}/profiles?limit=2&offset=0&role=${UserRoles.REFERER}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(400);
@@ -634,7 +634,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=3&offset=0&role=${UserRoles.COACH}`
+                  `${route}/profiles?limit=3&offset=0&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -664,7 +664,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=2&offset=2&role=${UserRoles.CANDIDATE}`
+                  `${route}/profiles?limit=2&offset=2&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -691,7 +691,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=2&offset=2&role=${UserRoles.COACH}`
+                  `${route}/profiles?limit=2&offset=2&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -744,7 +744,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&search=XXX`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.CANDIDATE}&search=XXX`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -775,7 +775,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&search=XXX`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.COACH}&search=XXX`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -843,7 +843,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&departments=${departmentRhone.id}&departments=${departmentParis.id}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.CANDIDATE}&departments=${departmentRhone.id}&departments=${departmentParis.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -907,7 +907,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&departments=${departmentRhone.id}&departments=${departmentParis.id}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.COACH}&departments=${departmentRhone.id}&departments=${departmentParis.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1067,7 +1067,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&businessSectorIds=${businessSector1.id}&businessSectorIds=${businessSector3.id}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.CANDIDATE}&businessSectorIds=${businessSector1.id}&businessSectorIds=${businessSector3.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1221,7 +1221,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&businessSectorIds=${businessSector1.id}&businessSectorIds=${businessSector3.id}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.COACH}&businessSectorIds=${businessSector1.id}&businessSectorIds=${businessSector3.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1318,7 +1318,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeInterview.id}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeInterview.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1414,7 +1414,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeInterview.id}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.COACH}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeInterview.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1469,7 +1469,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&query=XXX&departments=${departmentRhone.id}&businessSectorIds=${businessSector1.id}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeNetwork.id}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.CANDIDATE}&query=XXX&departments=${departmentRhone.id}&businessSectorIds=${businessSector1.id}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1516,7 +1516,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&query=XXX&departments=${departmentRhone.id}&businessSectorIds=${businessSector1.id}&nudgeIds=${nudgeNetwork.id}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.COACH}&query=XXX&departments=${departmentRhone.id}&businessSectorIds=${businessSector1.id}&nudgeIds=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -1555,7 +1555,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&isAvailable=true`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.CANDIDATE}&isAvailable=true`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -1585,7 +1585,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&isAvailable=false`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.CANDIDATE}&isAvailable=false`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -1613,7 +1613,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}`
+                  `${route}/profiles?limit=50&offset=0&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -1623,7 +1623,7 @@ describe('UserProfiles', () => {
         });
       });
 
-      describe('GET /user/profile/:userId - Get user profile', () => {
+      describe('GET /users/:userId/profile - Get user profile', () => {
         let loggedInUser: LoggedInUser;
         let randomUser: User;
         let randomUserProfile: UserProfile;
@@ -1693,13 +1693,13 @@ describe('UserProfiles', () => {
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(server).get(`${route}/profile/${randomUser.id}`);
+            await request(server).get(`${route}/${randomUser.id}/profile`);
           expect(response.status).toBe(401);
         });
         it('Should return 200, if user logged in', async () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
-              .get(`${route}/profile/${randomUser.id}`)
+              .get(`${route}/${randomUser.id}/profile`)
               .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
@@ -1715,7 +1715,7 @@ describe('UserProfiles', () => {
         it('Should return 200, and last contacted dates if user has contacted other user', async () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
-              .get(`${route}/profile/${randomUser.id}`)
+              .get(`${route}/${randomUser.id}/profile`)
               .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
@@ -1735,7 +1735,7 @@ describe('UserProfiles', () => {
           });
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
-              .get(`${route}/profile/${ineligibleUser.id}`)
+              .get(`${route}/${ineligibleUser.id}/profile`)
               .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(404);
         });
@@ -1746,7 +1746,7 @@ describe('UserProfiles', () => {
           });
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
-              .get(`${route}/profile/${ineligibleUser.id}`)
+              .get(`${route}/${ineligibleUser.id}/profile`)
               .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(404);
         });
@@ -1760,7 +1760,7 @@ describe('UserProfiles', () => {
           });
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
-              .get(`${route}/profile/${ineligibleUser.id}`)
+              .get(`${route}/${ineligibleUser.id}/profile`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
         });
@@ -1771,7 +1771,7 @@ describe('UserProfiles', () => {
           });
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
-              .get(`${route}/profile/${ineligibleUser.id}`)
+              .get(`${route}/${ineligibleUser.id}/profile`)
               .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(404);
         });
@@ -1837,7 +1837,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server).put(
-            `${route}/profile/${loggedInCandidate.user.id}`
+            `${route}/${loggedInCandidate.user.id}/profile`
           );
 
           expect(response.status).toBe(401);
@@ -1847,7 +1847,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
@@ -1860,7 +1860,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .send({
               description: 'hello',
@@ -1873,7 +1873,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               description: 'hello',
@@ -1886,7 +1886,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .put(`${route}/${loggedInCoach.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               description: 'hello',
@@ -1918,7 +1918,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
 
@@ -1965,7 +1965,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
           expect(response.status).toBe(400);
@@ -1982,7 +1982,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
           expect(response.status).toBe(400);
@@ -2007,7 +2007,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .put(`${route}/${loggedInCoach.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedProfile);
 
@@ -2040,7 +2040,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
 
@@ -2070,7 +2070,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
 
@@ -2094,7 +2094,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
 
@@ -2110,7 +2110,7 @@ describe('UserProfiles', () => {
         describe('Nudges and customNudges independence', () => {
           const putProfile = (body: UserProfileWithPartialAssociations) =>
             request(server)
-              .put(`${route}/profile/${loggedInCandidate.user.id}`)
+              .put(`${route}/${loggedInCandidate.user.id}/profile`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send(body);
 
@@ -2252,7 +2252,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
 
@@ -2300,7 +2300,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
 
@@ -2330,7 +2330,7 @@ describe('UserProfiles', () => {
           const firstResponse: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               experiences: [
@@ -2354,7 +2354,7 @@ describe('UserProfiles', () => {
           const secondResponse: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               experiences: [{ title: 'Nouveau poste', company: 'Nouvelle SA' }],
@@ -2387,7 +2387,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/${loggedInCandidate.user.id}/profile`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
           expect(response.status).toBe(200);
@@ -2432,7 +2432,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/upload-image`)
+            .post(`${route}/me/profile/image`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
 
@@ -2442,7 +2442,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/upload-image`)
+            .post(`${route}/me/profile/image`)
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2452,7 +2452,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/upload-image`)
+            .post(`${route}/me/profile/image`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2462,7 +2462,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/upload-image`)
+            .post(`${route}/me/profile/image`)
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2472,7 +2472,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/upload-image`)
+            .post(`${route}/me/profile/image`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
@@ -2481,7 +2481,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/upload-image`)
+            .post(`${route}/me/profile/image`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2491,7 +2491,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/upload-image`)
+            .post(`${route}/me/profile/image`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
@@ -2501,7 +2501,7 @@ describe('UserProfiles', () => {
   });
 
   describe('UserProfiles Refering Context', () => {
-    describe('GET /user/profile/refered', () => {
+    describe('GET /current/profile/referred-profiles', () => {
       describe('/profile/refered?limit=&offset= - Read only candidates that current user refered', () => {
         let loggedInReferer: LoggedInUser;
         beforeEach(async () => {
@@ -2514,7 +2514,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['findReferedCandidates']
           > = await request(server).get(
-            `${route}/profile/refered?limit=25&offset=0`
+            `/current/profile/referred-profiles?limit=25&offset=0`
           );
           expect(response.status).toBe(401);
         });
@@ -2526,7 +2526,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['findReferedCandidates']
           > = await request(server)
-            .get(`${route}/profile/refered?limit=25&offset=0`)
+            .get(`/current/profile/referred-profiles?limit=25&offset=0`)
             .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual([]);
@@ -2548,7 +2548,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['findReferedCandidates']
           > = await request(server)
-            .get(`${route}/profile/refered?limit=25&offset=0`)
+            .get(`/current/profile/referred-profiles?limit=25&offset=0`)
             .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(referedCandidates.length);
@@ -2581,7 +2581,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['findReferedCandidates']
           > = await request(server)
-            .get(`${route}/profile/refered?limit=1&offset=1`)
+            .get(`/current/profile/referred-profiles?limit=1&offset=1`)
             .set('authorization', `Bearer ${loggedInReferer.token}`);
           const sortedReferedCandidates = referedCandidates.sort(
             (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
@@ -2628,7 +2628,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['findReferedCandidates']
           > = await request(server)
-            .get(`${route}/profile/refered?limit=25&offset=0`)
+            .get(`/current/profile/referred-profiles?limit=25&offset=0`)
             .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(referedCandidates.length);
@@ -2652,7 +2652,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['findReferedCandidates']
           > = await request(server)
-            .get(`${route}/profile/refered?limit=25&offset=0`)
+            .get(`/current/profile/referred-profiles?limit=25&offset=0`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
@@ -2664,7 +2664,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['findReferedCandidates']
           > = await request(server)
-            .get(`${route}/profile/refered?limit=25&offset=0`)
+            .get(`/current/profile/referred-profiles?limit=25&offset=0`)
             .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
@@ -2676,7 +2676,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['findReferedCandidates']
           > = await request(server)
-            .get(`${route}/profile/refered?limit=25&offset=0`)
+            .get(`/current/profile/referred-profiles?limit=25&offset=0`)
             .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
