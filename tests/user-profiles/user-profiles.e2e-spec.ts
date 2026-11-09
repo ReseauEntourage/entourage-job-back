@@ -2502,7 +2502,7 @@ describe('UserProfiles', () => {
 
   describe('UserProfiles Refering Context', () => {
     describe('GET /current/profile/referred-profiles', () => {
-      describe('/profile/refered?limit=&offset= - Read only candidates that current user refered', () => {
+      describe('/current/profile/referred-profiles?limit=&offset= - Read only candidates that current user refered', () => {
         let loggedInReferer: LoggedInUser;
         beforeEach(async () => {
           loggedInReferer = await usersHelper.createLoggedInUser({

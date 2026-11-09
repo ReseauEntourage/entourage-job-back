@@ -149,6 +149,9 @@ describe('Users API routes convention (EN-8409)', () => {
         ['/user/profile/refered', '/current/profile/referred-profiles'],
         ['/user/profile/upload-image', '/users/me/profile/image'],
         ['/user/shares/sent', '/current/shares/sent'],
+        // A trailing slash was accepted before the rename.
+        ['/user/profile/abc/', '/users/abc/profile'],
+        ['/user/', '/users'],
       ];
 
       cases.forEach(([legacy, expected]) => {
@@ -203,26 +206,42 @@ describe('Users API routes convention (EN-8409)', () => {
       expect(members.status).toBe(200);
     });
 
-    it('answers PUT /user/changePwd like PUT /users/me/password', async () => {
+    it('changes the password through PUT /user/changePwd', async () => {
+      const oldPassword = buildRandomPassword();
+      const newPassword = buildRandomPassword();
       const candidate = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
+        password: oldPassword,
       });
-      const body = {
-        oldPassword: buildRandomPassword(),
-        newPassword: buildRandomPassword(),
-      };
 
       const legacy = await request(server)
         .put('/user/changePwd')
         .set(auth(candidate))
-        .send(body);
-      const current = await request(server)
+        .send({ oldPassword, newPassword });
+
+      expect(legacy.status).toBe(200);
+
+      // The new password is now the current one: the same call with the old
+      // one is refused, through the new route this time.
+      const replay = await request(server)
         .put('/users/me/password')
         .set(auth(candidate))
-        .send(body);
+        .send({ oldPassword, newPassword: buildRandomPassword() });
 
-      expect(legacy.status).toBe(current.status);
-      expect(legacy.status).not.toBe(404);
+      expect(replay.status).toBe(401);
+    });
+
+    it('serves a legacy URL with a trailing slash', async () => {
+      const admin = await usersHelper.createLoggedInUser({
+        role: UserRoles.ADMIN,
+      });
+
+      const response = await request(server)
+        .get(`/user/${admin.user.id}/`)
+        .set(auth(admin));
+
+      expect(response.status).toBe(200);
+      expect(response.body.id).toBe(admin.user.id);
     });
   });
 });

@@ -980,7 +980,7 @@ describe('UserCreation', () => {
       expect(response.status).toBe(409);
     });
   });
-  describe('POST /refering - Create user through refering', () => {
+  describe('POST /users/referrals - Create user through referral', () => {
     let loggedInReferer: LoggedInUser;
     let loggedInCandidate: LoggedInUser;
     let loggedInCoach: LoggedInUser;

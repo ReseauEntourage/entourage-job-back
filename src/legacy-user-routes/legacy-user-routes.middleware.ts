@@ -54,9 +54,16 @@ export const LEGACY_USER_ROUTE_RULES: ReadonlyArray<{
  * is not a legacy one. The query string is handled by the caller.
  */
 export function rewriteLegacyUserPath(pathname: string): string | null {
+  // Express routing is not strict: `/user/profile/<id>/` used to be served as
+  // `/user/profile/<id>`, so one trailing slash is ignored when matching.
+  const normalized =
+    pathname.length > 1 && pathname.endsWith('/')
+      ? pathname.slice(0, -1)
+      : pathname;
+
   for (const { pattern, target } of LEGACY_USER_ROUTE_RULES) {
-    if (pattern.test(pathname)) {
-      return pathname.replace(pattern, target);
+    if (pattern.test(normalized)) {
+      return normalized.replace(pattern, target);
     }
   }
   return null;

@@ -45,7 +45,7 @@ describe('Refered candidate account activation', () => {
   const wronglySignedToken = (userId: string) =>
     jwtService.sign({ sub: userId }, { secret: 'not-the-jwt-secret' });
 
-  // Mirrors POST /users/refering: unverified, no password, linked to a referer
+  // Mirrors POST /users/referrals: unverified, no password, linked to a referer
   // who belongs to an organization.
   const createReferedCandidate = async (
     overrides: { isEmailVerified?: boolean; password?: string | null } = {}
