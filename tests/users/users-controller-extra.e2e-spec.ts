@@ -61,7 +61,7 @@ describe('Users controller (members, company, password, update)', () => {
     authorization: `Bearer ${user.token}`,
   });
 
-  describe('GET /user/members', () => {
+  describe('GET /users/members', () => {
     let admin: LoggedInUser;
 
     beforeEach(async () => {
@@ -75,7 +75,7 @@ describe('Users controller (members, company, password, update)', () => {
       await usersHelper.createLoggedInUser({ role: UserRoles.CANDIDATE });
 
       const response = await request(server)
-        .get(`/user/members?limit=10&offset=0&role=${UserRoles.REFERER}`)
+        .get(`/users/members?limit=10&offset=0&role=${UserRoles.REFERER}`)
         .set(auth(admin));
 
       expect(response.status).toBe(200);
@@ -86,7 +86,7 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('requires a role', async () => {
       const response = await request(server)
-        .get('/user/members?limit=10&offset=0')
+        .get('/users/members?limit=10&offset=0')
         .set(auth(admin));
 
       expect(response.status).toBe(400);
@@ -94,7 +94,7 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('does not list the admins', async () => {
       const response = await request(server)
-        .get(`/user/members?limit=10&offset=0&role=${UserRoles.ADMIN}`)
+        .get(`/users/members?limit=10&offset=0&role=${UserRoles.ADMIN}`)
         .set(auth(admin));
 
       expect(response.status).toBe(400);
@@ -106,7 +106,7 @@ describe('Users controller (members, company, password, update)', () => {
         const user = await usersHelper.createLoggedInUser({ role });
 
         const response = await request(server)
-          .get(`/user/members?limit=10&offset=0&role=${UserRoles.COACH}`)
+          .get(`/users/members?limit=10&offset=0&role=${UserRoles.COACH}`)
           .set(auth(user));
 
         expect(response.status).toBe(403);
@@ -115,21 +115,21 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('refuses an anonymous user', async () => {
       const response = await request(server).get(
-        `/user/members?limit=10&offset=0&role=${UserRoles.COACH}`
+        `/users/members?limit=10&offset=0&role=${UserRoles.COACH}`
       );
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('PUT /user/company', () => {
+  describe('PUT /users/me/company', () => {
     it('links a coach to the company he declares, creating it', async () => {
       const coach = await usersHelper.createLoggedInUser({
         role: UserRoles.COACH,
       });
 
       const response = await request(server)
-        .put('/user/company')
+        .put('/users/me/company')
         .set(auth(coach))
         .send({ companyName: 'Declared Co' });
 
@@ -145,12 +145,12 @@ describe('Users controller (members, company, password, update)', () => {
         role: UserRoles.COACH,
       });
       await request(server)
-        .put('/user/company')
+        .put('/users/me/company')
         .set(auth(coach))
         .send({ companyName: 'Declared Co' });
 
       const response = await request(server)
-        .put('/user/company')
+        .put('/users/me/company')
         .set(auth(coach))
         .send({ companyName: null });
 
@@ -165,7 +165,7 @@ describe('Users controller (members, company, password, update)', () => {
         const user = await usersHelper.createLoggedInUser({ role });
 
         const response = await request(server)
-          .put('/user/company')
+          .put('/users/me/company')
           .set(auth(user))
           .send({ companyName: 'Declared Co' });
 
@@ -175,14 +175,14 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('refuses an anonymous user', async () => {
       const response = await request(server)
-        .put('/user/company')
+        .put('/users/me/company')
         .send({ companyName: 'Declared Co' });
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('PUT /user/changePwd', () => {
+  describe('PUT /users/me/password', () => {
     let user: LoggedInUser;
 
     beforeEach(async () => {
@@ -194,7 +194,7 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('changes the password when the old one is right and the new one strong enough', async () => {
       const response = await request(server)
-        .put('/user/changePwd')
+        .put('/users/me/password')
         .set(auth(user))
         .send({
           oldPassword: STRONG_PASSWORD,
@@ -203,7 +203,7 @@ describe('Users controller (members, company, password, update)', () => {
 
       expect(response.status).toBe(200);
       const again = await request(server)
-        .put('/user/changePwd')
+        .put('/users/me/password')
         .set(auth(user))
         .send({
           oldPassword: ANOTHER_STRONG_PASSWORD,
@@ -214,7 +214,7 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('refuses a wrong current password', async () => {
       const response = await request(server)
-        .put('/user/changePwd')
+        .put('/users/me/password')
         .set(auth(user))
         .send({ oldPassword: 'wrong', newPassword: ANOTHER_STRONG_PASSWORD });
 
@@ -223,7 +223,7 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('refuses a weak new password', async () => {
       const response = await request(server)
-        .put('/user/changePwd')
+        .put('/users/me/password')
         .set(auth(user))
         .send({ oldPassword: STRONG_PASSWORD, newPassword: 'abc' });
 
@@ -232,14 +232,14 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('refuses an anonymous user', async () => {
       const response = await request(server)
-        .put('/user/changePwd')
+        .put('/users/me/password')
         .send({ oldPassword: 'a', newPassword: 'b' });
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('PUT /user/:id', () => {
+  describe('PUT /users/:id', () => {
     it('answers 409 when the new email is already used', async () => {
       const user = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
@@ -249,7 +249,7 @@ describe('Users controller (members, company, password, update)', () => {
       });
 
       const response = await request(server)
-        .put(`/user/${user.user.id}`)
+        .put(`/users/${user.user.id}`)
         .set(auth(user))
         .send({ email: other.user.email });
 
@@ -262,7 +262,7 @@ describe('Users controller (members, company, password, update)', () => {
       });
 
       const response = await request(server)
-        .put(`/user/${user.user.id}`)
+        .put(`/users/${user.user.id}`)
         .set(auth(user))
         .send({ phone: '123' });
 
@@ -275,7 +275,7 @@ describe('Users controller (members, company, password, update)', () => {
       });
 
       const response = await request(server)
-        .put(`/user/${user.user.id}`)
+        .put(`/users/${user.user.id}`)
         .set(auth(user))
         .send({ email: 'brand.new@example.org' });
 
@@ -298,7 +298,7 @@ describe('Users controller (members, company, password, update)', () => {
       });
 
       const response = await request(server)
-        .put(`/user/${other.user.id}`)
+        .put(`/users/${other.user.id}`)
         .set(auth(user))
         .send({ firstName: 'Hacked' });
 
@@ -307,7 +307,7 @@ describe('Users controller (members, company, password, update)', () => {
 
     it('refuses an anonymous user', async () => {
       const response = await request(server)
-        .put('/user/3f1c2a52-2b0c-4a0a-9a2e-0f3c9f7a1b11')
+        .put('/users/3f1c2a52-2b0c-4a0a-9a2e-0f3c9f7a1b11')
         .send({ firstName: 'x' });
 
       expect(response.status).toBe(401);

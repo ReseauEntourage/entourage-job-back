@@ -18,7 +18,7 @@ export class UserProfileSharesController {
     private readonly userProfileSharesService: UserProfileSharesService
   ) {}
 
-  @Post('user/profile/:profileUserId/shares')
+  @Post('users/:profileUserId/profile/shares')
   async recordShare(
     @UserPayload('id', new ParseUUIDPipe()) sharingUserId: string,
     @Param('profileUserId', new ParseUUIDPipe()) sharedUserId: string,
@@ -34,14 +34,14 @@ export class UserProfileSharesController {
     return { success: true, shareId: share.id };
   }
 
-  @Get('user/profile/:profileUserId/shares')
+  @Get('users/:profileUserId/profile/shares')
   async getSharesReceived(
     @Param('profileUserId', new ParseUUIDPipe()) sharedUserId: string
   ) {
     return this.userProfileSharesService.findReceivedByUserId(sharedUserId);
   }
 
-  @Get('user/shares/sent')
+  @Get('current/shares/sent')
   async getSharesSent(
     @UserPayload('id', new ParseUUIDPipe()) sharingUserId: string
   ) {

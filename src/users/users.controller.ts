@@ -17,11 +17,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { passwordStrength } from 'check-password-strength';
-import { validate as uuidValidate } from 'uuid';
-import validator from 'validator';
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { UserPayload } from 'src/auth/guards';
-import { withHasExternalCv } from 'src/user-profiles/user-profiles.utils';
 import {
   UpdateUserDto,
   UpdateUserRestrictedDto,
@@ -48,10 +45,9 @@ import {
 } from './users.types';
 import { isRoleIncluded } from './users.utils';
 
-// TODO change to /users
 @ApiTags('Users')
 @ApiBearerAuth()
-@Controller('user')
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -104,7 +100,7 @@ export class UsersController {
     throw new BadRequestException();
   }
 
-  @Put('company')
+  @Put('me/company')
   async updateUserCompany(
     @UserPayload('id') userId: string,
     @Body('companyName')
@@ -121,32 +117,7 @@ export class UsersController {
     }
   }
 
-  @AdminOverride()
-  @Self('params.id')
-  @UseGuards(SelfGuard)
-  @Get(':id')
-  async findUser(@Param('id') userId: string) {
-    let user: User;
-    if (validator.isEmail(userId)) {
-      user = await this.usersService.findOneByMailWithRelations(userId);
-    } else if (uuidValidate(userId)) {
-      user = await this.usersService.findOneWithRelations(userId);
-    } else {
-      throw new BadRequestException();
-    }
-
-    if (!user) {
-      throw new NotFoundException();
-    }
-
-    const { userProfile, ...restUser } = user.toJSON() as User;
-    return {
-      ...restUser,
-      ...(userProfile ? { userProfile: withHasExternalCv(userProfile) } : {}),
-    };
-  }
-
-  @Put('changePwd')
+  @Put('me/password')
   async updatePassword(
     @UserPayload('email') email: string,
     @Body('oldPassword') oldPassword: string,

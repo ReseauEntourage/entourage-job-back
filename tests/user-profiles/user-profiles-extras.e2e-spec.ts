@@ -76,17 +76,17 @@ describe('UserProfiles - extras', () => {
     await databaseHelper.resetTestDB();
   });
 
-  describe('GET /user/profile/:userId/share-text', () => {
+  describe('GET /users/:userId/profile/share-text', () => {
     it('returns 401 for an anonymous user', async () => {
       const response = await request(server).get(
-        `/user/profile/${candidate.user.id}/share-text`
+        `/users/${candidate.user.id}/profile/share-text`
       );
       expect(response.status).toBe(401);
     });
 
     it.each(asRole)('returns the share text to a %s', async (_role, user) => {
       const response = await request(server)
-        .get(`/user/profile/${candidate.user.id}/share-text`)
+        .get(`/users/${candidate.user.id}/profile/share-text`)
         .set('authorization', `Bearer ${user().token}`);
 
       expect(response.status).toBe(200);
@@ -98,7 +98,7 @@ describe('UserProfiles - extras', () => {
 
     it('mentions the LinkedIn organizations on the linkedin channel', async () => {
       const response = await request(server)
-        .get(`/user/profile/${candidate.user.id}/share-text`)
+        .get(`/users/${candidate.user.id}/profile/share-text`)
         .query({ channel: 'linkedin' })
         .set('authorization', `Bearer ${coach.token}`);
 
@@ -114,7 +114,7 @@ describe('UserProfiles - extras', () => {
       });
 
       const response = await request(server)
-        .get(`/user/profile/${male.user.id}/share-text`)
+        .get(`/users/${male.user.id}/profile/share-text`)
         .set('authorization', `Bearer ${coach.token}`);
 
       expect(response.status).toBe(200);
@@ -123,20 +123,20 @@ describe('UserProfiles - extras', () => {
 
     it('returns 404 for an unknown profile and 400 for a malformed id', async () => {
       const unknown = await request(server)
-        .get(`/user/profile/${randomUUID()}/share-text`)
+        .get(`/users/${randomUUID()}/profile/share-text`)
         .set('authorization', `Bearer ${candidate.token}`);
       expect(unknown.status).toBe(404);
 
       const malformed = await request(server)
-        .get('/user/profile/not-a-uuid/share-text')
+        .get('/users/not-a-uuid/profile/share-text')
         .set('authorization', `Bearer ${candidate.token}`);
       expect(malformed.status).toBe(400);
     });
   });
 
-  describe('GET /user/profile/completion', () => {
+  describe('GET /current/profile/completion', () => {
     it('returns 401 for an anonymous user', async () => {
-      const response = await request(server).get('/user/profile/completion');
+      const response = await request(server).get('/current/profile/completion');
       expect(response.status).toBe(401);
     });
 
@@ -144,7 +144,7 @@ describe('UserProfiles - extras', () => {
       'returns a completion percentage to a %s',
       async (_role, user) => {
         const response = await request(server)
-          .get('/user/profile/completion')
+          .get('/current/profile/completion')
           .set('authorization', `Bearer ${user().token}`);
 
         expect(response.status).toBe(200);
@@ -154,10 +154,10 @@ describe('UserProfiles - extras', () => {
     );
   });
 
-  describe('GET /user/profile/recommendations', () => {
+  describe('GET /current/profile/recommendations', () => {
     it('returns 401 for an anonymous user', async () => {
       const response = await request(server).get(
-        '/user/profile/recommendations'
+        '/current/profile/recommendations'
       );
       expect(response.status).toBe(401);
     });
@@ -169,7 +169,7 @@ describe('UserProfiles - extras', () => {
       );
 
       const response = await request(server)
-        .get('/user/profile/recommendations')
+        .get('/current/profile/recommendations')
         .set('authorization', `Bearer ${candidate.token}`);
 
       expect(response.status).toBe(200);
@@ -182,7 +182,7 @@ describe('UserProfiles - extras', () => {
 
     it('returns 400 for a non numeric limit', async () => {
       const response = await request(server)
-        .get('/user/profile/recommendations')
+        .get('/current/profile/recommendations')
         .query({ limit: 'abc' })
         .set('authorization', `Bearer ${candidate.token}`);
 
@@ -190,10 +190,10 @@ describe('UserProfiles - extras', () => {
     });
   });
 
-  describe('GET /user/profile/recommendations-ai/:userId (admin only)', () => {
+  describe('GET /users/:userId/profile/recommendations-ai (admin only)', () => {
     it('returns 401 for an anonymous user', async () => {
       const response = await request(server).get(
-        `/user/profile/recommendations-ai/${candidate.user.id}`
+        `/users/${candidate.user.id}/profile/recommendations-ai`
       );
       expect(response.status).toBe(401);
     });
@@ -204,7 +204,7 @@ describe('UserProfiles - extras', () => {
       ['referer', () => referer],
     ])('returns 403 for a %s', async (_role, user) => {
       const response = await request(server)
-        .get(`/user/profile/recommendations-ai/${candidate.user.id}`)
+        .get(`/users/${candidate.user.id}/profile/recommendations-ai`)
         .set('authorization', `Bearer ${user().token}`);
 
       expect(response.status).toBe(403);
@@ -212,21 +212,21 @@ describe('UserProfiles - extras', () => {
 
     it('returns 404 to an admin for an unknown user and 400 for a malformed id', async () => {
       const unknown = await request(server)
-        .get(`/user/profile/recommendations-ai/${randomUUID()}`)
+        .get(`/users/${randomUUID()}/profile/recommendations-ai`)
         .set('authorization', `Bearer ${admin.token}`);
       expect(unknown.status).toBe(404);
 
       const malformed = await request(server)
-        .get('/user/profile/recommendations-ai/not-a-uuid')
+        .get('/users/not-a-uuid/profile/recommendations-ai')
         .set('authorization', `Bearer ${admin.token}`);
       expect(malformed.status).toBe(400);
     });
   });
 
-  describe('PUT /user/profile/:userId - experiences and formations with skills', () => {
+  describe('PUT /users/:userId/profile - experiences and formations with skills', () => {
     const put = (user: LoggedInUser, body: Record<string, unknown>) =>
       request(server)
-        .put(`/user/profile/${user.user.id}`)
+        .put(`/users/${user.user.id}/profile`)
         .set('authorization', `Bearer ${user.token}`)
         .send(body);
 
@@ -337,19 +337,19 @@ describe('UserProfiles - extras', () => {
   describe('Role checks on the other endpoints', () => {
     it('refuses anonymous users on the report and read endpoints', async () => {
       const report = await request(server)
-        .post(`/user/profile/${candidate.user.id}/report`)
+        .post(`/users/${candidate.user.id}/profile/report`)
         .send({ reason: 'SPAM' });
       expect(report.status).toBe(401);
 
       const read = await request(server).get(
-        `/user/profile/${candidate.user.id}`
+        `/users/${candidate.user.id}/profile`
       );
       expect(read.status).toBe(401);
     });
 
     it('returns 400 when reading a profile with a malformed id', async () => {
       const response = await request(server)
-        .get('/user/profile/not-a-uuid')
+        .get('/users/not-a-uuid/profile')
         .set('authorization', `Bearer ${candidate.token}`);
 
       expect(response.status).toBe(400);
@@ -357,13 +357,13 @@ describe('UserProfiles - extras', () => {
 
     it('returns 400 for an unknown or referer role filter, and for a non UUID department', async () => {
       const unknownRole = await request(server)
-        .get('/user/profile')
+        .get('/users/profiles')
         .query({ limit: 5, offset: 0, role: 'nobody' })
         .set('authorization', `Bearer ${coach.token}`);
       expect(unknownRole.status).toBe(400);
 
       const badDepartment = await request(server)
-        .get('/user/profile')
+        .get('/users/profiles')
         .query({
           limit: 5,
           offset: 0,
