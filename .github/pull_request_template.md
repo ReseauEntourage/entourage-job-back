@@ -26,3 +26,12 @@ Replace XXX with the PR numbers: GitHub turns `owner/repo#123` into a link and s
 - [ ] Nouvelle variable d'environnement — ajoutée à `.env.dist`, à créer sur Heroku (staging et prod) avant le déploiement
 - [ ] Contrat d'API modifié — à merger avant la PR front, compatible avec le front actuellement en prod le temps du déploiement
 - [ ] Rien de particulier
+
+## 🤖 Assistant IA
+
+<!--
+Rule of the `/assistant-tools` route group (see the header of `src/assistant-tools/assistant-tools.controller.ts`): each route added to the group widens what the AI assistant reads at Pro and sends to its model provider.
+Tick the box below when this PR adds a route to the group, or returns one more personal datum from an existing one: the opinion of the DPO is then asked before merging. Leave it unticked otherwise.
+-->
+
+- [ ] Des données personnelles d'utilisateurs sont ajoutées aux données envoyées à l'IA : avis du DPO (dpo@entourage.social) demandé
