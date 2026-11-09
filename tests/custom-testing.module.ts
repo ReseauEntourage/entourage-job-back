@@ -5,6 +5,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { getSequelizeOptions } from 'src/app.module';
+import { AssistantToolsModule } from 'src/assistant-tools/assistant-tools.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtAuthGuard } from 'src/auth/guards';
 import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
@@ -106,6 +107,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ElearningModule,
     RecruitementAlertsModule,
     VersionModule,
+    AssistantToolsModule,
 
     // Modules de test spécifiques
     AuthTestingModule,

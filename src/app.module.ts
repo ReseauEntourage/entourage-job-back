@@ -12,6 +12,7 @@ import { LanguagesModule } from 'src/languages/languages.module';
 import { NudgesModule } from 'src/nudge/nudges.module';
 import { SkillsModule } from 'src/skills/skills.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
+import { AssistantToolsModule } from './assistant-tools/assistant-tools.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
 import { CheckinModule } from './checkin/checkin.module';
@@ -157,6 +158,7 @@ export function getSequelizeOptions(
     NotificationsModule,
     HelpGroupsModule,
     AiAssistantModule,
+    AssistantToolsModule,
     UserProfileSharesModule,
     UserSocialSituationsModule,
     MediasModule,
