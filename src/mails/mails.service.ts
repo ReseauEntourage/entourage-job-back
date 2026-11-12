@@ -669,6 +669,8 @@ export class MailsService {
    * onboarding. When at least `ONBOARDING_REMINDER_PROFILES_COUNT` compatible
    * profiles are available, the mail shows the real number of compatible
    * profiles and that many of them; otherwise it is sent without any profile.
+   * The subject is defined by the Mailjet template (from `nbReco`, `role` and
+   * `nbCompatible`), so none is passed in the job: it would override the template's.
    * @returns Whether the version with profiles was sent
    */
   async sendReminderToCompleteOnboarding(
@@ -691,7 +693,6 @@ export class MailsService {
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       userId: user.id,
-      subject: getOnboardingReminderSubject(user.role, withProfiles, count),
       templateId: MailjetTemplates.ONBOARDING_REMINDER_WITH_PROFILES,
       variables: {
         firstName: user.firstName,
@@ -1384,19 +1385,6 @@ const getUnansweredConversationsSubject = (
 
 /** Number of compatible profiles shown in the onboarding reminder mail. */
 const ONBOARDING_REMINDER_PROFILES_COUNT = 3;
-
-const getOnboardingReminderSubject = (
-  role: UserRole,
-  withProfiles: boolean,
-  count: number
-): string => {
-  if (!withProfiles) {
-    return 'Il vous reste quelques étapes sur Entourage Pro';
-  }
-  return role === UserRoles.COACH
-    ? `${count} candidats cherchent un coup de pouce sur Entourage Pro`
-    : `${count} coachs peuvent vous donner un coup de pouce`;
-};
 
 /**
  * Formats a public profile for the profile blocks (`reco1`..`reco3`) shared by

@@ -339,9 +339,8 @@ describe('MailsService (mail templates)', () => {
       );
       expect(mail.templateId).not.toBe(7718674);
       expect(mail.toEmail).toBe(user.email);
-      expect(mail.subject).toBe(
-        '128 coachs peuvent vous donner un coup de pouce'
-      );
+      // The subject is defined by the Mailjet template, not by the job
+      expect(mail).not.toHaveProperty('subject');
       expect(mail.variables).toEqual({
         firstName: 'Jean',
         ctaUrl: `${FRONT_URL}/backoffice/dashboard`,
@@ -363,7 +362,7 @@ describe('MailsService (mail templates)', () => {
       });
     });
 
-    it('sends the version with profiles to a coach, with the candidates subject', async () => {
+    it('sends the version with profiles to a coach', async () => {
       const { mailsService, queuesService } = build();
       const candidates = [1, 2, 3].map((index) =>
         buildProfile(index, {
@@ -385,9 +384,7 @@ describe('MailsService (mail templates)', () => {
 
       expect(result).toEqual({ withProfiles: true });
       const mail = lastMail(queuesService);
-      expect(mail.subject).toBe(
-        '3 candidats cherchent un coup de pouce sur Entourage Pro'
-      );
+      expect(mail).not.toHaveProperty('subject');
       expect(mail.variables).toEqual(
         expect.objectContaining({
           role: 'Coach',
@@ -424,9 +421,7 @@ describe('MailsService (mail templates)', () => {
         expect(mail.templateId).toBe(
           MailjetTemplates.ONBOARDING_REMINDER_WITH_PROFILES
         );
-        expect(mail.subject).toBe(
-          'Il vous reste quelques étapes sur Entourage Pro'
-        );
+        expect(mail).not.toHaveProperty('subject');
         expect(mail.variables).toEqual(
           expect.objectContaining({
             nbReco: 0,
