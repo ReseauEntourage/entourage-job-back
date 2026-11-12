@@ -708,6 +708,90 @@ export class UsersService {
     return true;
   }
 
+  /**
+   * Candidates and coaches whose onboarding is not completed although they have
+   * reached the webinar invitation step, which is where the onboarding is now
+   * completed. Used by the backfill of the onboarding completion.
+   *
+   * Two categories, so that a human can read them apart before running it:
+   * - `evidence`: the webinar was skipped ("Later", `onboardingWebinarSkippedAt`);
+   * - `inferred`: every step before the webinar is complete, the way the wizard
+   *   resumes (`determineStartingStep`): picture, e-learning, profile (an
+   *   external CV, or at least one experience and one formation and a
+   *   presentation) and, for candidates, the social situation survey.
+   *
+   * A webinar booking is not an evidence here: participations live in
+   * Salesforce, not in this database. Those accounts have completed the steps
+   * before the webinar, so they fall in the `inferred` category.
+   * Company admins are excluded (their onboarding is completed at creation).
+   */
+  async getUsersStuckBeforeOnboardingCompletion(): Promise<
+    {
+      category: 'evidence' | 'inferred';
+      id: string;
+      role: string;
+    }[]
+  > {
+    return this.userModel.sequelize.query<{
+      category: 'evidence' | 'inferred';
+      id: string;
+      role: string;
+    }>(
+      `
+      SELECT u."id", u."role",
+        CASE WHEN u."onboardingWebinarSkippedAt" IS NOT NULL
+          THEN 'evidence' ELSE 'inferred' END AS "category"
+      FROM "Users" u
+      JOIN "UserProfiles" up ON up."userId" = u."id"
+      WHERE u."role" IN (:candidateRole, :coachRole)
+        AND u."onboardingStatus" <> :completedStatus
+        AND u."deletedAt" IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM "CompanyUsers" cu
+          WHERE cu."userId" = u."id" AND cu."isAdmin" IS TRUE
+        )
+        AND (
+          u."onboardingWebinarSkippedAt" IS NOT NULL
+          OR (
+            u."elearningCompletedAt" IS NOT NULL
+            AND up."hasPicture" IS TRUE
+            AND (
+              u."role" <> :candidateRole
+              OR EXISTS (
+                SELECT 1 FROM "User_Social_Situations" uss
+                WHERE uss."userId" = u."id" AND uss."hasCompletedSurvey" IS TRUE
+              )
+            )
+            AND (
+              EXISTS (
+                SELECT 1 FROM "ExternalCvs" ec
+                WHERE ec."userProfileId" = up."id" AND ec."deletedAt" IS NULL
+              )
+              OR (
+                EXISTS (
+                  SELECT 1 FROM "Experiences" e WHERE e."userProfileId" = up."id"
+                )
+                AND EXISTS (
+                  SELECT 1 FROM "Formations" f WHERE f."userProfileId" = up."id"
+                )
+                AND NULLIF(BTRIM(up."description"), '') IS NOT NULL
+              )
+            )
+          )
+        )
+      ORDER BY u."createdAt", u."id"
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          candidateRole: UserRoles.CANDIDATE,
+          coachRole: UserRoles.COACH,
+          completedStatus: OnboardingStatus.COMPLETED,
+        },
+      }
+    );
+  }
+
   async sendOnboardingCompletedMail(
     user: User,
     recommendations: RecommendationDto[]
