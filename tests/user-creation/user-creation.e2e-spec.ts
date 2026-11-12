@@ -15,6 +15,7 @@ import { Department } from 'src/locations/locations.types';
 import { Nudge } from 'src/nudge/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { UsersService } from 'src/users/users.service';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
@@ -561,6 +562,11 @@ describe('UserCreation', () => {
       expect(createdUser.elearningCompletedAt).toBeNull();
     });
     it('Should return 200 and a created referer if valid referer data', async () => {
+      const addToWorkQueueSpy = jest.spyOn(
+        QueuesServiceMock.prototype,
+        'addToWorkQueue'
+      );
+      addToWorkQueueSpy.mockClear();
       const user = await userFactory.create(
         { role: UserRoles.REFERER },
         {},
@@ -619,8 +625,21 @@ describe('UserCreation', () => {
       const createdUser = await usersHelper.findUserRaw(response.body.id);
       expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
       expect(createdUser.elearningCompletedAt).not.toBeNull();
+      expect(createdUser.onboardingCompletedAt).not.toBeNull();
+      // The referer onboarding is completed at creation: the completion job is
+      // still queued, once
+      expect(
+        addToWorkQueueSpy.mock.calls.filter(
+          ([job]) => job === Jobs.ON_ONBOARDING_COMPLETED
+        )
+      ).toEqual([[Jobs.ON_ONBOARDING_COMPLETED, { userId: response.body.id }]]);
     });
     it('Should set elearningCompletedAt when a coach registers as company admin', async () => {
+      const addToWorkQueueSpy = jest.spyOn(
+        QueuesServiceMock.prototype,
+        'addToWorkQueue'
+      );
+      addToWorkQueueSpy.mockClear();
       const user = await userFactory.create(
         { role: UserRoles.COACH },
         {},
@@ -651,6 +670,11 @@ describe('UserCreation', () => {
       const createdUser = await usersHelper.findUserRaw(response.body.id);
       expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
       expect(createdUser.elearningCompletedAt).not.toBeNull();
+      expect(
+        addToWorkQueueSpy.mock.calls.filter(
+          ([job]) => job === Jobs.ON_ONBOARDING_COMPLETED
+        )
+      ).toEqual([[Jobs.ON_ONBOARDING_COMPLETED, { userId: response.body.id }]]);
     });
     it('Should not complete onboarding when a coach registers to a company with a role that cannot be admin', async () => {
       const user = await userFactory.create(
