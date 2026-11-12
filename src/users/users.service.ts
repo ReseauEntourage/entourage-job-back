@@ -945,7 +945,8 @@ export class UsersService {
           user.role as UserRole,
           nudgeIds,
           businessSectorIds,
-          true
+          // The mail does not use the response delay, which is costly to compute
+          { onlyVisibleProfiles: true, withAverageDelayResponse: false }
         );
       compatibleProfiles = { count, profiles };
     } catch (error) {

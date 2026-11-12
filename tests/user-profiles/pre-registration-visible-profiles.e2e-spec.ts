@@ -17,6 +17,7 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
   let userProfilesService: UserProfilesService;
+  let userProfileAnalyticsService: UserProfilesService['userProfileAnalyticsService'];
   let businessSectorsHelper: BusinessSectorHelper;
   let nudgesHelper: NudgesHelper;
 
@@ -40,6 +41,9 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     userProfilesService =
       moduleFixture.get<UserProfilesService>(UserProfilesService);
+    // Not exported by the module: reached through the service that uses it
+    userProfileAnalyticsService =
+      userProfilesService['userProfileAnalyticsService'];
     businessSectorsHelper =
       moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
     nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
@@ -68,6 +72,7 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
   // The database is reset between tests, so the sectors and nudges are
   // re-seeded in `beforeEach` through the helpers' ids captured above.
   afterEach(async () => {
+    jest.restoreAllMocks();
     await databaseHelper.resetTestDB();
     await businessSectorsHelper.deleteAllBusinessSectors();
     await businessSectorsHelper.seedBusinessSectors();
@@ -141,7 +146,7 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
         UserRoles.CANDIDATE,
         [],
         [],
-        true
+        { onlyVisibleProfiles: true }
       );
 
     expect(result.count).toBe(3);
@@ -149,6 +154,66 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
     expect(result.profiles.map(({ id }) => id).sort()).toEqual(
       visible.map(({ id }) => id).sort()
     );
+  });
+
+  it('excludes a profile that has never connected, like the directory does', async () => {
+    const { visible } = await createCoaches(3);
+    await databaseHelper.createEntities(
+      userFactory,
+      1,
+      { role: UserRoles.COACH, lastConnection: null },
+      { userProfile: { unavailableAt: null } }
+    );
+
+    const result =
+      await userProfilesService.findPreRegistrationCompatibleProfiles(
+        UserRoles.CANDIDATE,
+        [],
+        [],
+        { onlyVisibleProfiles: true }
+      );
+
+    expect(result.count).toBe(3);
+    expect(result.profiles.map(({ id }) => id).sort()).toEqual(
+      visible.map(({ id }) => id).sort()
+    );
+  });
+
+  it('computes the average response delay of the sampled profiles by default', async () => {
+    await createCoaches(3);
+    const spy = jest.spyOn(
+      userProfileAnalyticsService,
+      'getAverageDelayResponse'
+    );
+
+    await userProfilesService.findPreRegistrationCompatibleProfiles(
+      UserRoles.CANDIDATE,
+      [],
+      [],
+      { onlyVisibleProfiles: true }
+    );
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('does not compute the average response delay when it is disabled', async () => {
+    await createCoaches(3);
+    const spy = jest.spyOn(
+      userProfileAnalyticsService,
+      'getAverageDelayResponse'
+    );
+
+    const result =
+      await userProfilesService.findPreRegistrationCompatibleProfiles(
+        UserRoles.CANDIDATE,
+        [],
+        [],
+        { onlyVisibleProfiles: true, withAverageDelayResponse: false }
+      );
+
+    expect(result.count).toBe(3);
+    expect(result.profiles).toHaveLength(3);
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it('applies the same filter when matching on sectors and nudges', async () => {
@@ -162,7 +227,7 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
         UserRoles.CANDIDATE,
         [nudgeCv.id],
         [businessSector1.id],
-        true
+        { onlyVisibleProfiles: true }
       );
 
     expect(result.count).toBe(2);
@@ -183,7 +248,7 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
         UserRoles.CANDIDATE,
         [nudgeCv.id],
         [businessSector1.id],
-        true
+        { onlyVisibleProfiles: true }
       );
 
     expect(result.broadened).toBe(true);
@@ -204,7 +269,7 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
         UserRoles.CANDIDATE,
         [nudgeCv.id],
         [businessSector1.id],
-        true
+        { onlyVisibleProfiles: true }
       );
 
     expect(result.count).toBe(0);
@@ -230,7 +295,7 @@ describe('UserProfilesService.findPreRegistrationCompatibleProfiles - onlyVisibl
         UserRoles.COACH,
         [],
         [],
-        true
+        { onlyVisibleProfiles: true }
       );
 
     expect(result.count).toBe(3);

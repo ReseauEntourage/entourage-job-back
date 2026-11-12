@@ -139,6 +139,23 @@ describe('UsersService.sendReminderToCompleteOnboarding', () => {
     ).toBe(true);
   });
 
+  it('only considers visible profiles and skips the response delay, which the mail does not use', async () => {
+    const user = await createReminderRecipient(businessSector1.id);
+    const spy = jest.spyOn(
+      userProfilesService,
+      'findPreRegistrationCompatibleProfiles'
+    );
+
+    await usersService.sendReminderToCompleteOnboarding(user);
+
+    expect(spy).toHaveBeenCalledWith(
+      UserRoles.CANDIDATE,
+      expect.any(Array),
+      [businessSector1.id],
+      { onlyVisibleProfiles: true, withAverageDelayResponse: false }
+    );
+  });
+
   it('passes fewer than 3 profiles on to the mail, which sends the version without profiles', async () => {
     const user = await createReminderRecipient(businessSector1.id);
     await createCoaches(2, businessSector1.id);
