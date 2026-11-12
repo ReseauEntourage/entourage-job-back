@@ -719,6 +719,41 @@ describe('WorkQueueProcessor', () => {
       );
     });
 
+    it('does not schedule the staff welcome message when asked to skip it, but still mails the recommendations', async () => {
+      const {
+        processor,
+        usersService,
+        userProfilesService,
+        userProfileRecommendationsService,
+        workQueue,
+      } = build();
+      const recommendations = [{}, {}, {}];
+      usersService.findOneWithRelations.mockResolvedValue(user);
+      userProfilesService.findOneByUserId.mockResolvedValue({ id: 'p1' });
+      usersService.generatePostOnboardingWelcomeMessage.mockResolvedValue(
+        'Welcome!'
+      );
+      userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA.mockResolvedValue(
+        recommendations
+      );
+
+      await processor.processOnOnboardingCompleted(
+        job(Jobs.ON_ONBOARDING_COMPLETED, {
+          userId: 'u1',
+          skipWelcomeMessage: true,
+        })
+      );
+
+      expect(
+        usersService.generatePostOnboardingWelcomeMessage
+      ).not.toHaveBeenCalled();
+      expect(workQueue.add).not.toHaveBeenCalled();
+      expect(usersService.sendOnboardingCompletedMail).toHaveBeenCalledWith(
+        user,
+        recommendations
+      );
+    });
+
     it('does not schedule any welcome message when none is generated', async () => {
       const {
         processor,

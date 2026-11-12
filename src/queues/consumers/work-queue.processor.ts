@@ -300,7 +300,7 @@ export class WorkQueueProcessor extends WorkerHost {
    */
   async processOnOnboardingCompleted(job: Job) {
     const { data } = job;
-    const { userId } = data as OnOnboardingCompletedJob;
+    const { userId, skipWelcomeMessage } = data as OnOnboardingCompletedJob;
 
     this.logger.log(
       `Processing onboarding completion for user with id ${userId}`
@@ -317,9 +317,12 @@ export class WorkQueueProcessor extends WorkerHost {
       throw new Error(`UserProfile not found for user with id ${userId}`);
     }
 
-    // Send a welcome message from a staff member in the messaging system
-    const welcomeMessageToSend =
-      await this.usersService.generatePostOnboardingWelcomeMessage(user);
+    // Send a welcome message from a staff member in the messaging system,
+    // except for accounts caught up by the backfill (possibly old accounts, for
+    // which a welcome message does not fit)
+    const welcomeMessageToSend = skipWelcomeMessage
+      ? null
+      : await this.usersService.generatePostOnboardingWelcomeMessage(user);
     if (welcomeMessageToSend) {
       await this.workQueue.add(
         Jobs.SEND_STAFF_MESSAGING_MESSAGE,
