@@ -242,12 +242,22 @@ export class CronTasksProcessor extends WorkerHost {
       `Found ${users.length} users that have not completed onboarding`
     );
 
-    const results = await Promise.allSettled(
-      users.map(async (user) => {
-        this.logger.log(`Sending reminder to user ${user.id}`);
-        return this.usersService.sendReminderToCompleteOnboarding(user);
-      })
-    );
+    // Each reminder runs several queries to find the compatible profiles: process the
+    // users in small batches so that the concurrency cannot saturate the DB pool shared
+    // with the other worker jobs (a failed reminder is not retried, the J+1 window is gone)
+    const BATCH_SIZE = 5;
+    const results: PromiseSettledResult<{ withProfiles: boolean }>[] = [];
+
+    for (const userChunk of chunk(users, BATCH_SIZE)) {
+      const batchResults = await Promise.allSettled(
+        userChunk.map(async (user) => {
+          this.logger.log(`Sending reminder to user ${user.id}`);
+          return this.usersService.sendReminderToCompleteOnboarding(user);
+        })
+      );
+
+      results.push(...batchResults);
+    }
 
     const { succeeded, successIds, failures } = collectSettledResults(
       users,

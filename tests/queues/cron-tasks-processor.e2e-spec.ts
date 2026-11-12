@@ -456,6 +456,27 @@ describe('CronTasksProcessor', () => {
       );
     });
 
+    it('bounds how many reminders are processed at the same time', async () => {
+      const { processor, usersService, sendMock } = build([]);
+      usersService.getUsersNotCompletedOnboarding.mockResolvedValue(
+        userRows(23)
+      );
+      let inFlight = 0;
+      let maxInFlight = 0;
+      sendMock.mockImplementation(async () => {
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight -= 1;
+        return { withProfiles: true };
+      });
+
+      await processor.remindUsersNotCompletedOnboarding();
+
+      expect(sendMock).toHaveBeenCalledTimes(23);
+      expect(maxInFlight).toBeLessThanOrEqual(5);
+    });
+
     it('handles an empty list of users', async () => {
       const { processor, sendMock, slack } = build([]);
 
