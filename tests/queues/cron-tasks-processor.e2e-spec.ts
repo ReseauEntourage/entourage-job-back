@@ -222,18 +222,6 @@ describe('CronTasksProcessor', () => {
       throwsMessage: (f, n) => `Failed deleting ${f}/${n} inactive users`,
     },
     {
-      method: 'remindUsersNotCompletedOnboarding',
-      fetchFn: 'getUsersNotCompletedOnboarding',
-      fetchArgs: [3],
-      rows: userRows,
-      idOf: byId,
-      sendService: 'usersService',
-      sendFn: 'sendReminderToCompleteOnboarding',
-      ok: (n) =>
-        `Reminders sent to ${n} users that have not completed onboarding`,
-      throwsMessage: (f, n) => `Failed sending ${f}/${n} onboarding reminders`,
-    },
-    {
       method: 'sendUnverifiedAccountRelaunchMails',
       fetchFn: 'getUsersWithUnverifiedEmailOneDayAfterCreation',
       rows: userRows,
@@ -408,6 +396,132 @@ describe('CronTasksProcessor', () => {
         `Failed sending ${f}/${n} warn account deletion mails`,
     },
   ];
+
+  describe('remindUsersNotCompletedOnboarding', () => {
+    const SLACK_TITLE =
+      '📬 Send reminder to users that have not completed onboarding';
+
+    const build = (sendResults: ({ withProfiles: boolean } | Error)[] = []) => {
+      const rows = userRows(sendResults.length);
+      const sendMock = jest.fn();
+      sendResults.forEach((result) =>
+        result instanceof Error
+          ? sendMock.mockRejectedValueOnce(result)
+          : sendMock.mockResolvedValueOnce(result)
+      );
+      const usersService = {
+        getUsersNotCompletedOnboarding: jest.fn().mockResolvedValue(rows),
+        sendReminderToCompleteOnboarding: sendMock,
+      };
+      const slack = buildSlack();
+      const processor = buildCronTasksProcessor({
+        usersService: usersService as never,
+        cronTasksSlackReporterService: slack as never,
+      });
+      return { processor, usersService, sendMock, slack };
+    };
+
+    it('fetches the users created the day before', async () => {
+      const { processor, usersService } = build([{ withProfiles: true }]);
+
+      await processor.remindUsersNotCompletedOnboarding();
+
+      expect(usersService.getUsersNotCompletedOnboarding).toHaveBeenCalledWith(
+        1
+      );
+    });
+
+    it('sends one reminder per user and reports how many were sent without profiles', async () => {
+      const { processor, sendMock, slack } = build([
+        { withProfiles: true },
+        { withProfiles: false },
+        { withProfiles: false },
+      ]);
+
+      const result = await processor.remindUsersNotCompletedOnboarding();
+
+      expect(result).toBe(
+        'Reminders sent to 3 users that have not completed onboarding'
+      );
+      expect(sendMock).toHaveBeenCalledTimes(3);
+      expect(slack.sendCronTaskResultToSlack).toHaveBeenCalledWith(
+        true,
+        SLACK_TITLE,
+        { total: 3, success: 3, failure: 0 },
+        [],
+        undefined,
+        undefined,
+        [],
+        [{ label: 'Without profiles', value: 2 }]
+      );
+    });
+
+    it('bounds how many reminders are processed at the same time', async () => {
+      const { processor, usersService, sendMock } = build([]);
+      usersService.getUsersNotCompletedOnboarding.mockResolvedValue(
+        userRows(23)
+      );
+      let inFlight = 0;
+      let maxInFlight = 0;
+      sendMock.mockImplementation(async () => {
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight -= 1;
+        return { withProfiles: true };
+      });
+
+      await processor.remindUsersNotCompletedOnboarding();
+
+      expect(sendMock).toHaveBeenCalledTimes(23);
+      expect(maxInFlight).toBeLessThanOrEqual(5);
+    });
+
+    it('handles an empty list of users', async () => {
+      const { processor, sendMock, slack } = build([]);
+
+      const result = await processor.remindUsersNotCompletedOnboarding();
+
+      expect(result).toBe(
+        'Reminders sent to 0 users that have not completed onboarding'
+      );
+      expect(sendMock).not.toHaveBeenCalled();
+      expect(slack.sendCronTaskResultToSlack).toHaveBeenCalledWith(
+        true,
+        SLACK_TITLE,
+        { total: 0, success: 0, failure: 0 },
+        [],
+        undefined,
+        undefined,
+        [],
+        [{ label: 'Without profiles', value: 0 }]
+      );
+    });
+
+    it('reports the failing user without blocking the other ones, and does not count it as sent without profiles', async () => {
+      const failure = new Error('boom');
+      const { processor, sendMock, slack } = build([
+        failure,
+        { withProfiles: false },
+      ]);
+
+      await expect(
+        processor.remindUsersNotCompletedOnboarding()
+      ).rejects.toThrow('Failed sending 1/2 onboarding reminders');
+
+      expect(sendMock).toHaveBeenCalledTimes(2);
+      expect(slack.sendCronTaskResultToSlack).toHaveBeenCalledWith(
+        false,
+        SLACK_TITLE,
+        { total: 2, success: 1, failure: 1 },
+        [{ itemId: 'user-1', reason: failure }],
+        undefined,
+        undefined,
+        [],
+        [{ label: 'Without profiles', value: 1 }]
+      );
+    });
+  });
 
   describe.each(LIST_TASKS)('$method', (task) => {
     const build = (rowCount: number, failingIndex?: number) => {

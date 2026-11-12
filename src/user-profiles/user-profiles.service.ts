@@ -575,10 +575,30 @@ export class UserProfilesService {
     };
   }
 
+  /**
+   * Counts and samples the available profiles of the opposite role that match
+   * the given sectors and nudges.
+   * @param options.onlyVisibleProfiles When true, only profiles that the app
+   * itself shows to others are considered: the same conditions as the directory
+   * (onboarding and eLearning completed, see `profileVisibilityEligibilityWhere`,
+   * and at least one connection). Defaults to false so the pre-registration
+   * wizard keeps its current counts.
+   * @param options.withAverageDelayResponse When false, the average response
+   * delay of the sampled profiles is not computed (it loads every conversation
+   * of every profile). Defaults to true; callers that do not use it, such as
+   * the onboarding reminder mail, should disable it.
+   */
   async findPreRegistrationCompatibleProfiles(
     role: UserRole,
     nudgeIds: string[] = [],
-    businessSectorIds: string[] = []
+    businessSectorIds: string[] = [],
+    {
+      onlyVisibleProfiles = false,
+      withAverageDelayResponse = true,
+    }: {
+      onlyVisibleProfiles?: boolean;
+      withAverageDelayResponse?: boolean;
+    } = {}
   ): Promise<{
     broadened: boolean;
     count: number;
@@ -591,7 +611,13 @@ export class UserProfilesService {
     const userInclude = {
       model: User,
       as: 'user',
-      where: { role: targetRole },
+      where: {
+        role: targetRole,
+        ...(onlyVisibleProfiles && {
+          lastConnection: { [Op.ne]: null },
+          ...profileVisibilityEligibilityWhere,
+        }),
+      },
       required: true,
       attributes: [] as string[],
     };
@@ -757,10 +783,11 @@ export class UserProfilesService {
 
     const publicProfiles = await Promise.all(
       profileRows.map(async (profile): Promise<PublicProfileDto> => {
-        const averageDelayResponse =
-          await this.userProfileAnalyticsService.getAverageDelayResponse(
-            profile.user.id
-          );
+        const averageDelayResponse = withAverageDelayResponse
+          ? await this.userProfileAnalyticsService.getAverageDelayResponse(
+              profile.user.id
+            )
+          : undefined;
         const { user, ...restProfile } = withHasExternalCv(profile.toJSON());
         return {
           ...user,
