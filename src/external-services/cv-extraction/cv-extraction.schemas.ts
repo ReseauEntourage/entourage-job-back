@@ -1,5 +1,5 @@
 // Increment schema version on changes to make sure we dont reuse old saved schemas
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 // Increment when the instructions of the reading pass change, so that a text
 // read with older instructions is not reused to build a profile
@@ -123,7 +123,7 @@ export const cvSchema = {
             type: 'string',
             enum: ['NOTIONS', 'INTERMEDIATE', 'FLUENT', 'NATIVE'],
             description:
-              "Niveau de maîtrise de la langue tel qu'écrit dans le CV, à faire correspondre à l'échelle ci-dessous sans jamais surestimer : NOTIONS (notions, débutant, scolaire, CECRL A1-A2) ; INTERMEDIATE (intermédiaire, opérationnel, professionnel, CECRL B1-B2) ; FLUENT (courant, avancé, bilingue professionnel, CECRL C1-C2) ; NATIVE (langue maternelle, natif, bilingue natif). Ne pas remplir si aucun niveau n'est précisé dans le CV.",
+              "Niveau de maîtrise de la langue, à déduire uniquement de ce que dit le CV. Ne pas remplir si aucun niveau, score ou diplôme n'est précisé. Un score de test de langue ou le niveau d'un diplôme prime sur toute formulation ambiguë (« compétence professionnelle », « opérationnel », « très bon niveau ») ou contradictoire. Seuils : TOEIC Listening & Reading 941 et plus = FLUENT, 550 à 940 = INTERMEDIATE, moins de 550 = NOTIONS ; IELTS 7.0 et plus = FLUENT, 5.0 à 6.5 = INTERMEDIATE, moins de 5.0 = NOTIONS ; TOEFL iBT 95 et plus = FLUENT, 42 à 94 = INTERMEDIATE, moins de 42 = NOTIONS ; DELF, DALF, Cambridge (C1 Advanced, C2 Proficiency, B2 First…) = niveau CECRL du diplôme. Sans score ni diplôme, échelle : NATIVE uniquement si le CV dit expressément que c'est la langue maternelle (« langue maternelle », « natif », « native », « native speaker », « mother tongue ») ; « bilingue » ne veut pas dire langue maternelle. FLUENT : « bilingue », « bilingual », « courant », « couramment », « fluent », « maîtrise », « excellent », « professionnel complet », CECRL C1-C2. INTERMEDIATE : « intermédiaire », « bon niveau », « conversationnel », « good command », CECRL B1-B2. NOTIONS : « notions », « débutant », « bases », « scolaire », « élémentaire », « basic », « beginner », CECRL A1-A2.",
           },
         },
         required: ['name', 'value'],
