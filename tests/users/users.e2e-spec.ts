@@ -10,6 +10,7 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { UsersByIdController } from 'src/users/users-by-id.controller';
 import { UsersController } from 'src/users/users.controller';
+import { UsersService } from 'src/users/users.service';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { ZoneName } from 'src/utils/types/zones.types';
@@ -31,6 +32,7 @@ describe('Users', () => {
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
+  let usersService: UsersService;
   let organizationFactory: OrganizationFactory;
   let businessSectorsHelper: BusinessSectorHelper;
 
@@ -55,6 +57,7 @@ describe('Users', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    usersService = moduleFixture.get<UsersService>(UsersService);
     businessSectorsHelper =
       moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
@@ -948,6 +951,144 @@ describe('Users', () => {
             completedAt
           );
           expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('Should enqueue the onboarding completion job only once when two calls overlap', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: null,
+          });
+          addToWorkQueueSpy.mockClear();
+
+          const responses: APIResponse<UsersController['updateUser']>[] =
+            await Promise.all(
+              [1, 2, 3].map(() =>
+                request(server)
+                  .put(`${route}/${loggedInCandidate.user.id}`)
+                  .set('authorization', `Bearer ${loggedInCandidate.token}`)
+                  .send({ onboardingStatus: OnboardingStatus.COMPLETED })
+              )
+            );
+
+          responses.forEach((response) => {
+            expect(response.status).toBe(200);
+            expect(response.body.onboardingStatus).toBe(
+              OnboardingStatus.COMPLETED
+            );
+          });
+          const completionJobs = addToWorkQueueSpy.mock.calls.filter(
+            ([job]) => job === Jobs.ON_ONBOARDING_COMPLETED
+          );
+          expect(completionJobs).toHaveLength(1);
+          expect(completionJobs[0][1]).toEqual({
+            userId: loggedInCandidate.user.id,
+          });
+        });
+
+        it('Should update the other fields sent with the completed onboardingStatus', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: null,
+          });
+          addToWorkQueueSpy.mockClear();
+
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: OnboardingStatus.COMPLETED,
+                firstName: 'Camille',
+              });
+
+          expect(response.status).toBe(200);
+          expect(response.body.onboardingStatus).toBe(
+            OnboardingStatus.COMPLETED
+          );
+          expect(response.body.firstName).toBe('Camille');
+          expect(response.body.onboardingCompletedAt).toEqual(
+            expect.any(String)
+          );
+          expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('Should keep the onboardingCompletedAt already set when completing again', async () => {
+          const alreadySetAt = new Date('2026-01-15T10:00:00.000Z');
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: alreadySetAt,
+          });
+
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({ onboardingStatus: OnboardingStatus.COMPLETED });
+
+          expect(response.status).toBe(200);
+          expect(response.body.onboardingStatus).toBe(
+            OnboardingStatus.COMPLETED
+          );
+          expect(
+            new Date(response.body.onboardingCompletedAt).toISOString()
+          ).toBe(alreadySetAt.toISOString());
+        });
+      });
+
+      describe('completeOnboarding - Complete the onboarding of a user', () => {
+        let user: Awaited<
+          ReturnType<UsersHelper['createLoggedInUser']>
+        >['user'];
+
+        beforeEach(async () => {
+          ({ user } = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: null,
+          }));
+          addToWorkQueueSpy.mockClear();
+        });
+
+        it('Should complete the onboarding and enqueue the job for the first call only', async () => {
+          await expect(usersService.completeOnboarding(user.id)).resolves.toBe(
+            true
+          );
+          await expect(usersService.completeOnboarding(user.id)).resolves.toBe(
+            false
+          );
+
+          const updated = await usersService.findOne(user.id);
+          expect(updated.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
+          expect(updated.onboardingCompletedAt).toEqual(expect.any(Date));
+          expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+          expect(addToWorkQueueSpy).toHaveBeenCalledWith(
+            Jobs.ON_ONBOARDING_COMPLETED,
+            { userId: user.id }
+          );
+        });
+
+        it('Should ask the job to skip the staff welcome message when requested', async () => {
+          await expect(
+            usersService.completeOnboarding(user.id, {
+              skipWelcomeMessage: true,
+            })
+          ).resolves.toBe(true);
+
+          expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+          expect(addToWorkQueueSpy).toHaveBeenCalledWith(
+            Jobs.ON_ONBOARDING_COMPLETED,
+            { userId: user.id, skipWelcomeMessage: true }
+          );
+        });
+
+        it('Should do nothing for a user that does not exist', async () => {
+          await expect(usersService.completeOnboarding(uuid())).resolves.toBe(
+            false
+          );
+          expect(addToWorkQueueSpy).not.toHaveBeenCalled();
         });
       });
       describe('/changePwd - Update password', () => {

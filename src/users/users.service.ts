@@ -629,19 +629,29 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const shouldCheckOnboardingTransition =
-      updateUserDto.onboardingStatus !== undefined;
+    // The transition to a completed onboarding is written on its own, by a
+    // single conditional statement (see `completeOnboarding`), so that only one
+    // caller ever observes it. The other fields keep the regular update.
+    const { onboardingStatus, ...otherFields } = updateUserDto;
+    const isCompletingOnboarding =
+      onboardingStatus === OnboardingStatus.COMPLETED;
 
-    const previousUser = shouldCheckOnboardingTransition
-      ? await this.findOne(id)
-      : null;
+    if (isCompletingOnboarding) {
+      await this.completeOnboarding(id);
+    }
 
-    await this.userModel.update(updateUserDto, {
-      where: { id },
-      individualHooks: true,
-      hooks: true,
-      returning: true,
-    });
+    const fieldsToUpdate: UpdateUserDto = isCompletingOnboarding
+      ? otherFields
+      : updateUserDto;
+
+    if (Object.keys(fieldsToUpdate).length > 0) {
+      await this.userModel.update(fieldsToUpdate, {
+        where: { id },
+        individualHooks: true,
+        hooks: true,
+        returning: true,
+      });
+    }
 
     const updatedUser = await this.findOneWithRelations(id);
 
@@ -649,16 +659,141 @@ export class UsersService {
       return null;
     }
 
-    if (
-      updateUserDto.onboardingStatus === OnboardingStatus.COMPLETED &&
-      previousUser?.onboardingStatus !== OnboardingStatus.COMPLETED
-    ) {
-      await this.queuesService.addToWorkQueue(Jobs.ON_ONBOARDING_COMPLETED, {
-        userId: updatedUser.id,
-      });
+    return updatedUser;
+  }
+
+  /**
+   * Marks the onboarding of a user as completed, and queues the onboarding
+   * completion job, only for the caller that actually performs the transition.
+   *
+   * The transition is a single conditional `UPDATE ... WHERE onboardingStatus <>
+   * 'completed'`, with no transaction and no explicit row lock: when two calls
+   * overlap, PostgreSQL evaluates the condition again once the first one is
+   * committed, so the second one changes no row and queues nothing. The
+   * instance hook `setOnboardingCompletedAt` does not run for this statement,
+   * so `onboardingCompletedAt` is set here, and kept if it was already set.
+   *
+   * @param userId - The user whose onboarding is completed
+   * @param options.skipWelcomeMessage - Do not send the staff welcome message
+   * (accounts caught up by the backfill, which may be old)
+   * @returns true when this call completed the onboarding, false when it was
+   * already completed (or the user does not exist)
+   */
+  async completeOnboarding(
+    userId: string,
+    options: { skipWelcomeMessage?: boolean } = {}
+  ): Promise<boolean> {
+    const updatedRows = await this.userModel.sequelize.query<{ id: string }>(
+      `UPDATE "Users"
+       SET "onboardingStatus" = :completedStatus,
+           "onboardingCompletedAt" = COALESCE("onboardingCompletedAt", NOW()),
+           "updatedAt" = NOW()
+       WHERE "id" = :userId
+         AND "onboardingStatus" <> :completedStatus
+         AND "deletedAt" IS NULL
+       RETURNING "id"`,
+      {
+        replacements: {
+          userId,
+          completedStatus: OnboardingStatus.COMPLETED,
+        },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    if (updatedRows.length !== 1) {
+      return false;
     }
 
-    return updatedUser;
+    await this.queuesService.addToWorkQueue(Jobs.ON_ONBOARDING_COMPLETED, {
+      userId,
+      ...(options.skipWelcomeMessage ? { skipWelcomeMessage: true } : {}),
+    });
+    return true;
+  }
+
+  /**
+   * Candidates and coaches whose onboarding is not completed although they have
+   * reached the webinar invitation step, which is where the onboarding is now
+   * completed. Used by the backfill of the onboarding completion.
+   *
+   * Two categories, so that a human can read them apart before running it:
+   * - `evidence`: the webinar was skipped ("Later", `onboardingWebinarSkippedAt`);
+   * - `inferred`: every step before the webinar is complete, the way the wizard
+   *   resumes (`determineStartingStep`): picture, e-learning, profile (an
+   *   external CV, or at least one experience and one formation and a
+   *   presentation) and, for candidates, the social situation survey.
+   *
+   * A webinar booking is not an evidence here: participations live in
+   * Salesforce, not in this database. Those accounts have completed the steps
+   * before the webinar, so they fall in the `inferred` category.
+   * Company admins are excluded (their onboarding is completed at creation).
+   */
+  async getUsersStuckBeforeOnboardingCompletion(): Promise<
+    {
+      category: 'evidence' | 'inferred';
+      id: string;
+      role: string;
+    }[]
+  > {
+    return this.userModel.sequelize.query<{
+      category: 'evidence' | 'inferred';
+      id: string;
+      role: string;
+    }>(
+      `
+      SELECT u."id", u."role",
+        CASE WHEN u."onboardingWebinarSkippedAt" IS NOT NULL
+          THEN 'evidence' ELSE 'inferred' END AS "category"
+      FROM "Users" u
+      JOIN "UserProfiles" up ON up."userId" = u."id"
+      WHERE u."role" IN (:candidateRole, :coachRole)
+        AND u."onboardingStatus" <> :completedStatus
+        AND u."deletedAt" IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM "CompanyUsers" cu
+          WHERE cu."userId" = u."id" AND cu."isAdmin" IS TRUE
+        )
+        AND (
+          u."onboardingWebinarSkippedAt" IS NOT NULL
+          OR (
+            u."elearningCompletedAt" IS NOT NULL
+            AND up."hasPicture" IS TRUE
+            AND (
+              u."role" <> :candidateRole
+              OR EXISTS (
+                SELECT 1 FROM "User_Social_Situations" uss
+                WHERE uss."userId" = u."id" AND uss."hasCompletedSurvey" IS TRUE
+              )
+            )
+            AND (
+              EXISTS (
+                SELECT 1 FROM "ExternalCvs" ec
+                WHERE ec."userProfileId" = up."id" AND ec."deletedAt" IS NULL
+              )
+              OR (
+                EXISTS (
+                  SELECT 1 FROM "Experiences" e WHERE e."userProfileId" = up."id"
+                )
+                AND EXISTS (
+                  SELECT 1 FROM "Formations" f WHERE f."userProfileId" = up."id"
+                )
+                AND NULLIF(BTRIM(up."description"), '') IS NOT NULL
+              )
+            )
+          )
+        )
+      ORDER BY u."createdAt", u."id"
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          candidateRole: UserRoles.CANDIDATE,
+          coachRole: UserRoles.COACH,
+          completedStatus: OnboardingStatus.COMPLETED,
+        },
+      }
+    );
   }
 
   async sendOnboardingCompletedMail(

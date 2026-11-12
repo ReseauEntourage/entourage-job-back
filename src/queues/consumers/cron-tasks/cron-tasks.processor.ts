@@ -25,6 +25,7 @@ import {
 } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import {
   Jobs,
+  BackfillOnboardingCompletionJob,
   ManualLinkSalesforceContactJob,
   Queues,
 } from 'src/queues/queues.types';
@@ -137,6 +138,10 @@ export class CronTasksProcessor extends WorkerHost {
         return this.sendUnverifiedAccountRelaunchMails();
       case Jobs.BACKFILL_SALESFORCE_APP_ID:
         return this.backfillSalesforceAppId();
+      case Jobs.BACKFILL_ONBOARDING_COMPLETION:
+        return this.backfillOnboardingCompletion(
+          job.data as BackfillOnboardingCompletionJob
+        );
       case Jobs.MANUAL_LINK_SALESFORCE_CONTACT:
         return this.manualLinkSalesforceContact(
           job.data as ManualLinkSalesforceContactJob
@@ -2247,6 +2252,139 @@ export class CronTasksProcessor extends WorkerHost {
       `${networkOrCasquetteCompletions} contacts ` +
       `completed with a missing network/casquette, ${manualReviewCases.length} for manual review, ` +
       `${unexpectedFailures.length} unexpected failures (${users.length} users processed)`
+    );
+  }
+
+  /**
+   * Completes the onboarding of the candidates and coaches stuck "in progress"
+   * although they have reached the webinar invitation step (see
+   * `UsersService.getUsersStuckBeforeOnboardingCompletion`). Each account goes
+   * through `UsersService.completeOnboarding`, so it is completed at most once
+   * and queues the onboarding completion job, without the staff welcome message
+   * (these accounts may be old). `onboardingCompletedAt` is the date of this
+   * run, which is also the starting point of the J+1, J+4 and J+5 mails.
+   *
+   * Triggered manually on demand, no `@Cron` and no admin endpoint: run it via
+   * `queuesService.addToCronTasksQueue(Jobs.BACKFILL_ONBOARDING_COMPLETION, { dryRun: true })`
+   * first (the default), read the report, then again with
+   * `{ dryRun: false, categories: ['evidence', 'inferred'], limit: 100 }`.
+   * Nothing is written unless `dryRun` is explicitly false and `categories` is
+   * given. The accounts completed leave the selection, so it can be run again.
+   */
+  async backfillOnboardingCompletion(
+    data: BackfillOnboardingCompletionJob = {}
+  ): Promise<string> {
+    const DEFAULT_BATCH_SIZE = 25;
+    const DEFAULT_PAUSE_BETWEEN_BATCHES_MS = 10000;
+    const dryRun = data.dryRun !== false;
+
+    this.logger.log(
+      `Starting onboarding completion backfill (${dryRun ? 'dry run' : 'execution'})...`
+    );
+    const users =
+      await this.usersService.getUsersStuckBeforeOnboardingCompletion();
+    const idsOf = (category: 'evidence' | 'inferred') =>
+      users.filter((user) => user.category === category).map(({ id }) => id);
+    const evidenceIds = idsOf('evidence');
+    const inferredIds = idsOf('inferred');
+
+    if (dryRun) {
+      await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+        true,
+        '🧪 Backfill onboarding completion (dry run, nothing written)',
+        { total: users.length, success: users.length, failure: 0 },
+        [],
+        undefined,
+        undefined,
+        [
+          { label: 'Preuve directe (webinaire passé)', items: evidenceIds },
+          {
+            label: 'Reconstitués (étapes précédentes faites)',
+            items: inferredIds,
+          },
+        ]
+      );
+      return (
+        `Onboarding completion backfill (dry run): ${users.length} accounts, ` +
+        `${evidenceIds.length} with evidence, ${inferredIds.length} inferred`
+      );
+    }
+
+    const categories = data.categories;
+    if (!categories || categories.length === 0) {
+      throw new Error(
+        'The onboarding completion backfill needs `categories` when `dryRun` is false: read the dry run first, then choose.'
+      );
+    }
+
+    const selected = users
+      .filter((user) => categories.includes(user.category))
+      .slice(0, data.limit ?? users.length);
+    const batchSize = data.batchSize ?? DEFAULT_BATCH_SIZE;
+    const pauseBetweenBatchesMs =
+      data.pauseBetweenBatchesMs ?? DEFAULT_PAUSE_BETWEEN_BATCHES_MS;
+
+    let completed = 0;
+    let alreadyCompleted = 0;
+    const failures: SettledFailure[] = [];
+    const batches = chunk(selected, batchSize);
+
+    for (const [batchIndex, batch] of batches.entries()) {
+      for (const user of batch) {
+        try {
+          const hasCompleted = await this.usersService.completeOnboarding(
+            user.id,
+            { skipWelcomeMessage: true }
+          );
+          if (hasCompleted) {
+            completed += 1;
+          } else {
+            alreadyCompleted += 1;
+          }
+        } catch (error) {
+          failures.push({ itemId: user.id, reason: error });
+          this.logger.error(
+            `Failed completing the onboarding of user ${user.id} in the backfill`,
+            error
+          );
+        }
+      }
+
+      // Spread the completion jobs (recommendations to compute, mails) rather
+      // than queueing them all at once
+      if (batchIndex < batches.length - 1) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, pauseBetweenBatchesMs)
+        );
+      }
+    }
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      failures.length === 0,
+      '✅ Backfill onboarding completion',
+      {
+        total: selected.length,
+        success: completed + alreadyCompleted,
+        failure: failures.length,
+      },
+      failures,
+      undefined,
+      undefined,
+      undefined,
+      [
+        { label: 'Completed by this run', value: completed },
+        { label: 'Already completed', value: alreadyCompleted },
+        {
+          label: 'Left for a next run',
+          value: users.length - selected.length,
+        },
+      ]
+    );
+
+    return (
+      `Onboarding completion backfill: ${completed} completed, ` +
+      `${alreadyCompleted} already completed, ${failures.length} failures ` +
+      `(${selected.length}/${users.length} accounts processed)`
     );
   }
 
