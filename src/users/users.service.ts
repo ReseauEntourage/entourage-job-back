@@ -625,19 +625,29 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const shouldCheckOnboardingTransition =
-      updateUserDto.onboardingStatus !== undefined;
+    // The transition to a completed onboarding is written on its own, by a
+    // single conditional statement (see `completeOnboarding`), so that only one
+    // caller ever observes it. The other fields keep the regular update.
+    const { onboardingStatus, ...otherFields } = updateUserDto;
+    const isCompletingOnboarding =
+      onboardingStatus === OnboardingStatus.COMPLETED;
 
-    const previousUser = shouldCheckOnboardingTransition
-      ? await this.findOne(id)
-      : null;
+    if (isCompletingOnboarding) {
+      await this.completeOnboarding(id);
+    }
 
-    await this.userModel.update(updateUserDto, {
-      where: { id },
-      individualHooks: true,
-      hooks: true,
-      returning: true,
-    });
+    const fieldsToUpdate: UpdateUserDto = isCompletingOnboarding
+      ? otherFields
+      : updateUserDto;
+
+    if (Object.keys(fieldsToUpdate).length > 0) {
+      await this.userModel.update(fieldsToUpdate, {
+        where: { id },
+        individualHooks: true,
+        hooks: true,
+        returning: true,
+      });
+    }
 
     const updatedUser = await this.findOneWithRelations(id);
 
@@ -645,16 +655,57 @@ export class UsersService {
       return null;
     }
 
-    if (
-      updateUserDto.onboardingStatus === OnboardingStatus.COMPLETED &&
-      previousUser?.onboardingStatus !== OnboardingStatus.COMPLETED
-    ) {
-      await this.queuesService.addToWorkQueue(Jobs.ON_ONBOARDING_COMPLETED, {
-        userId: updatedUser.id,
-      });
+    return updatedUser;
+  }
+
+  /**
+   * Marks the onboarding of a user as completed, and queues the onboarding
+   * completion job, only for the caller that actually performs the transition.
+   *
+   * The transition is a single conditional `UPDATE ... WHERE onboardingStatus <>
+   * 'completed'`, with no transaction and no explicit row lock: when two calls
+   * overlap, PostgreSQL evaluates the condition again once the first one is
+   * committed, so the second one changes no row and queues nothing. The
+   * instance hook `setOnboardingCompletedAt` does not run for this statement,
+   * so `onboardingCompletedAt` is set here, and kept if it was already set.
+   *
+   * @param userId - The user whose onboarding is completed
+   * @param options.skipWelcomeMessage - Do not send the staff welcome message
+   * (accounts caught up by the backfill, which may be old)
+   * @returns true when this call completed the onboarding, false when it was
+   * already completed (or the user does not exist)
+   */
+  async completeOnboarding(
+    userId: string,
+    options: { skipWelcomeMessage?: boolean } = {}
+  ): Promise<boolean> {
+    const updatedRows = await this.userModel.sequelize.query<{ id: string }>(
+      `UPDATE "Users"
+       SET "onboardingStatus" = :completedStatus,
+           "onboardingCompletedAt" = COALESCE("onboardingCompletedAt", NOW()),
+           "updatedAt" = NOW()
+       WHERE "id" = :userId
+         AND "onboardingStatus" <> :completedStatus
+         AND "deletedAt" IS NULL
+       RETURNING "id"`,
+      {
+        replacements: {
+          userId,
+          completedStatus: OnboardingStatus.COMPLETED,
+        },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    if (updatedRows.length !== 1) {
+      return false;
     }
 
-    return updatedUser;
+    await this.queuesService.addToWorkQueue(Jobs.ON_ONBOARDING_COMPLETED, {
+      userId,
+      ...(options.skipWelcomeMessage ? { skipWelcomeMessage: true } : {}),
+    });
+    return true;
   }
 
   async sendOnboardingCompletedMail(

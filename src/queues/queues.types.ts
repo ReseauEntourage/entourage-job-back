@@ -215,6 +215,8 @@ export interface UpdateSalesforceUserCompanyJob {
 }
 
 export interface OnOnboardingCompletedJob {
+  // Do not send the staff welcome message (accounts caught up by the backfill)
+  skipWelcomeMessage?: boolean;
   userId: string;
 }
 
