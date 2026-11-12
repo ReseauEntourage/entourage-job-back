@@ -79,6 +79,7 @@ export const Jobs = {
   SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS:
     'send_unverified_account_relaunch_mails',
   BACKFILL_SALESFORCE_APP_ID: 'backfill_salesforce_app_id',
+  BACKFILL_ONBOARDING_COMPLETION: 'backfill_onboarding_completion',
   MANUAL_LINK_SALESFORCE_CONTACT: 'manual_link_salesforce_contact',
   SEND_HELP_GROUPS_DAILY_DIGEST: 'send_help_groups_daily_digest',
   PURGE_EXPIRED_NOTIFICATIONS: 'purge_expired_notifications',
@@ -140,6 +141,7 @@ type JobsData = {
   [Jobs.PREPARE_CHECKIN_RELANCE_MAILS]: PrepareCheckinRelanceMailsJob;
   [Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS]: SendUnverifiedAccountRelaunchMailsJob;
   [Jobs.BACKFILL_SALESFORCE_APP_ID]: BackfillSalesforceAppIdJob;
+  [Jobs.BACKFILL_ONBOARDING_COMPLETION]: BackfillOnboardingCompletionJob;
   [Jobs.MANUAL_LINK_SALESFORCE_CONTACT]: ManualLinkSalesforceContactJob;
   [Jobs.SEND_HELP_GROUPS_DAILY_DIGEST]: SendHelpGroupsDailyDigestJob;
   [Jobs.PURGE_EXPIRED_NOTIFICATIONS]: PurgeExpiredNotificationsJob;
@@ -298,6 +300,23 @@ export type PrepareCheckinInvitationMailsJob = Record<string, never>;
 export type PrepareCheckinRelanceMailsJob = Record<string, never>;
 export type SendUnverifiedAccountRelaunchMailsJob = Record<string, never>;
 export type BackfillSalesforceAppIdJob = Record<string, never>;
+
+export type BackfillOnboardingCompletionCategory = 'evidence' | 'inferred';
+
+export interface BackfillOnboardingCompletionJob {
+  // Accounts per batch (default 25)
+  batchSize?: number;
+  // Categories to complete. Required when `dryRun` is false: the dry run
+  // lists both categories, and the choice is made after reading it.
+  categories?: BackfillOnboardingCompletionCategory[];
+  // Defaults to true: nothing is written unless `dryRun` is explicitly false
+  dryRun?: boolean;
+  // Accounts to complete per run, so that a long backfill can be stopped
+  // between two runs (the accounts already completed leave the selection)
+  limit?: number;
+  // Pause between two batches, to spread the completion jobs they queue
+  pauseBetweenBatchesMs?: number;
+}
 
 export interface ManualLinkSalesforceContactPair {
   sfContactId: string;

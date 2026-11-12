@@ -113,6 +113,7 @@ describe('CronTasksProcessor', () => {
         'sendUnverifiedAccountRelaunchMails',
       ],
       [Jobs.BACKFILL_SALESFORCE_APP_ID, 'backfillSalesforceAppId'],
+      [Jobs.BACKFILL_ONBOARDING_COMPLETION, 'backfillOnboardingCompletion'],
       [Jobs.SEND_HELP_GROUPS_DAILY_DIGEST, 'sendHelpGroupsDailyDigest'],
       [Jobs.PURGE_EXPIRED_NOTIFICATIONS, 'purgeExpiredNotifications'],
     ];
