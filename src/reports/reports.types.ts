@@ -43,10 +43,22 @@ export const ReportResolutions = {
   DELETED: 'DELETED',
   // Closed by an admin from the reports tab (conversation, profile)
   MANUAL: 'MANUAL',
+  // Closed without touching the message, which stays visible (a group
+  // message that never got hidden)
+  DISMISSED: 'DISMISSED',
 } as const;
 
 export type ReportResolution =
   (typeof ReportResolutions)[keyof typeof ReportResolutions];
+
+// A signalement with a human reporter, or one created automatically (e.g. a
+// forbidden expression detected in a help group message)
+export const ReportOrigins = {
+  MEMBER: 'MEMBER',
+  AUTOMATIC: 'AUTOMATIC',
+} as const;
+
+export type ReportOrigin = (typeof ReportOrigins)[keyof typeof ReportOrigins];
 
 export interface ReportTarget {
   targetId: string;

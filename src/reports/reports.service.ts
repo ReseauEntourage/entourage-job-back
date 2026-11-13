@@ -7,6 +7,8 @@ import { User } from 'src/users/models';
 import { ZoneName } from 'src/utils/types/zones.types';
 import { Report, ReportSlackMessage } from './models';
 import {
+  ReportOrigin,
+  ReportOrigins,
   ReportReason,
   ReportResolution,
   ReportStatuses,
@@ -29,8 +31,11 @@ export class ReportAlreadyPendingError extends ConflictException {
 
 export interface CreateReportInput extends ReportTarget {
   comment?: string | null;
+  // Defaults to MEMBER
+  origin?: ReportOrigin;
   reason: ReportReason;
-  reporterId: string;
+  // Absent for an AUTOMATIC report, which has no human reporter
+  reporterId?: string | null;
   // Zone of the reported person (`getConversationReportZone` for a
   // conversation); « Hors zone » when null
   zone: ZoneName | null;
@@ -125,7 +130,8 @@ export class ReportsService {
         {
           targetType: input.targetType,
           targetId: input.targetId,
-          reporterId: input.reporterId,
+          reporterId: input.reporterId ?? null,
+          origin: input.origin ?? ReportOrigins.MEMBER,
           reason: input.reason,
           comment: input.comment || null,
           // A person without zone is followed by the « Hors zone » team
@@ -142,8 +148,11 @@ export class ReportsService {
   }
 
   /**
-   * Distinct reporters of the reports still to handle on a target: resolved
-   * reports never count, so a restored message starts again from zero.
+   * Distinct reporters of the member reports still to handle on a target:
+   * resolved reports never count, so a restored message starts again from
+   * zero. An AUTOMATIC report has no reporter and never contributes to this
+   * count (explicit filter, not relied upon as a side effect of counting
+   * `DISTINCT reporterId`).
    */
   async countPendingDistinctReporters(
     target: ReportTarget,
@@ -151,11 +160,32 @@ export class ReportsService {
   ): Promise<number> {
     const result = (await this.reportModel.findOne({
       attributes: [[fn('COUNT', fn('DISTINCT', col('reporterId'))), 'count']],
-      where: { ...target, status: ReportStatuses.PENDING },
+      where: {
+        ...target,
+        status: ReportStatuses.PENDING,
+        origin: ReportOrigins.MEMBER,
+      },
       raw: true,
       transaction,
     })) as unknown as { count: string } | null;
     return parseInt(result?.count ?? '0', 10);
+  }
+
+  /**
+   * Whether an AUTOMATIC report is already pending on a target: an edited
+   * message that still contains a forbidden expression must not create a
+   * second one, nor a second Slack alert.
+   */
+  async hasPendingAutomaticReport(target: ReportTarget): Promise<boolean> {
+    const existing = await this.reportModel.findOne({
+      attributes: ['id'],
+      where: {
+        ...target,
+        status: ReportStatuses.PENDING,
+        origin: ReportOrigins.AUTOMATIC,
+      },
+    });
+    return !!existing;
   }
 
   /**

@@ -13,6 +13,7 @@ import { Post, PostContext, PostReply } from 'src/posts/models';
 import { Report } from 'src/reports/models';
 import { ReportsService } from 'src/reports/reports.service';
 import {
+  ReportOrigin,
   ReportReason,
   ReportResolutions,
   ReportTarget,
@@ -63,6 +64,7 @@ export type ReportUser = {
 export interface ReportTargetItem {
   label: string;
   lastReportedAt: Date;
+  origins: ReportOrigin[];
   pendingCount: number;
   reasons: ReportReason[];
   reportsCount: number;
@@ -101,6 +103,7 @@ export type ReportTargetContext =
 interface TargetRow {
   isPending: boolean;
   lastReportedAt: Date;
+  origins: ReportOrigin[];
   pendingCount: number;
   reasons: ReportReason[];
   reportsCount: number;
@@ -272,6 +275,7 @@ export class ReportsAdminService {
         {
           type: query.type,
           zone: query.zone,
+          origin: query.origin,
           pendingOnly: query.status === ReportTargetStatuses.PENDING,
         },
         replacements
@@ -290,6 +294,7 @@ export class ReportsAdminService {
         targetId: row.targetId,
         label: labels.get(this.key(row)) ?? MISSING_TARGET_LABEL,
         zones: row.zones ?? [],
+        origins: row.origins,
         pendingCount: Number(row.pendingCount),
         reportsCount: Number(row.reportsCount),
         reasons: row.reasons,
@@ -336,8 +341,11 @@ export class ReportsAdminService {
     {
       type,
       zone,
+      origin,
       pendingOnly = false,
-    }: Pick<ReportTargetsQueryDto, 'type' | 'zone'> & { pendingOnly?: boolean },
+    }: Pick<ReportTargetsQueryDto, 'type' | 'zone' | 'origin'> & {
+      pendingOnly?: boolean;
+    },
     replacements: Record<string, unknown>
   ) {
     const where: string[] = [];
@@ -347,6 +355,17 @@ export class ReportsAdminService {
     }
     if (zone) {
       replacements.zone = zone;
+    }
+    if (origin) {
+      // A target with at least one report of this origin — the aggregates
+      // below (pendingCount, reasons…) still cover every report, not only
+      // this origin's
+      where.push(
+        `("targetType", "targetId") IN (
+          SELECT "targetType", "targetId" FROM "Reports" WHERE "origin" = :origin
+        )`
+      );
+      replacements.origin = origin;
     }
     if (pendingOnly) {
       where.push(
@@ -368,6 +387,7 @@ export class ReportsAdminService {
         COUNT(*) AS "reportsCount",
         COUNT(*) FILTER (WHERE "status" = 'PENDING') > 0 AS "isPending",
         array_agg(DISTINCT "reason") AS "reasons",
+        array_agg(DISTINCT "origin") AS "origins",
         date_trunc('milliseconds', MAX("createdAt")) AS "lastReportedAt",
         CASE WHEN bool_or("status" = 'PENDING')
           THEN array_remove(array_agg(DISTINCT "zone") FILTER (WHERE "status" = 'PENDING'), NULL)
@@ -602,6 +622,13 @@ export class ReportsAdminService {
     // The label is derived from the context, loaded once
     const context = await this.resolveContext(target);
     const isPending = reports.some(({ status }) => status === 'PENDING');
+    // A help group message is "resolvable" generically only while visible
+    // (hidden/deleted messages are handled from the group instead)
+    const canResolve =
+      context.targetType === ReportTargetTypes.POST ||
+      context.targetType === ReportTargetTypes.POST_REPLY
+        ? context.message?.state === GroupMessageStates.VISIBLE
+        : true;
     return {
       targetType: target.targetType,
       targetId: target.targetId,
@@ -609,10 +636,11 @@ export class ReportsAdminService {
       status: isPending
         ? ReportTargetStatuses.PENDING
         : ReportTargetStatuses.RESOLVED,
-      canResolve: !isGroupMessageTarget(target.targetType),
+      canResolve,
       reports: reports.map((report) => ({
         id: report.id,
         reporter: toReportUser(report.reporter),
+        origin: report.origin,
         reason: report.reason,
         comment: report.comment,
         zone: report.zone,
@@ -752,18 +780,21 @@ export class ReportsAdminService {
   // ---------------------------------------------------------------------
 
   /**
-   * Closes every report still to handle on a conversation or a profile, with
-   * an optional internal note. No message to the reporter nor to the
-   * reported person. 400 for a help group message, handled in the group.
+   * Closes every report still to handle on a conversation, a profile, or a
+   * help group message that stayed visible (dismissed without touching the
+   * message — `DISMISSED`, distinct from the generic `MANUAL` closing). A
+   * masked message is still refused: it is handled from the group (restore
+   * or delete).
    */
   async resolveTarget(
     target: ReportTarget,
     adminId: string,
     dto: ResolveReportTargetDto
   ): Promise<{ resolvedCount: number }> {
-    if (isGroupMessageTarget(target.targetType)) {
+    const isGroupMessage = isGroupMessageTarget(target.targetType);
+    if (isGroupMessage && !(await this.isGroupMessageVisible(target))) {
       throw new BadRequestException(
-        'Un message de groupe se traite depuis le groupe.'
+        'Un message de groupe masqué se traite depuis le groupe.'
       );
     }
     const reported = await this.reportModel.findOne({
@@ -775,11 +806,30 @@ export class ReportsAdminService {
     }
     const resolvedCount = await this.reportsService.resolvePending(
       target,
-      ReportResolutions.MANUAL,
+      isGroupMessage ? ReportResolutions.DISMISSED : ReportResolutions.MANUAL,
       adminId,
       undefined,
       dto.note
     );
     return { resolvedCount };
+  }
+
+  /**
+   * A help group message target is "resolvable" generically only while it
+   * is visible (neither hidden nor deleted, itself or its discussion).
+   */
+  private async isGroupMessageVisible(target: ReportTarget): Promise<boolean> {
+    const targetType = target.targetType as
+      typeof ReportTargetTypes.POST | typeof ReportTargetTypes.POST_REPLY;
+    const isReply = targetType === ReportTargetTypes.POST_REPLY;
+    const [reply] = isReply ? await this.findReplies([target.targetId]) : [];
+    const [post] = await this.findPosts(
+      [isReply ? reply?.postId : target.targetId].filter(Boolean)
+    );
+    const message = isReply ? reply : post;
+    if (!message || !post) {
+      return false;
+    }
+    return !message.hiddenAt && !message.deletedAt && !post.deletedAt;
   }
 }

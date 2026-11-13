@@ -11,6 +11,8 @@ import { HELP_GROUP_TITLE_OUTPUT_SCHEMA } from 'src/help-groups/help-groups-titl
 import { HelpGroup, HelpGroupMembership } from 'src/help-groups/models';
 import { Post, PostReaction, PostReply, PostRevision } from 'src/posts/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { Report } from 'src/reports/models';
+import { ReportOrigins, ReportStatuses } from 'src/reports/reports.types';
 import { tracer } from 'src/tracer';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -64,6 +66,7 @@ describe('Help groups - Participation', () => {
   let membershipModel: typeof HelpGroupMembership;
   let postModel: typeof Post;
   let postReplyModel: typeof PostReply;
+  let reportModel: typeof Report;
   let postReactionModel: typeof PostReaction;
   let postRevisionModel: typeof PostRevision;
   let userModel: typeof User;
@@ -107,6 +110,7 @@ describe('Help groups - Participation', () => {
     membershipModel = moduleFixture.get(getModelToken(HelpGroupMembership));
     postModel = moduleFixture.get(getModelToken(Post));
     postReplyModel = moduleFixture.get(getModelToken(PostReply));
+    reportModel = moduleFixture.get(getModelToken(Report));
     postReactionModel = moduleFixture.get(getModelToken(PostReaction));
     postRevisionModel = moduleFixture.get(getModelToken(PostRevision));
     userModel = moduleFixture.get(getModelToken(User));
@@ -1268,7 +1272,7 @@ describe('Help groups - Participation', () => {
   });
 
   describe('Forbidden expressions alert', () => {
-    it('Should publish and alert the moderation channel, mentioning the referent', async () => {
+    it('Should publish, create an AUTOMATIC report and alert the moderation channel, mentioning the referent', async () => {
       process.env.FORBIDDEN_EXPRESSIONS = 'whatsapp, virement';
       const sendMessage = jest
         .spyOn(slackService, 'sendMessage')
@@ -1286,9 +1290,23 @@ describe('Help groups - Participation', () => {
       expect(blocksText).toContain('whatsapp');
       expect(blocksText).toContain(group.name);
       expect(blocksText).toContain(`replyId=${response.body.id}`);
+
+      const report = await reportModel.findOne({
+        where: { targetType: 'POST_REPLY', targetId: response.body.id },
+      });
+      expect(report).toMatchObject({
+        origin: ReportOrigins.AUTOMATIC,
+        reporterId: null,
+        reason: 'OTHER',
+        comment: 'whatsapp',
+        status: ReportStatuses.PENDING,
+      });
+      // Never hidden, never flagged to the author or readers
+      const reply = await postReplyModel.findByPk(response.body.id);
+      expect(reply?.hiddenAt).toBeNull();
     });
 
-    it('Should also check an edited message', async () => {
+    it('Should also check an edited message, and never report it twice while the first is pending', async () => {
       process.env.FORBIDDEN_EXPRESSIONS = 'virement';
       const sendMessage = jest
         .spyOn(slackService, 'sendMessage')
@@ -1298,6 +1316,19 @@ describe('Help groups - Participation', () => {
         content: 'Faites-moi un virement',
       });
       await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+
+      // Edited again, still containing the expression: no second report,
+      // no second alert
+      await api('patch', `${discussionsPath()}/${discussion.id}`, member, {
+        content: 'Faites-moi vite un virement',
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(
+        await reportModel.count({
+          where: { targetType: 'POST', targetId: discussion.id },
+        })
+      ).toBe(1);
     });
 
     it('Should publish even when Slack fails', async () => {

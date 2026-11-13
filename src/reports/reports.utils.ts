@@ -73,10 +73,41 @@ export const getResolveSlackAction = (
   style: 'primary',
 });
 
+/**
+ * The actions of an admin on an AUTOMATIC report of a help group message
+ * that stays visible: no "Rétablir" (nothing to restore), "Supprimer"
+ * reuses the moderation link into the message's thread, "Classer sans
+ * suite" opens the closing form of its report page (same endpoint as a
+ * conversation/profile closing).
+ */
+export const getVisibleGroupMessageModerationSlackActions = (
+  targetType: ReportTargetType,
+  targetId: string,
+  messageUrl: string
+): SlackMsgAction[] => [
+  {
+    label: 'Supprimer le message',
+    url: withQueryParam(messageUrl, 'moderation', 'delete'),
+    value: 'moderation-delete',
+    style: 'danger',
+  },
+  {
+    label: 'Classer sans suite',
+    url: withQueryParam(
+      getReportTargetAdminUrl(targetType, targetId),
+      'action',
+      'resolve'
+    ),
+    value: 'moderation-resolve',
+    style: 'primary',
+  },
+];
+
 export const REPORT_RESOLUTION_SLACK_LABELS: {
   [K in ReportResolution]: string;
 } = {
   [ReportResolutions.RESTORED]: 'message rétabli',
   [ReportResolutions.DELETED]: 'message supprimé',
   [ReportResolutions.MANUAL]: 'marqué comme traité',
+  [ReportResolutions.DISMISSED]: 'classé sans suite',
 };

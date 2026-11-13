@@ -46,6 +46,7 @@ describe('Reports - Admin', () => {
   let reportFactory: ReportFactory;
   let reportModel: typeof Report;
   let postReplyModel: typeof PostReply;
+  let postModel: typeof Post;
 
   let admin: LoggedInUser;
   let coach: LoggedInUser;
@@ -77,6 +78,7 @@ describe('Reports - Admin', () => {
     reportFactory = moduleFixture.get(ReportFactory);
     reportModel = moduleFixture.get(getModelToken(Report));
     postReplyModel = moduleFixture.get(getModelToken(PostReply));
+    postModel = moduleFixture.get(getModelToken(Post));
   });
 
   afterAll(async () => {
@@ -368,6 +370,47 @@ describe('Reports - Admin', () => {
       expect((await get('/pending-count')).body).toEqual({ count: 2 });
     });
 
+    it('Should show the origins of a target, and filter by origin', async () => {
+      const { reply } = await createReply();
+      await reportFactory.create({
+        targetType: ReportTargetTypes.POST_REPLY,
+        targetId: reply.id,
+        reporterId: null,
+        origin: 'AUTOMATIC',
+        reason: ReportReasons.OTHER,
+      });
+      await reportProfile(coach.user.id, candidate.user.id);
+
+      const all = (await get('/targets')).body.items;
+      const replyItem = all.find(
+        ({ targetId }: { targetId: string }) => targetId === reply.id
+      );
+      expect(replyItem.origins).toEqual(['AUTOMATIC']);
+      const profileItem = all.find(
+        ({ targetId }: { targetId: string }) => targetId === coach.user.id
+      );
+      expect(profileItem.origins).toEqual(['MEMBER']);
+
+      expect(await ids('origin=AUTOMATIC')).toEqual([reply.id]);
+      expect(await ids('origin=MEMBER')).toEqual([coach.user.id]);
+
+      // A member report on the same message: the target now carries both
+      // origins, still a single row
+      await reportFactory.create({
+        targetType: ReportTargetTypes.POST_REPLY,
+        targetId: reply.id,
+        reporterId: candidate.user.id,
+      });
+      const mixed = (await get('/targets?type=GROUP_MESSAGE')).body.items[0];
+      expect([...mixed.origins].sort()).toEqual(['AUTOMATIC', 'MEMBER']);
+
+      async function ids(query: string) {
+        return (await get(`/targets?${query}`)).body.items.map(
+          ({ targetId }: { targetId: string }) => targetId
+        );
+      }
+    });
+
     it('Should load the list by pages', async () => {
       const users = await Promise.all(
         Array.from({ length: 21 }, () =>
@@ -509,6 +552,28 @@ describe('Reports - Admin', () => {
       });
     });
 
+    it('Should carry the origin of each report of a target', async () => {
+      const { reply } = await createReply();
+      await reportFactory.create({
+        targetType: ReportTargetTypes.POST_REPLY,
+        targetId: reply.id,
+        reporterId: null,
+        origin: 'AUTOMATIC',
+        reason: ReportReasons.OTHER,
+      });
+      await reportFactory.create({
+        targetType: ReportTargetTypes.POST_REPLY,
+        targetId: reply.id,
+        reporterId: candidate.user.id,
+      });
+
+      const page = await get(`/targets/POST_REPLY/${reply.id}`);
+      const origins = page.body.reports.map(
+        ({ origin }: { origin: string }) => origin
+      );
+      expect([...origins].sort()).toEqual(['AUTOMATIC', 'MEMBER']);
+    });
+
     it('Should show the group, the content and the state of a group message, even hidden or deleted', async () => {
       const { group, discussion, reply } = await createReply();
       await reportFactory.create({
@@ -520,7 +585,9 @@ describe('Reports - Admin', () => {
         (await get(`/targets/POST_REPLY/${reply.id}`)).body;
 
       const visible = await context();
-      expect(visible.canResolve).toBe(false);
+      // A visible group message with a pending report is resolvable
+      // generically (dismissed without touching the message)
+      expect(visible.canResolve).toBe(true);
       expect(visible.context).toMatchObject({
         group: { id: group.id, name: group.name, slug: group.slug },
         message: {
@@ -538,7 +605,10 @@ describe('Reports - Admin', () => {
         { hiddenAt: new Date() },
         { where: { id: reply.id } }
       );
-      expect((await context()).context.message.state).toBe('HIDDEN');
+      const hidden = await context();
+      expect(hidden.context.message.state).toBe('HIDDEN');
+      // A hidden message is handled from the group instead (restore/delete)
+      expect(hidden.canResolve).toBe(false);
 
       await postReplyModel.destroy({ where: { id: reply.id } });
       const deleted = await context();
@@ -582,13 +652,51 @@ describe('Reports - Admin', () => {
       expect(SlackMocks.sendMessage).not.toHaveBeenCalled();
     });
 
-    it('Should refuse to close a group message by hand with a 400', async () => {
+    it('Should dismiss the pending reports of a visible group message without touching it', async () => {
+      const { reply } = await createReply();
+      await reportFactory.create({
+        targetType: ReportTargetTypes.POST_REPLY,
+        targetId: reply.id,
+        reporterId: candidate.user.id,
+      });
+
+      const response = await resolve(ReportTargetTypes.POST_REPLY, reply.id, {
+        note: 'Faux positif',
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual({ resolvedCount: 1 });
+      const report = await reportModel.findOne({
+        where: { targetId: reply.id },
+      });
+      expect(report).toMatchObject({
+        status: ReportStatuses.RESOLVED,
+        resolution: ReportResolutions.DISMISSED,
+        resolutionNote: 'Faux positif',
+        resolvedById: admin.user.id,
+      });
+      // The message itself is untouched: not hidden, not deleted
+      const updatedReply = await postReplyModel.findByPk(reply.id);
+      expect(updatedReply?.hiddenAt).toBeNull();
+      expect(updatedReply?.deletedAt).toBeNull();
+      expect(SlackMocks.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('Should refuse to close a hidden group message by hand with a 400', async () => {
       const { reply, discussion } = await createReply();
       await reportFactory.create({
         targetType: ReportTargetTypes.POST_REPLY,
         targetId: reply.id,
         reporterId: candidate.user.id,
       });
+      await postReplyModel.update(
+        { hiddenAt: new Date() },
+        { where: { id: reply.id } }
+      );
+      await postModel.update(
+        { hiddenAt: new Date() },
+        { where: { id: discussion.id } }
+      );
 
       expect(
         (await resolve(ReportTargetTypes.POST_REPLY, reply.id)).status

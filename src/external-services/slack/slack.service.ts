@@ -10,12 +10,18 @@ import {
   CheckinPerceivedBenefit,
 } from 'src/checkin/checkin.types';
 import { ConversationCheckin } from 'src/checkin/models/conversation-checkin.model';
-import { ReportTarget, ReportTargetTypes } from 'src/reports/reports.types';
+import {
+  ReportOrigin,
+  ReportOrigins,
+  ReportTarget,
+  ReportTargetTypes,
+} from 'src/reports/reports.types';
 import {
   REPORT_TARGET_SLACK_ACTION_VALUE,
   getGroupMessageModerationSlackActions,
   getReportTargetSlackAction,
   getResolveSlackAction,
+  getVisibleGroupMessageModerationSlackActions,
 } from 'src/reports/reports.utils';
 import { User } from 'src/users/models';
 import {
@@ -38,8 +44,11 @@ export interface HelpGroupMessageReport {
   groupName: string;
   isReply: boolean;
   messageUrl: string;
+  // Defaults to MEMBER
+  origin?: ReportOrigin;
   reasonLabel: string;
-  reporter: User;
+  // Null for an AUTOMATIC report, which has no human reporter
+  reporter: User | null;
   // The reported message, for the page of its reports in the admin tab
   target: ReportTarget;
 }
@@ -249,6 +258,11 @@ export class SlackService implements OnModuleInit {
    * A help group message was reported: link, group, excerpt, motive,
    * comment, reporter and author, with the referents of the author and of
    * the reporter mentioned once each. Never any email.
+   *
+   * An AUTOMATIC report (no human reporter, the message stays visible) shows
+   * "Détection automatique" instead of a reporter, and its decisions are
+   * "Supprimer" / "Classer sans suite" instead of "Rétablir" / "Supprimer"
+   * (nothing to restore, since the message was never hidden).
    */
   sendHelpGroupMessageReported = async ({
     author,
@@ -259,13 +273,24 @@ export class SlackService implements OnModuleInit {
     messageUrl,
     reasonLabel,
     reporter,
+    origin = ReportOrigins.MEMBER,
     target,
   }: HelpGroupMessageReport): Promise<SentSlackMessage | null> => {
-    const referentIds = await this.getReferentSlackUserIds([author, reporter]);
+    const isAutomatic = origin === ReportOrigins.AUTOMATIC;
+    const referentIds = await this.getReferentSlackUserIds(
+      [author, reporter].filter(Boolean) as User[]
+    );
     const blocks = this.generateSlackBlockMsg({
-      title: '🚨 Un message de groupe d’entraide a été signalé',
+      title: isAutomatic
+        ? '🚨 Expression interdite détectée dans un groupe d’entraide'
+        : '🚨 Un message de groupe d’entraide a été signalé',
       context: [
-        { title: 'Signalé par', content: formatSlackUser(reporter) },
+        {
+          title: isAutomatic ? 'Origine' : 'Signalé par',
+          content: isAutomatic
+            ? 'Détection automatique'
+            : formatSlackUser(reporter),
+        },
         { title: 'Auteur du message', content: formatSlackUser(author) },
         {
           title: '👮 Référents',
@@ -286,13 +311,21 @@ export class SlackService implements OnModuleInit {
         },
       ],
       actions: [
-        ...getGroupMessageModerationSlackActions(messageUrl),
+        ...(isAutomatic
+          ? getVisibleGroupMessageModerationSlackActions(
+              target.targetType,
+              target.targetId,
+              messageUrl
+            )
+          : getGroupMessageModerationSlackActions(messageUrl)),
         getReportTargetSlackAction(target.targetType, target.targetId),
       ],
     });
     return this.postModerationAlert(
       blocks,
-      `Un message du groupe ${escapeSlackText(groupName)} a été signalé`
+      isAutomatic
+        ? `Expression interdite détectée dans le groupe ${escapeSlackText(groupName)}`
+        : `Un message du groupe ${escapeSlackText(groupName)} a été signalé`
     );
   };
 
