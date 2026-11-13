@@ -387,6 +387,7 @@ export interface SalesforceCampaign {
   Heure_de_d_but__c?: string;
   Heure_de_fin__c?: string;
   Id?: string;
+  Impact__c?: string;
   MeetingLink__c?: string;
   Name?: string;
   Nombre_d_inscrits__c?: number;
