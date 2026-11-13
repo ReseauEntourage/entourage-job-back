@@ -5,6 +5,7 @@ import {
   EventMode,
   EventPublicAudience,
   EventType,
+  SalesforceEventImpact,
   SalesforceEventTypes,
 } from './event.types';
 
@@ -20,6 +21,7 @@ export const salesforceEventAttributes = [
   'EndDate',
   'Heure_de_fin__c',
   'Type_evenement__c',
+  'Impact__c',
   'Antenne__c',
   'Adresse_de_l_v_nement__c',
   'En_ligne__c',
@@ -46,6 +48,7 @@ export const salesforceEventTypeToEventType: { [key: string]: EventType } = {
 };
 
 export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
+  [EventType.AWARENESS_WORKSHOP]: SalesforceEventTypes.AWARENESS_WORKSHOP,
   [EventType.WELCOME_SESSION]: SalesforceEventTypes.WELCOME_SESSION,
   [EventType.COFFEE_SESSION]: SalesforceEventTypes.COFFEE_SESSION,
   [EventType.FRIENDLINESS]: SalesforceEventTypes.FRIENDLINESS,
@@ -178,6 +181,19 @@ export const additionalEventAttributesByEventType: {
   [EventType.FRIENDLINESS]: {
     sequences: [],
   },
+
+  // Atelier de sensibilisation Isolement & Précarité
+  [EventType.AWARENESS_WORKSHOP]: {
+    format: 'Webinaire - En ligne',
+    goal: 'Comprendre et déconstruire les préjugés sur l’isolement et la précarité, avoir les clés pour agir à son échelle.',
+    audience: 'Coachs et candidats de toute la France',
+    sequences: [
+      'Accueil, présentation',
+      'Présentation de l’association et de ses programmes',
+      'Déroulé de l’atelier',
+      'Questions et clôture',
+    ],
+  },
 };
 
 /**
@@ -221,6 +237,10 @@ const parseSalesforceTime = (date: string, time: string) => {
   return moment.tz(`${date}T${cleanTime}`, 'Europe/Paris').format();
 };
 
+const isAwarenessWorkshopCampaign = (campaign: SalesforceCampaign): boolean =>
+  campaign.Type_evenement__c === SalesforceEventTypes.AWARENESS_WORKSHOP &&
+  campaign.Impact__c === SalesforceEventImpact.AWARENESS_WORKSHOP;
+
 /**
  * Convert Salesforce Campaign to internal Event representation
  * @param campaign SalesforceCampaign
@@ -229,12 +249,22 @@ const parseSalesforceTime = (date: string, time: string) => {
 export const convertSalesforceCampaignToEvent = (
   campaign: SalesforceCampaign
 ): Event | null => {
-  const eventType =
-    campaign.Type_evenement__c in salesforceEventTypeToEventType
+  const eventType = isAwarenessWorkshopCampaign(campaign)
+    ? EventType.AWARENESS_WORKSHOP
+    : campaign.Type_evenement__c in salesforceEventTypeToEventType
       ? salesforceEventTypeToEventType[campaign.Type_evenement__c]
       : EventType.UNKNOWN;
 
   if (eventType === EventType.UNKNOWN) {
+    return null;
+  }
+
+  // A session with no connection link or no start date is hidden rather than
+  // shown with a broken call to action.
+  if (
+    eventType === EventType.AWARENESS_WORKSHOP &&
+    (!campaign.MeetingLink__c || !campaign.StartDate)
+  ) {
     return null;
   }
   const isParticipating = Boolean(campaign?.CampaignMembers?.records.length);
