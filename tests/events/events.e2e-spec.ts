@@ -7,6 +7,7 @@ import {
   EventMode,
   EventPublicAudience,
   EventType,
+  SalesforceEventImpact,
   SalesforceEventTypes,
 } from 'src/events/event.types';
 import { EventsController } from 'src/events/events.controller';
@@ -182,8 +183,20 @@ describe('events utils', () => {
     it.each(Object.values(SalesforceEventTypes))(
       'recognizes the "%s" type',
       (type) => {
+        // AWARENESS_WORKSHOP is impact-qualified and requires a connection
+        // link: Type_evenement__c alone isn't enough to recognize it.
+        const awarenessWorkshopOverride =
+          type === SalesforceEventTypes.AWARENESS_WORKSHOP
+            ? {
+                Impact__c: SalesforceEventImpact.AWARENESS_WORKSHOP,
+                MeetingLink__c: 'https://meet.example.com/abc',
+              }
+            : {};
         const event = convertSalesforceCampaignToEvent(
-          campaign({ Type_evenement__c: type }) as never
+          campaign({
+            Type_evenement__c: type,
+            ...awarenessWorkshopOverride,
+          }) as never
         );
 
         expect(event.eventType).not.toBe(EventType.UNKNOWN);

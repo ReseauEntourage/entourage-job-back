@@ -18,6 +18,7 @@ import {
   EventMode,
   EventPublicAudience,
   EventType,
+  SalesforceEventImpact,
 } from 'src/events/event.types';
 import {
   eventTypeToSalesforceEventType,
@@ -801,7 +802,11 @@ export class SalesforceService {
                   .map((eventType) => {
                     const sfEventType =
                       eventTypeToSalesforceEventType[eventType];
-                    return `Type_evenement__c = '${sfEventType}'`;
+                    // Awareness workshops are identified by the pair
+                    // (Type_evenement__c, Impact__c), not Type_evenement__c alone.
+                    return eventType === EventType.AWARENESS_WORKSHOP
+                      ? `(Type_evenement__c = '${sfEventType}' AND Impact__c = '${SalesforceEventImpact.AWARENESS_WORKSHOP}')`
+                      : `Type_evenement__c = '${sfEventType}'`;
                   })
                   .join(' OR ')}
               )
