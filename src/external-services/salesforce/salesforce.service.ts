@@ -19,6 +19,7 @@ import {
   EventPublicAudience,
   EventType,
   SalesforceEventImpact,
+  SalesforceEventTypes,
 } from 'src/events/event.types';
 import {
   eventTypeToSalesforceEventType,
@@ -862,12 +863,27 @@ export class SalesforceService {
           contactId
         )}' AND Status = '${SalesforceCampaignStatus.REGISTERED}' LIMIT 1)`
       : '';
+    // An awareness workshop campaign missing its connection link or start
+    // date is dropped by convertSalesforceCampaignToEvent: exclude it here,
+    // before LIMIT/OFFSET, so it never consumes a page slot and pushes a
+    // valid workshop to a later offset — regardless of the eventTypes filter.
+    const awarenessWorkshopCompletenessCondition = `
+              AND (
+                NOT (
+                  Type_evenement__c = '${SalesforceEventTypes.AWARENESS_WORKSHOP}'
+                  AND Impact__c = '${SalesforceEventImpact.AWARENESS_WORKSHOP}'
+                )
+                OR (MeetingLink__c != null AND StartDate != null)
+              )
+            `;
+
     const query = `SELECT ${salesforceEventAttributes.join(
       ', '
     )}${selectUserParticipation}
            FROM ${ObjectNames.CAMPAIGN}
            WHERE
             Type = 'Event' AND R_seaux__c INCLUDES ('LinkedOut')
+            ${awarenessWorkshopCompletenessCondition}
             ${searchCondition}
             ${modeFilters}
             ${eventTypesFilters}

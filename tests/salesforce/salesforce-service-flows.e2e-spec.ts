@@ -264,6 +264,34 @@ describe('SalesforceService - event campaigns', () => {
     expect(connection.query.mock.calls[0][0]).not.toContain('CampaignMembers');
   });
 
+  it('findAllEventCampaigns filters AWARENESS_WORKSHOP by both Type_evenement__c and Impact__c (EN-9855)', async () => {
+    const { service, connection } = buildService();
+    connection.query.mockResolvedValue({ records: [] });
+
+    await service.findAllEventCampaigns('', 1, 0, true, null, '', undefined, [
+      EventType.AWARENESS_WORKSHOP,
+    ]);
+
+    const query = connection.query.mock.calls[0][0] as string;
+    expect(query).toContain(
+      "(Type_evenement__c = 'Atelier de sensib Monde de la rue' AND Impact__c = 'Sensibilisation')"
+    );
+  });
+
+  it('findAllEventCampaigns always excludes incomplete awareness workshops before LIMIT/OFFSET, even with no eventTypes filter', async () => {
+    const { service, connection } = buildService();
+    connection.query.mockResolvedValue({ records: [] });
+
+    await service.findAllEventCampaigns('', 1, 0, true, null);
+
+    const query = (connection.query.mock.calls[0][0] as string)
+      .replace(/\s+/g, ' ')
+      .trim();
+    expect(query).toContain(
+      "NOT ( Type_evenement__c = 'Atelier de sensib Monde de la rue' AND Impact__c = 'Sensibilisation' ) OR (MeetingLink__c != null AND StartDate != null)"
+    );
+  });
+
   it('findEventCampaignById returns the campaign or null', async () => {
     const { service, connection } = buildService();
     jest
