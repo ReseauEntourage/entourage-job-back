@@ -82,6 +82,48 @@ describe('CronTasksProcessor.backfillOnboardingCompletion', () => {
       expect(usersService.completeOnboarding).not.toHaveBeenCalled();
     });
 
+    it('rejects an unknown category before reading or writing anything', async () => {
+      const { processor, usersService, cronTasksSlackReporterService } =
+        buildProcessor();
+
+      await expect(
+        processor.backfillOnboardingCompletion({
+          dryRun: false,
+          categories: ['evdience'] as never,
+        })
+      ).rejects.toThrow('Unknown categories');
+      expect(
+        usersService.getUsersStuckBeforeOnboardingCompletion
+      ).not.toHaveBeenCalled();
+      expect(usersService.completeOnboarding).not.toHaveBeenCalled();
+      expect(
+        cronTasksSlackReporterService.sendCronTaskResultToSlack
+      ).not.toHaveBeenCalled();
+    });
+
+    it('rejects categories that are not a list', async () => {
+      const { processor } = buildProcessor();
+
+      await expect(
+        processor.backfillOnboardingCompletion({
+          dryRun: false,
+          categories: 'evidence' as never,
+        })
+      ).rejects.toThrow('Unknown categories');
+    });
+
+    it('rejects an unknown category in a dry run too', async () => {
+      const { processor, usersService } = buildProcessor();
+
+      await expect(
+        processor.backfillOnboardingCompletion({
+          dryRun: true,
+          categories: ['evidence', 'other'] as never,
+        })
+      ).rejects.toThrow('"other"');
+      expect(usersService.completeOnboarding).not.toHaveBeenCalled();
+    });
+
     it('completes the accounts of the chosen categories only, without the welcome message', async () => {
       const { processor, usersService } = buildProcessor();
 

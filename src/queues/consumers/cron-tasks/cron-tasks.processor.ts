@@ -2259,6 +2259,24 @@ export class CronTasksProcessor extends WorkerHost {
     const DEFAULT_PAUSE_BETWEEN_BATCHES_MS = 10000;
     const dryRun = data.dryRun !== false;
 
+    // A misspelled category must not turn the run into a silent no-op that
+    // looks successful: reject the job before anything is read or written.
+    const supportedCategories = ['evidence', 'inferred'];
+    if (data.categories !== undefined) {
+      const unknownCategories = Array.isArray(data.categories)
+        ? data.categories.filter(
+            (category) => !supportedCategories.includes(category)
+          )
+        : [data.categories];
+      if (unknownCategories.length > 0) {
+        throw new Error(
+          `Unknown categories for the onboarding completion backfill: ${JSON.stringify(
+            unknownCategories
+          )}. Supported: ${supportedCategories.join(', ')}.`
+        );
+      }
+    }
+
     this.logger.log(
       `Starting onboarding completion backfill (${dryRun ? 'dry run' : 'execution'})...`
     );
