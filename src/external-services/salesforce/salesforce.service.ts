@@ -867,12 +867,12 @@ export class SalesforceService {
     // date is dropped by convertSalesforceCampaignToEvent: exclude it here,
     // before LIMIT/OFFSET, so it never consumes a page slot and pushes a
     // valid workshop to a later offset — regardless of the eventTypes filter.
+    // SOQL rejects `NOT (...) OR ...` (MALFORMED_QUERY), so the negation is
+    // written out with De Morgan; `!=` also matches null values in SOQL.
     const awarenessWorkshopCompletenessCondition = `
               AND (
-                NOT (
-                  Type_evenement__c = '${SalesforceEventTypes.AWARENESS_WORKSHOP}'
-                  AND Impact__c = '${SalesforceEventImpact.AWARENESS_WORKSHOP}'
-                )
+                Type_evenement__c != '${SalesforceEventTypes.AWARENESS_WORKSHOP}'
+                OR Impact__c != '${SalesforceEventImpact.AWARENESS_WORKSHOP}'
                 OR (MeetingLink__c != null AND StartDate != null)
               )
             `;
