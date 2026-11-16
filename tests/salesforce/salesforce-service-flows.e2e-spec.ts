@@ -288,8 +288,10 @@ describe('SalesforceService - event campaigns', () => {
       .replace(/\s+/g, ' ')
       .trim();
     expect(query).toContain(
-      "NOT ( Type_evenement__c = 'Atelier de sensib Monde de la rue' AND Impact__c = 'Sensibilisation' ) OR (MeetingLink__c != null AND StartDate != null)"
+      "Type_evenement__c != 'Atelier de sensib Monde de la rue' OR Impact__c != 'Sensibilisation' OR (MeetingLink__c != null AND StartDate != null)"
     );
+    // SOQL rejects a NOT (...) group followed by OR
+    expect(query).not.toMatch(/NOT \(/);
   });
 
   it('findEventCampaignById returns the campaign or null', async () => {
