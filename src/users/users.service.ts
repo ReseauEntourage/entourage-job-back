@@ -626,15 +626,13 @@ export class UsersService {
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     // The transition to a completed onboarding is written on its own, by a
-    // single conditional statement (see `completeOnboarding`), so that only one
-    // caller ever observes it. The other fields keep the regular update.
+    // conditional update (see `completeOnboarding`), so that only one caller
+    // ever observes it. It comes last: the completion job reads the user, so
+    // the other fields must be written first, and a failure of that update
+    // (validation, unique email) must not leave the onboarding completed.
     const { onboardingStatus, ...otherFields } = updateUserDto;
     const isCompletingOnboarding =
       onboardingStatus === OnboardingStatus.COMPLETED;
-
-    if (isCompletingOnboarding) {
-      await this.completeOnboarding(id);
-    }
 
     const fieldsToUpdate: UpdateUserDto = isCompletingOnboarding
       ? otherFields
@@ -647,6 +645,10 @@ export class UsersService {
         hooks: true,
         returning: true,
       });
+    }
+
+    if (isCompletingOnboarding) {
+      await this.completeOnboarding(id);
     }
 
     const updatedUser = await this.findOneWithRelations(id);
@@ -662,12 +664,18 @@ export class UsersService {
    * Marks the onboarding of a user as completed, and queues the onboarding
    * completion job, only for the caller that actually performs the transition.
    *
-   * The transition is a single conditional `UPDATE ... WHERE onboardingStatus <>
+   * The transition is a conditional update, `WHERE onboardingStatus <>
    * 'completed'`, with no transaction and no explicit row lock: when two calls
    * overlap, PostgreSQL evaluates the condition again once the first one is
-   * committed, so the second one changes no row and queues nothing. The
-   * instance hook `setOnboardingCompletedAt` does not run for this statement,
-   * so `onboardingCompletedAt` is set here, and kept if it was already set.
+   * committed, so the second one changes no row and queues nothing. The number
+   * of rows changed tells which caller made the transition.
+   *
+   * It goes through the model with its hooks (`individualHooks`), so that the
+   * user history is kept (revision counter, `Revision` and `RevisionChange`)
+   * and `onboardingCompletedAt` is set by the `setOnboardingCompletedAt` hook
+   * (and kept if already set), like any other update of a user. In the rare
+   * overlap of two calls, the one that changes no row can still record a
+   * duplicate revision entry: the hooks run before the statement.
    *
    * @param userId - The user whose onboarding is completed
    * @param options.skipWelcomeMessage - Do not send the staff welcome message
@@ -679,25 +687,19 @@ export class UsersService {
     userId: string,
     options: { skipWelcomeMessage?: boolean } = {}
   ): Promise<boolean> {
-    const updatedRows = await this.userModel.sequelize.query<{ id: string }>(
-      `UPDATE "Users"
-       SET "onboardingStatus" = :completedStatus,
-           "onboardingCompletedAt" = COALESCE("onboardingCompletedAt", NOW()),
-           "updatedAt" = NOW()
-       WHERE "id" = :userId
-         AND "onboardingStatus" <> :completedStatus
-         AND "deletedAt" IS NULL
-       RETURNING "id"`,
+    const [affectedCount] = await this.userModel.update(
+      { onboardingStatus: OnboardingStatus.COMPLETED },
       {
-        replacements: {
-          userId,
-          completedStatus: OnboardingStatus.COMPLETED,
+        where: {
+          id: userId,
+          onboardingStatus: { [Op.ne]: OnboardingStatus.COMPLETED },
         },
-        type: QueryTypes.SELECT,
+        individualHooks: true,
+        hooks: true,
       }
     );
 
-    if (updatedRows.length !== 1) {
+    if (affectedCount !== 1) {
       return false;
     }
 

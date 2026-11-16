@@ -8,6 +8,7 @@ import { BusinessSector } from 'src/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { Revision, RevisionChange } from 'src/revisions/models';
 import { UsersByIdController } from 'src/users/users-by-id.controller';
 import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
@@ -1036,6 +1037,33 @@ describe('Users', () => {
             new Date(response.body.onboardingCompletedAt).toISOString()
           ).toBe(alreadySetAt.toISOString());
         });
+
+        it('Should neither complete the onboarding nor queue the job when another field of the request cannot be updated', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: null,
+          });
+          const otherUser = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          addToWorkQueueSpy.mockClear();
+
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: OnboardingStatus.COMPLETED,
+                email: otherUser.user.email,
+              });
+
+          expect(response.status).toBe(409);
+          const user = await usersHelper.findUserRaw(loggedInCandidate.user.id);
+          expect(user.onboardingStatus).toBe(OnboardingStatus.IN_PROGRESS);
+          expect(user.onboardingCompletedAt).toBeNull();
+          expect(addToWorkQueueSpy).not.toHaveBeenCalled();
+        });
       });
 
       describe('completeOnboarding - Complete the onboarding of a user', () => {
@@ -1082,6 +1110,23 @@ describe('Users', () => {
             Jobs.ON_ONBOARDING_COMPLETED,
             { userId: user.id, skipWelcomeMessage: true }
           );
+        });
+
+        it('Should record the completion in the user history', async () => {
+          const before = await usersHelper.findUserRaw(user.id);
+
+          await usersService.completeOnboarding(user.id);
+
+          const after = await usersHelper.findUserRaw(user.id);
+          expect(after.revision).toBeGreaterThan(before.revision);
+          const revisions = await Revision.findAll({
+            where: { documentId: user.id, revision: after.revision },
+            include: [RevisionChange],
+          });
+          expect(revisions).toHaveLength(1);
+          expect(
+            revisions[0].revisionsChanges.map((change) => change.path)
+          ).toEqual(expect.arrayContaining(['onboardingStatus']));
         });
 
         it('Should do nothing for a user that does not exist', async () => {
