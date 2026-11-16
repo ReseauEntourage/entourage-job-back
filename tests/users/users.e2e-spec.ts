@@ -1129,6 +1129,54 @@ describe('Users', () => {
           ).toEqual(expect.arrayContaining(['onboardingStatus']));
         });
 
+        it('Should complete only once when every call has loaded the user before any of them writes', async () => {
+          // Forces the worst overlap: each call loads the user still in progress
+          // (the `findAll` of the update with hooks) before any call writes.
+          const userModel = (
+            usersService as unknown as {
+              userModel: { findAll: (...args: unknown[]) => Promise<unknown> };
+            }
+          ).userModel;
+          const originalFindAll = userModel.findAll.bind(userModel);
+          const CALLS = 4;
+          let loaded = 0;
+          let release: () => void = () => undefined;
+          const allLoaded = new Promise<void>((resolve) => {
+            release = resolve;
+          });
+          const findAllSpy = jest
+            .spyOn(userModel, 'findAll')
+            .mockImplementation(async (...args: unknown[]) => {
+              const rows = await originalFindAll(...args);
+              // The first CALLS loads are those of the calls: each one waits
+              // here, before its hooks and its write, for all the others
+              loaded += 1;
+              if (loaded === CALLS) {
+                release();
+              }
+              await allLoaded;
+              return rows;
+            });
+
+          try {
+            const results = await Promise.all(
+              Array.from({ length: CALLS }, () =>
+                usersService.completeOnboarding(user.id)
+              )
+            );
+
+            expect(loaded).toBe(CALLS);
+            expect(results.filter(Boolean)).toHaveLength(1);
+            expect(
+              addToWorkQueueSpy.mock.calls.filter(
+                ([job]) => job === Jobs.ON_ONBOARDING_COMPLETED
+              )
+            ).toHaveLength(1);
+          } finally {
+            findAllSpy.mockRestore();
+          }
+        });
+
         it('Should do nothing for a user that does not exist', async () => {
           await expect(usersService.completeOnboarding(uuid())).resolves.toBe(
             false
