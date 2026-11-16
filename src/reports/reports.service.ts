@@ -7,6 +7,8 @@ import { User } from 'src/users/models';
 import { ZoneName } from 'src/utils/types/zones.types';
 import { Report, ReportSlackMessage } from './models';
 import {
+  ReportOrigin,
+  ReportOrigins,
   ReportReason,
   ReportResolution,
   ReportStatuses,
@@ -29,8 +31,11 @@ export class ReportAlreadyPendingError extends ConflictException {
 
 export interface CreateReportInput extends ReportTarget {
   comment?: string | null;
+  // Defaults to MEMBER
+  origin?: ReportOrigin;
   reason: ReportReason;
-  reporterId: string;
+  // Absent for an AUTOMATIC report, which has no human reporter
+  reporterId?: string | null;
   // Zone of the reported person (`getConversationReportZone` for a
   // conversation); « Hors zone » when null
   zone: ZoneName | null;
@@ -125,7 +130,8 @@ export class ReportsService {
         {
           targetType: input.targetType,
           targetId: input.targetId,
-          reporterId: input.reporterId,
+          reporterId: input.reporterId ?? null,
+          origin: input.origin ?? ReportOrigins.MEMBER,
           reason: input.reason,
           comment: input.comment || null,
           // A person without zone is followed by the « Hors zone » team
@@ -142,8 +148,11 @@ export class ReportsService {
   }
 
   /**
-   * Distinct reporters of the reports still to handle on a target: resolved
-   * reports never count, so a restored message starts again from zero.
+   * Distinct reporters of the member reports still to handle on a target:
+   * resolved reports never count, so a restored message starts again from
+   * zero. An AUTOMATIC report has no reporter and never contributes to this
+   * count (explicit filter, not relied upon as a side effect of counting
+   * `DISTINCT reporterId`).
    */
   async countPendingDistinctReporters(
     target: ReportTarget,
@@ -151,11 +160,32 @@ export class ReportsService {
   ): Promise<number> {
     const result = (await this.reportModel.findOne({
       attributes: [[fn('COUNT', fn('DISTINCT', col('reporterId'))), 'count']],
-      where: { ...target, status: ReportStatuses.PENDING },
+      where: {
+        ...target,
+        status: ReportStatuses.PENDING,
+        origin: ReportOrigins.MEMBER,
+      },
       raw: true,
       transaction,
     })) as unknown as { count: string } | null;
     return parseInt(result?.count ?? '0', 10);
+  }
+
+  /**
+   * Whether an AUTOMATIC report is already pending on a target: an edited
+   * message that still contains a forbidden expression must not create a
+   * second one, nor a second Slack alert.
+   */
+  async hasPendingAutomaticReport(target: ReportTarget): Promise<boolean> {
+    const existing = await this.reportModel.findOne({
+      attributes: ['id'],
+      where: {
+        ...target,
+        status: ReportStatuses.PENDING,
+        origin: ReportOrigins.AUTOMATIC,
+      },
+    });
+    return !!existing;
   }
 
   /**
@@ -237,6 +267,35 @@ export class ReportsService {
     resolution: ReportResolution,
     resolvedById: string
   ): Promise<void> {
+    const admin = await this.userModel.findByPk(resolvedById, {
+      attributes: ['firstName', 'lastName'],
+      paranoid: false,
+    });
+    await this.replaceAlertsStatus(
+      target,
+      formatSlackHandledStatus(resolution, admin, new Date())
+    );
+  }
+
+  /**
+   * Replaces the action buttons of the target's unhandled Slack alerts
+   * (e.g. an AUTOMATIC report's "Classer sans suite", now a dead link) once
+   * the message is hidden by the member-report threshold: handled from the
+   * group from now on, as the priority "auto hidden" alert says.
+   */
+  async markSlackAlertsHidden(
+    target: Omit<ReportTarget, 'targetId'> & { targetId: string | string[] }
+  ): Promise<void> {
+    await this.replaceAlertsStatus(
+      target,
+      '⚠️ Message masqué automatiquement — à traiter depuis le groupe (voir l’alerte prioritaire)'
+    );
+  }
+
+  private async replaceAlertsStatus(
+    target: Omit<ReportTarget, 'targetId'> & { targetId: string | string[] },
+    status: string
+  ): Promise<void> {
     try {
       const alerts = await this.reportSlackMessageModel.findAll({
         where: { ...target, handledAt: null },
@@ -244,11 +303,6 @@ export class ReportsService {
       if (alerts.length === 0) {
         return;
       }
-      const admin = await this.userModel.findByPk(resolvedById, {
-        attributes: ['firstName', 'lastName'],
-        paranoid: false,
-      });
-      const status = formatSlackHandledStatus(resolution, admin, new Date());
       for (const alert of alerts) {
         try {
           await this.slackService.markModerationAlertHandled(
@@ -258,7 +312,7 @@ export class ReportsService {
           await alert.update({ handledAt: new Date() });
         } catch (error) {
           this.logger.error(
-            `Slack alert ${alert.ts} of the ${alert.targetType} ${alert.targetId} not marked as handled: ${
+            `Slack alert ${alert.ts} of the ${alert.targetType} ${alert.targetId} not updated: ${
               error instanceof Error ? error.message : String(error)
             }`
           );
@@ -266,7 +320,7 @@ export class ReportsService {
       }
     } catch (error) {
       this.logger.error(
-        `Slack alerts not marked as handled: ${
+        `Slack alerts not updated: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

@@ -13,6 +13,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import type {
+  ReportOrigin,
   ReportReason,
   ReportResolution,
   ReportStatus,
@@ -24,8 +25,9 @@ import { ZoneName } from 'src/utils/types/zones.types';
 /**
  * Generic report. The target is polymorphic (`targetType`, `targetId`)
  * without a foreign key: its existence is checked by the service creating
- * the report. A single PENDING report per reporter and target (partial
- * unique index).
+ * the report. A single PENDING report per reporter and target for a MEMBER
+ * report; an AUTOMATIC report (no reporter) dedups per target alone (two
+ * partial unique indexes).
  */
 @Table({ tableName: 'Reports' })
 export class Report extends Model {
@@ -44,11 +46,18 @@ export class Report extends Model {
   @Column
   targetId: string;
 
+  // Null for an AUTOMATIC report, which has no human reporter
   @IsUUID(4)
   @ForeignKey(() => User)
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
-  reporterId: string;
+  reporterId: string | null;
+
+  // MEMBER | AUTOMATIC
+  @AllowNull(false)
+  @Default('MEMBER')
+  @Column(DataType.STRING(20))
+  origin: ReportOrigin;
 
   @AllowNull(false)
   @Column(DataType.STRING(30))

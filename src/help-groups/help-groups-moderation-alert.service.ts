@@ -1,12 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
-import { slackChannels } from 'src/external-services/slack/slack.types';
+import { Post, PostReply } from 'src/posts/models';
+import { ReportsService } from 'src/reports/reports.service';
+import {
+  ReportOrigins,
+  ReportReasonLabels,
+  ReportReasons,
+  ReportTarget,
+  ReportTargetTypes,
+} from 'src/reports/reports.types';
 import { User } from 'src/users/models';
 import {
   findForbiddenExpression,
   parseForbiddenExpressions,
 } from 'src/utils/misc/forbidden-expressions';
 import { HelpGroup } from './models';
+
+const EXCERPT_MAX_LENGTH = 200;
 
 export interface ModerationAlertMessage {
   author: User;
@@ -17,31 +28,47 @@ export interface ModerationAlertMessage {
   title?: string | null;
 }
 
+const toExcerpt = (text: string) =>
+  text.length > EXCERPT_MAX_LENGTH
+    ? `${text.slice(0, EXCERPT_MAX_LENGTH).trimEnd()}…`
+    : text;
+
 /**
- * Alerts the Entourage Pro moderation Slack channel when a published or
- * edited help group message contains a forbidden expression. Never blocks
- * nor delays the publication, and never tells the author nor the readers.
+ * Creates an AUTOMATIC report on a help group message that contains a
+ * forbidden expression, when published or edited. Never blocks nor delays
+ * the publication, and never tells the author nor the readers. The message
+ * is never hidden by this (see `help-groups-reporting.service.ts`'s
+ * threshold, which only ever counts MEMBER reports).
  */
 @Injectable()
 export class HelpGroupsModerationAlertService {
   private readonly logger = new Logger(HelpGroupsModerationAlertService.name);
 
-  constructor(private readonly slackService: SlackService) {}
+  constructor(
+    private readonly slackService: SlackService,
+    private readonly reportsService: ReportsService,
+    @InjectModel(Post)
+    private readonly postModel: typeof Post,
+    @InjectModel(PostReply)
+    private readonly postReplyModel: typeof PostReply
+  ) {}
 
   /**
    * Fire and forget: meant to be called once the write is committed.
    */
   checkMessage(message: ModerationAlertMessage): void {
-    this.alertIfForbidden(message).catch((error) => {
+    this.reportIfForbidden(message).catch((error) => {
+      // May fail after the report was already created (e.g. Slack down):
+      // do not imply the report itself is missing
       this.logger.warn(
-        `[HelpGroupsModerationAlert] alert not sent (discussionId=${
+        `[HelpGroupsModerationAlert] automatic report/alert processing failed (discussionId=${
           message.discussionId
         }): ${error instanceof Error ? error.message : String(error)}`
       );
     });
   }
 
-  private async alertIfForbidden({
+  private async reportIfForbidden({
     author,
     content,
     discussionId,
@@ -60,39 +87,63 @@ export class HelpGroupsModerationAlertService {
       return;
     }
 
-    // Same referent resolution as the messaging reports
-    const referentSlackEmail = author.staffContact?.slackEmail;
-    const referentSlackUserId = referentSlackEmail
-      ? await this.slackService.getUserIdByEmail(referentSlackEmail)
-      : null;
+    const target: ReportTarget = replyId
+      ? { targetType: ReportTargetTypes.POST_REPLY, targetId: replyId }
+      : { targetType: ReportTargetTypes.POST, targetId: discussionId };
+
+    // An edited message still containing a forbidden expression must not
+    // create a second report, nor a second Slack alert, while the first is
+    // still to handle
+    if (await this.reportsService.hasPendingAutomaticReport(target)) {
+      return;
+    }
+
+    await this.reportsService.create({
+      ...target,
+      reporterId: null,
+      origin: ReportOrigins.AUTOMATIC,
+      reason: ReportReasons.OTHER,
+      comment: expression,
+      zone: author.zone ?? null,
+    });
 
     const messageUrl = `${process.env.FRONT_URL}/backoffice/groupes/${
       group.slug
     }/discussions/${discussionId}${replyId ? `?replyId=${replyId}` : ''}`;
 
-    const blocks = this.slackService.generateSlackBlockMsg({
-      title: '🚨 Expression interdite dans un groupe d’entraide',
-      context: [
-        {
-          title: 'Auteur',
-          content: `${author.firstName} ${author.lastName} <${author.email}>`,
-        },
-        ...(referentSlackUserId
-          ? [{ title: '👮 Référent', content: `<@${referentSlackUserId}>` }]
-          : []),
-      ],
-      msgParts: [
-        { content: `*Groupe* : ${group.name}` },
-        { content: `*Expression détectée* : ${expression}` },
-        {
-          content: `*${replyId ? 'Réponse' : 'Discussion'}* : <${messageUrl}|Voir le message>`,
-        },
-      ],
+    // This runs fire-and-forget, independently from a member report's own
+    // transaction: re-check right before sending, so a message hidden in
+    // the meantime gets the hidden-state actions, not a dead "Classer sans
+    // suite" link
+    const isHidden = await this.isMessageHidden(target, replyId);
+
+    const sent = await this.slackService.sendHelpGroupMessageReported({
+      author,
+      reporter: null,
+      origin: ReportOrigins.AUTOMATIC,
+      isHidden,
+      groupName: group.name,
+      isReply: !!replyId,
+      messageUrl,
+      excerpt: toExcerpt([title, content].filter(Boolean).join(' — ')),
+      reasonLabel: ReportReasonLabels[ReportReasons.OTHER],
+      comment: expression,
+      target,
     });
-    await this.slackService.sendMessage(
-      slackChannels.ENTOURAGE_PRO_MODERATION,
-      blocks,
-      `Expression interdite détectée dans le groupe ${group.name}`
-    );
+    await this.reportsService.recordSlackAlert(target, sent);
+  }
+
+  private async isMessageHidden(
+    target: ReportTarget,
+    replyId: string | undefined
+  ): Promise<boolean> {
+    const message = replyId
+      ? await this.postReplyModel.findByPk(target.targetId, {
+          attributes: ['hiddenAt'],
+        })
+      : await this.postModel.findByPk(target.targetId, {
+          attributes: ['hiddenAt'],
+        });
+    return !!message?.hiddenAt;
   }
 }

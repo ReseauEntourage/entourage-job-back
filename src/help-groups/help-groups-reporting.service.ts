@@ -196,6 +196,18 @@ export class HelpGroupsReportingService {
           discussionId: message.discussionId,
         });
       }
+      // Any earlier alert on this target (e.g. an AUTOMATIC report's
+      // "Classer sans suite") would now link to a message handled from the
+      // group instead; replace its actions rather than leave a dead link
+      this.reportsService
+        .markSlackAlertsHidden(message.target)
+        .catch((error) => {
+          this.logger.error(
+            `[HelpGroupsReporting] earlier Slack alerts not updated (${message.target.targetType} ${message.id}): ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        });
     }
 
     this.sendAlerts(message, reader.id, dto, isHidden).catch((error) => {
