@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
+import { Post, PostReply } from 'src/posts/models';
 import { ReportsService } from 'src/reports/reports.service';
 import {
   ReportOrigins,
@@ -44,7 +46,11 @@ export class HelpGroupsModerationAlertService {
 
   constructor(
     private readonly slackService: SlackService,
-    private readonly reportsService: ReportsService
+    private readonly reportsService: ReportsService,
+    @InjectModel(Post)
+    private readonly postModel: typeof Post,
+    @InjectModel(PostReply)
+    private readonly postReplyModel: typeof PostReply
   ) {}
 
   /**
@@ -105,10 +111,17 @@ export class HelpGroupsModerationAlertService {
       group.slug
     }/discussions/${discussionId}${replyId ? `?replyId=${replyId}` : ''}`;
 
+    // This runs fire-and-forget, independently from a member report's own
+    // transaction: re-check right before sending, so a message hidden in
+    // the meantime gets the hidden-state actions, not a dead "Classer sans
+    // suite" link
+    const isHidden = await this.isMessageHidden(target, replyId);
+
     const sent = await this.slackService.sendHelpGroupMessageReported({
       author,
       reporter: null,
       origin: ReportOrigins.AUTOMATIC,
+      isHidden,
       groupName: group.name,
       isReply: !!replyId,
       messageUrl,
@@ -118,5 +131,19 @@ export class HelpGroupsModerationAlertService {
       target,
     });
     await this.reportsService.recordSlackAlert(target, sent);
+  }
+
+  private async isMessageHidden(
+    target: ReportTarget,
+    replyId: string | undefined
+  ): Promise<boolean> {
+    const message = replyId
+      ? await this.postReplyModel.findByPk(target.targetId, {
+          attributes: ['hiddenAt'],
+        })
+      : await this.postModel.findByPk(target.targetId, {
+          attributes: ['hiddenAt'],
+        });
+    return !!message?.hiddenAt;
   }
 }

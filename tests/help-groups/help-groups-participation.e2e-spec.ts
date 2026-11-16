@@ -1331,6 +1331,28 @@ describe('Help groups - Participation', () => {
       ).toBe(1);
     });
 
+    it('Should alert with the hidden-state actions when the message is already hidden', async () => {
+      process.env.FORBIDDEN_EXPRESSIONS = 'virement';
+      const sendMessage = jest
+        .spyOn(slackService, 'sendMessage')
+        .mockResolvedValue(undefined);
+      const discussion = await createDiscussion();
+      // Raced ahead by a member report crossing the auto-hide threshold,
+      // before the automatic detection's own (fire-and-forget) alert runs
+      await postModel.update(
+        { hiddenAt: new Date() },
+        { where: { id: discussion.id } }
+      );
+
+      await api('patch', `${discussionsPath()}/${discussion.id}`, member, {
+        content: 'Faites-moi un virement',
+      });
+      await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+      const blocksText = JSON.stringify(sendMessage.mock.calls[0][1]);
+      expect(blocksText).toContain('Rétablir le message');
+      expect(blocksText).not.toContain('Classer sans suite');
+    });
+
     it('Should publish even when Slack fails', async () => {
       process.env.FORBIDDEN_EXPRESSIONS = 'virement';
       const sendMessage = jest

@@ -42,6 +42,11 @@ export interface HelpGroupMessageReport {
   comment: string | null;
   excerpt: string;
   groupName: string;
+  // An AUTOMATIC report whose message is already hidden (raced ahead by a
+  // member report crossing the auto-hide threshold) gets the hidden-state
+  // actions (restore/delete) instead of the visible ones (dismiss/delete),
+  // which `resolveTarget` would otherwise reject with 400
+  isHidden?: boolean;
   isReply: boolean;
   messageUrl: string;
   // Defaults to MEMBER
@@ -269,6 +274,7 @@ export class SlackService implements OnModuleInit {
     comment,
     excerpt,
     groupName,
+    isHidden = false,
     isReply,
     messageUrl,
     reasonLabel,
@@ -277,6 +283,7 @@ export class SlackService implements OnModuleInit {
     target,
   }: HelpGroupMessageReport): Promise<SentSlackMessage | null> => {
     const isAutomatic = origin === ReportOrigins.AUTOMATIC;
+    const showVisibleActions = isAutomatic && !isHidden;
     const referentIds = await this.getReferentSlackUserIds(
       [author, reporter].filter(Boolean) as User[]
     );
@@ -311,7 +318,7 @@ export class SlackService implements OnModuleInit {
         },
       ],
       actions: [
-        ...(isAutomatic
+        ...(showVisibleActions
           ? getVisibleGroupMessageModerationSlackActions(
               target.targetType,
               target.targetId,
