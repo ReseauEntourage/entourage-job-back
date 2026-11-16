@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes, Transaction } from 'sequelize';
 import { HelpGroup } from 'src/help-groups/models';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { MessageCursor } from 'src/messaging/messaging.utils';
@@ -793,39 +793,68 @@ export class ReportsAdminService {
     dto: ResolveReportTargetDto
   ): Promise<{ resolvedCount: number }> {
     const isGroupMessage = isGroupMessageTarget(target.targetType);
-    if (isGroupMessage && !(await this.isGroupMessageVisible(target))) {
-      throw new BadRequestException(
-        'Un message de groupe masqué se traite depuis le groupe.'
+    // The visibility check and the resolution must be atomic: otherwise a
+    // member report could hide the message (crossing the auto-hide
+    // threshold) between the two, and this would still dismiss it as if it
+    // had stayed visible. Locking the message row (and its discussion, for
+    // a reply) blocks that report until this transaction commits, same
+    // order as `HelpGroupsReportingService.report`'s own lock.
+    return this.reportModel.sequelize.transaction(async (transaction) => {
+      if (
+        isGroupMessage &&
+        !(await this.isGroupMessageVisible(target, transaction))
+      ) {
+        throw new BadRequestException(
+          'Un message de groupe masqué se traite depuis le groupe.'
+        );
+      }
+      const reported = await this.reportModel.findOne({
+        attributes: ['id'],
+        where: { targetType: target.targetType, targetId: target.targetId },
+        transaction,
+      });
+      if (!reported) {
+        throw new NotFoundException();
+      }
+      const resolvedCount = await this.reportsService.resolvePending(
+        target,
+        isGroupMessage ? ReportResolutions.DISMISSED : ReportResolutions.MANUAL,
+        adminId,
+        transaction,
+        dto.note
       );
-    }
-    const reported = await this.reportModel.findOne({
-      attributes: ['id'],
-      where: { targetType: target.targetType, targetId: target.targetId },
+      return { resolvedCount };
     });
-    if (!reported) {
-      throw new NotFoundException();
-    }
-    const resolvedCount = await this.reportsService.resolvePending(
-      target,
-      isGroupMessage ? ReportResolutions.DISMISSED : ReportResolutions.MANUAL,
-      adminId,
-      undefined,
-      dto.note
-    );
-    return { resolvedCount };
   }
 
   /**
    * A help group message target is "resolvable" generically only while it
    * is visible (neither hidden nor deleted, itself or its discussion).
+   * Locks the message row (and its discussion, for a reply) under
+   * `transaction` so nothing can hide it before the caller resolves its
+   * reports.
    */
-  private async isGroupMessageVisible(target: ReportTarget): Promise<boolean> {
+  private async isGroupMessageVisible(
+    target: ReportTarget,
+    transaction: Transaction
+  ): Promise<boolean> {
     const targetType = target.targetType as
       typeof ReportTargetTypes.POST | typeof ReportTargetTypes.POST_REPLY;
     const isReply = targetType === ReportTargetTypes.POST_REPLY;
-    const [reply] = isReply ? await this.findReplies([target.targetId]) : [];
-    const [post] = await this.findPosts(
-      [isReply ? reply?.postId : target.targetId].filter(Boolean)
+    const lock = transaction.LOCK.UPDATE;
+    const reply = isReply
+      ? await this.postReplyModel.findByPk(target.targetId, {
+          attributes: ['id', 'postId', 'hiddenAt', 'deletedAt'],
+          lock,
+          transaction,
+        })
+      : null;
+    if (isReply && !reply) {
+      return false;
+    }
+    const post = await this.postModel.findByPk(
+      isReply ? reply.postId : target.targetId,
+      { attributes: ['id', 'hiddenAt', 'deletedAt'], lock, transaction }
     );
     const message = isReply ? reply : post;
     if (!message || !post) {

@@ -267,6 +267,35 @@ export class ReportsService {
     resolution: ReportResolution,
     resolvedById: string
   ): Promise<void> {
+    const admin = await this.userModel.findByPk(resolvedById, {
+      attributes: ['firstName', 'lastName'],
+      paranoid: false,
+    });
+    await this.replaceAlertsStatus(
+      target,
+      formatSlackHandledStatus(resolution, admin, new Date())
+    );
+  }
+
+  /**
+   * Replaces the action buttons of the target's unhandled Slack alerts
+   * (e.g. an AUTOMATIC report's "Classer sans suite", now a dead link) once
+   * the message is hidden by the member-report threshold: handled from the
+   * group from now on, as the priority "auto hidden" alert says.
+   */
+  async markSlackAlertsHidden(
+    target: Omit<ReportTarget, 'targetId'> & { targetId: string | string[] }
+  ): Promise<void> {
+    await this.replaceAlertsStatus(
+      target,
+      '⚠️ Message masqué automatiquement — à traiter depuis le groupe (voir l’alerte prioritaire)'
+    );
+  }
+
+  private async replaceAlertsStatus(
+    target: Omit<ReportTarget, 'targetId'> & { targetId: string | string[] },
+    status: string
+  ): Promise<void> {
     try {
       const alerts = await this.reportSlackMessageModel.findAll({
         where: { ...target, handledAt: null },
@@ -274,11 +303,6 @@ export class ReportsService {
       if (alerts.length === 0) {
         return;
       }
-      const admin = await this.userModel.findByPk(resolvedById, {
-        attributes: ['firstName', 'lastName'],
-        paranoid: false,
-      });
-      const status = formatSlackHandledStatus(resolution, admin, new Date());
       for (const alert of alerts) {
         try {
           await this.slackService.markModerationAlertHandled(
@@ -288,7 +312,7 @@ export class ReportsService {
           await alert.update({ handledAt: new Date() });
         } catch (error) {
           this.logger.error(
-            `Slack alert ${alert.ts} of the ${alert.targetType} ${alert.targetId} not marked as handled: ${
+            `Slack alert ${alert.ts} of the ${alert.targetType} ${alert.targetId} not updated: ${
               error instanceof Error ? error.message : String(error)
             }`
           );
@@ -296,7 +320,7 @@ export class ReportsService {
       }
     } catch (error) {
       this.logger.error(
-        `Slack alerts not marked as handled: ${
+        `Slack alerts not updated: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
