@@ -719,11 +719,12 @@ export class ReportsAdminService {
       }),
     ]);
     const group = groups.get(post.id);
-    // A reply of a deleted discussion is deleted with it
+    // A reply of a deleted or hidden discussion follows it: nobody but an
+    // admin or the author can reach it either way
     const state: GroupMessageState =
       message.deletedAt || post.deletedAt
         ? GroupMessageStates.DELETED
-        : message.hiddenAt
+        : message.hiddenAt || post.hiddenAt
           ? GroupMessageStates.HIDDEN
           : GroupMessageStates.VISIBLE;
     return {
@@ -830,6 +831,13 @@ export class ReportsAdminService {
     if (!message || !post) {
       return false;
     }
-    return !message.hiddenAt && !message.deletedAt && !post.deletedAt;
+    // A reply of a hidden or deleted discussion follows it (see
+    // `resolveGroupMessageContext`'s `state`)
+    return (
+      !message.hiddenAt &&
+      !message.deletedAt &&
+      !post.hiddenAt &&
+      !post.deletedAt
+    );
   }
 }

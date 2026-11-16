@@ -74,6 +74,13 @@ module.exports = {
         }
       );
 
+      // AUTOMATIC reports (reporterId NULL) only exist because of this
+      // feature: removing it removes them too, so the column can go back
+      // to NOT NULL without failing on existing rows
+      await queryInterface.sequelize.query(
+        `DELETE FROM "Reports" WHERE "reporterId" IS NULL`,
+        { transaction }
+      );
       await queryInterface.sequelize.query(
         'ALTER TABLE "Reports" ALTER COLUMN "reporterId" SET NOT NULL',
         { transaction }

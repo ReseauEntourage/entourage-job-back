@@ -52,8 +52,10 @@ export class HelpGroupsModerationAlertService {
    */
   checkMessage(message: ModerationAlertMessage): void {
     this.reportIfForbidden(message).catch((error) => {
+      // May fail after the report was already created (e.g. Slack down):
+      // do not imply the report itself is missing
       this.logger.warn(
-        `[HelpGroupsModerationAlert] report not created (discussionId=${
+        `[HelpGroupsModerationAlert] automatic report/alert processing failed (discussionId=${
           message.discussionId
         }): ${error instanceof Error ? error.message : String(error)}`
       );
