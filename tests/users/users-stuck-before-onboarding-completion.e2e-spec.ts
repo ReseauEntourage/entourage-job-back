@@ -194,6 +194,20 @@ describe('UsersService.getUsersStuckBeforeOnboardingCompletion', () => {
     expect(ids).not.toContain(candidateWithoutSurvey);
   });
 
+  it('does not select an account whose profile is soft-deleted', async () => {
+    const id = await createUserBeforeWebinar();
+    await expect(
+      usersService.getUsersStuckBeforeOnboardingCompletion()
+    ).resolves.toHaveLength(1);
+
+    const profile = await userProfilesService.findOneByUserId(id);
+    await profile.destroy();
+
+    await expect(
+      usersService.getUsersStuckBeforeOnboardingCompletion()
+    ).resolves.toEqual([]);
+  });
+
   it('does not select other roles', async () => {
     await createUserBeforeWebinar({ role: UserRoles.REFERER });
     await createUserBeforeWebinar({ role: UserRoles.ADMIN });

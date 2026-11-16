@@ -745,6 +745,7 @@ export class UsersService {
           THEN 'evidence' ELSE 'inferred' END AS "category"
       FROM "Users" u
       JOIN "UserProfiles" up ON up."userId" = u."id"
+        AND up."deletedAt" IS NULL
       WHERE u."role" IN (:candidateRole, :coachRole)
         AND u."onboardingStatus" <> :completedStatus
         AND u."deletedAt" IS NULL
