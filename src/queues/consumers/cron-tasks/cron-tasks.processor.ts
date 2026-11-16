@@ -2277,6 +2277,30 @@ export class CronTasksProcessor extends WorkerHost {
       }
     }
 
+    // Same for the numeric options: a zero batch size would work through no
+    // batch at all and still report a run without failure.
+    const invalidOptions = [
+      data.batchSize !== undefined &&
+        !(Number.isInteger(data.batchSize) && data.batchSize > 0) &&
+        `batchSize (${JSON.stringify(data.batchSize)}): a positive integer is expected`,
+      data.limit !== undefined &&
+        !(Number.isInteger(data.limit) && data.limit >= 0) &&
+        `limit (${JSON.stringify(data.limit)}): a non-negative integer is expected`,
+      data.pauseBetweenBatchesMs !== undefined &&
+        !(
+          Number.isFinite(data.pauseBetweenBatchesMs) &&
+          data.pauseBetweenBatchesMs >= 0
+        ) &&
+        `pauseBetweenBatchesMs (${JSON.stringify(data.pauseBetweenBatchesMs)}): a non-negative number is expected`,
+    ].filter(Boolean);
+    if (invalidOptions.length > 0) {
+      throw new Error(
+        `Invalid options for the onboarding completion backfill: ${invalidOptions.join(
+          '; '
+        )}.`
+      );
+    }
+
     this.logger.log(
       `Starting onboarding completion backfill (${dryRun ? 'dry run' : 'execution'})...`
     );

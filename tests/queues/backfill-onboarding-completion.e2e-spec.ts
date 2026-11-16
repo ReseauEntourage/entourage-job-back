@@ -124,6 +124,46 @@ describe('CronTasksProcessor.backfillOnboardingCompletion', () => {
       expect(usersService.completeOnboarding).not.toHaveBeenCalled();
     });
 
+    it.each([
+      ['batchSize', { batchSize: 0 }],
+      ['batchSize', { batchSize: -5 }],
+      ['batchSize', { batchSize: 2.5 }],
+      ['limit', { limit: -1 }],
+      ['pauseBetweenBatchesMs', { pauseBetweenBatchesMs: -1 }],
+      ['pauseBetweenBatchesMs', { pauseBetweenBatchesMs: Number.NaN }],
+    ])(
+      'rejects an invalid %s before reading or writing anything',
+      async (name, options) => {
+        const { processor, usersService } = buildProcessor();
+
+        await expect(
+          processor.backfillOnboardingCompletion({
+            dryRun: false,
+            categories: ['evidence'],
+            ...options,
+          })
+        ).rejects.toThrow(`Invalid options`);
+        expect(
+          usersService.getUsersStuckBeforeOnboardingCompletion
+        ).not.toHaveBeenCalled();
+        expect(usersService.completeOnboarding).not.toHaveBeenCalled();
+        void name;
+      }
+    );
+
+    it('accepts a limit of zero and processes nobody', async () => {
+      const { processor, usersService } = buildProcessor();
+
+      const result = await processor.backfillOnboardingCompletion({
+        dryRun: false,
+        categories: ['evidence', 'inferred'],
+        limit: 0,
+      });
+
+      expect(usersService.completeOnboarding).not.toHaveBeenCalled();
+      expect(result).toContain('(0/3 accounts processed)');
+    });
+
     it('completes the accounts of the chosen categories only, without the welcome message', async () => {
       const { processor, usersService } = buildProcessor();
 
