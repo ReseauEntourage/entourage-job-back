@@ -6,10 +6,11 @@
   "semanticCommits": "enabled",
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
+  "dependencyDashboard": false,
   "vulnerabilityAlerts": {
     "enabled": true,
     "schedule": ["at any time"],
-    "labels": ["security"]
+    "commitMessageSuffix": ""
   },
   "osvVulnerabilityAlerts": true,
   "transitiveRemediation": true,
