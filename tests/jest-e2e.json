@@ -10,7 +10,7 @@
       { "tsconfig": { "isolatedModules": false, "module": "commonjs" } }
     ]
   },
-  "transformIgnorePatterns": ["/node_modules/(?!.*(@slack|axios|@short\\.io))"],
+  "transformIgnorePatterns": ["/node_modules/(?!.*(@slack|axios|@short\\.io|@faker-js))"],
   "moduleDirectories": ["node_modules"],
   "moduleNameMapper": {
     "^src/(.*)": "<rootDir>/src/$1",

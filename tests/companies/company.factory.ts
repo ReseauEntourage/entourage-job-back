@@ -16,7 +16,7 @@ export class CompanyFactory implements Factory<Company> {
 
   generateCompany(props: Partial<Company>): Partial<Company> {
     const fakeData: Partial<Company> = {
-      id: faker.datatype.uuid(),
+      id: faker.string.uuid(),
       name: faker.company.name(),
       description: faker.company.catchPhrase(),
       ...props,
@@ -33,7 +33,7 @@ export class CompanyFactory implements Factory<Company> {
     insertInDB = true
   ): Promise<Company> {
     const companyData = this.generateCompany(props);
-    const companyId = faker.datatype.uuid();
+    const companyId = faker.string.uuid();
     if (insertInDB) {
       await this.companyModel.create(
         { ...companyData, id: companyId },

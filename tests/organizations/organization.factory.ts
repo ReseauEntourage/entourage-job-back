@@ -21,7 +21,7 @@ export class OrganizationFactory implements Factory<Organization> {
   generateOrganization(props: Partial<Organization>): Partial<Organization> {
     const fakeData: Partial<Organization> = {
       name: faker.company.name(),
-      address: faker.address.streetAddress(),
+      address: faker.location.streetAddress(),
       zone: ZoneName.IDF,
     };
 
@@ -34,12 +34,12 @@ export class OrganizationFactory implements Factory<Organization> {
   generateOrganizationReferent(
     props: Partial<OrganizationReferent>
   ): Partial<OrganizationReferent> {
-    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.helpers.replaceSymbols('+336 ## ## ## ##');
 
     const fakeData: Partial<OrganizationReferent> = {
       referentMail: faker.internet.email().toLowerCase(),
-      referentFirstName: faker.name.firstName(),
-      referentLastName: faker.name.lastName(),
+      referentFirstName: faker.person.firstName(),
+      referentLastName: faker.person.lastName(),
       referentPhone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
     };
 
@@ -59,7 +59,7 @@ export class OrganizationFactory implements Factory<Organization> {
       organizationReferentProps
     );
 
-    const organizationId = faker.datatype.uuid();
+    const organizationId = faker.string.uuid();
     if (insertInDB) {
       await this.organizationModel.create(
         { ...organizationData, id: organizationId },

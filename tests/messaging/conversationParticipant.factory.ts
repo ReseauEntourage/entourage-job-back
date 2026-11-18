@@ -31,7 +31,7 @@ export class ConversationFactory implements Factory<ConversationParticipant> {
     const conversationParticipantData =
       this.generateConversationParticipant(props);
 
-    const conversationId = faker.datatype.uuid();
+    const conversationId = faker.string.uuid();
 
     if (insertInDB) {
       await this.conversationParticipantModel.create(

@@ -29,8 +29,8 @@ export class ElearningUnitFactory implements Factory<ElearningUnit> {
       description: props.description ?? faker.lorem.sentence(8),
       videoUrl: props.videoUrl ?? faker.internet.url(),
       durationMinutes:
-        props.durationMinutes ?? faker.datatype.number({ min: 1, max: 90 }),
-      order: props.order ?? faker.datatype.number({ min: 1, max: 100 }),
+        props.durationMinutes ?? faker.number.int({ min: 1, max: 90 }),
+      order: props.order ?? faker.number.int({ min: 1, max: 100 }),
     };
   }
 

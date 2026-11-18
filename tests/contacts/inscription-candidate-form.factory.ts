@@ -14,17 +14,17 @@
 //   generateInscriptionCandidateFormAnswers(
 //     props: Partial<InscriptionCandidateFormDto>
 //   ): InscriptionCandidateFormDto {
-//     const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
+//     const fakePhoneNumber = faker.helpers.replaceSymbols('+336 ## ## ## ##');
 
 //     const fakeData = {
-//       firstName: faker.name.firstName(),
-//       lastName: faker.name.lastName(),
+//       firstName: faker.person.firstName(),
+//       lastName: faker.person.lastName(),
 //       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
 //       email: faker.internet.email(),
 //       location: '93',
 //       workingRight: faker.helpers.objectValue(CandidateYesNoNSPP),
 //       heardAbout: faker.helpers.objectValue(HeardAbout),
-//       birthdate: faker.date.past(40),
+//       birthdate: faker.date.past({ years: 40 }),
 //       infoCo: '',
 //       tsPrescripteur: '',
 //     };
