@@ -68,7 +68,7 @@
     "@vonage/server-sdk": "^3.27.0",
     "axios": "^1.20.0",
     "bullmq": "^5.70.4",
-    "check-password-strength": "^2.0.7",
+    "check-password-strength": "^3.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "dd-trace": "^6.20.1",
