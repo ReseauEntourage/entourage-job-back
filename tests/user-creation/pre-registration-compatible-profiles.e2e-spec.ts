@@ -18,7 +18,7 @@ import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 
-describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
+describe('UsersCreation - GET /users/registration/compatible-profiles', () => {
   let app: INestApplication;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let server: any;
@@ -35,7 +35,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
   let nudgeTips: Nudge;
   let nudgeNetwork: Nudge;
 
-  const route = '/user/registration/compatible-profiles';
+  const route = '/users/registration/compatible-profiles';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

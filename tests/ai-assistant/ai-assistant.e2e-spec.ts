@@ -82,9 +82,9 @@ describe('AI ASSISTANT', () => {
     generateText: jest.fn().mockResolvedValue('NON'),
   };
 
-  const postStream = (token: string, id = conversationId) =>
+  const postStream = (token: string, id = loggedInCandidate.user.id) =>
     request(server)
-      .post(`/ai-assistant/conversations/${id}/stream`)
+      .post(`/ai-assistant/recipients/${id}/stream`)
       .send({ message: 'Propose-moi une réponse' })
       .set('authorization', `Bearer ${token}`)
       .buffer(true)
@@ -152,7 +152,7 @@ describe('AI ASSISTANT', () => {
     await databaseHelper.resetTestDB();
   });
 
-  describe('POST /ai-assistant/conversations/:id/stream', () => {
+  describe('POST /ai-assistant/recipients/:recipientId/stream', () => {
     it('should stream the full response without a truncated event when the model ends its turn', async () => {
       anthropicServiceMock.createStream.mockReturnValue(
         createFakeStream({
@@ -196,28 +196,41 @@ describe('AI ASSISTANT', () => {
       );
     });
 
-    // The role check runs inside the stream, so a candidate gets an SSE error
-    // event rather than an HTTP 401 — what matters is that nothing is generated.
+    // The access check runs in a guard, before the stream starts: a candidate
+    // gets an HTTP 401 and nothing is generated.
     it('should refuse a candidate without generating anything', async () => {
       const response = await postStream(loggedInCandidate.token);
-      const events = parseSSEData(response.body);
-
-      expect(events).toContainEqual({ error: 'Une erreur est survenue.' });
-      expect(events).not.toContainEqual(
-        expect.objectContaining({ content: expect.any(String) })
-      );
-      expect(anthropicServiceMock.createStream).not.toHaveBeenCalled();
-    });
-
-    it('should return 401 for a user who is not a participant of the conversation', async () => {
-      const outsider = await usersHelper.createLoggedInUser({
-        role: UserRoles.COACH,
-      });
-
-      const response = await postStream(outsider.token);
 
       expect(response.status).toBe(401);
       expect(anthropicServiceMock.createStream).not.toHaveBeenCalled();
+    });
+
+    it('should return 401 for a coach who has not completed the eLearning', async () => {
+      const ineligibleCoach = await usersHelper.createLoggedInUser({
+        role: UserRoles.COACH,
+        elearningCompletedAt: null,
+      });
+
+      const response = await postStream(ineligibleCoach.token);
+
+      expect(response.status).toBe(401);
+      expect(anthropicServiceMock.createStream).not.toHaveBeenCalled();
+    });
+
+    it('should accept an eligible coach who has no conversation with the candidate yet', async () => {
+      anthropicServiceMock.createStream.mockReturnValue(
+        createFakeStream({ chunks: ['Bonjour'], stopReason: 'end_turn' })
+      );
+      const coachWithoutConversation = await usersHelper.createLoggedInUser({
+        role: UserRoles.COACH,
+      });
+
+      const response = await postStream(coachWithoutConversation.token);
+
+      expect(response.status).toBe(201);
+      expect(parseSSEData(response.body)).toContainEqual({
+        content: 'Bonjour',
+      });
     });
 
     it('should use a dedicated timeout longer than the 30s global default', () => {

@@ -16,7 +16,7 @@ export class RecruitementAlertFactory implements Factory<RecruitementAlert> {
   ): Partial<RecruitementAlert> {
     return {
       name: faker.company.catchPhrase(),
-      jobName: faker.name.jobTitle(),
+      jobName: faker.person.jobTitle(),
       ...props,
     };
   }

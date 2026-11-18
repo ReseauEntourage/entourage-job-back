@@ -97,7 +97,7 @@ describe('User profiles - Report', () => {
     user = reporter
   ) =>
     request(server)
-      .post(`/user/profile/${userId}/report`)
+      .post(`/users/${userId}/profile/report`)
       .set('authorization', `Bearer ${user.token}`)
       .send(body);
 

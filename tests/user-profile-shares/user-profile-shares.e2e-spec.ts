@@ -61,17 +61,17 @@ describe('UserProfileShares', () => {
       const id = candidate.user.id;
       const responses = [
         await request(server)
-          .post(`/user/profile/${id}/shares`)
+          .post(`/users/${id}/profile/shares`)
           .send({ channel: 'linkedin' }),
-        await request(server).get(`/user/profile/${id}/shares`),
-        await request(server).get('/user/shares/sent'),
+        await request(server).get(`/users/${id}/profile/shares`),
+        await request(server).get('/current/shares/sent'),
       ];
 
       responses.forEach((response) => expect(response.status).toBe(401));
     });
   });
 
-  describe('POST /user/profile/:profileUserId/shares', () => {
+  describe('POST /users/:profileUserId/profile/shares', () => {
     it.each([
       ['coach', () => coach, 'linkedin'],
       ['referer', () => referer, 'whatsapp'],
@@ -84,7 +84,7 @@ describe('UserProfileShares', () => {
           sharer() === candidate ? coach.user.id : candidate.user.id;
 
         const response = await request(server)
-          .post(`/user/profile/${target}/shares`)
+          .post(`/users/${target}/profile/shares`)
           .set('authorization', `Bearer ${sharer().token}`)
           .send({ channel, postUrl: 'https://linkedin.invalid/post/1' });
 
@@ -96,7 +96,7 @@ describe('UserProfileShares', () => {
 
     it('returns 400 when the profile id is not a UUID', async () => {
       const response = await request(server)
-        .post('/user/profile/not-a-uuid/shares')
+        .post('/users/not-a-uuid/profile/shares')
         .set('authorization', `Bearer ${coach.token}`)
         .send({ channel: 'linkedin' });
 
@@ -111,7 +111,7 @@ describe('UserProfileShares', () => {
       channel: string
     ) =>
       request(server)
-        .post(`/user/profile/${profileUserId}/shares`)
+        .post(`/users/${profileUserId}/profile/shares`)
         .set('authorization', `Bearer ${sharer.token}`)
         .send({ channel });
 
@@ -121,7 +121,7 @@ describe('UserProfileShares', () => {
       await share(coach, admin.user.id, 'linkedin');
 
       const response = await request(server)
-        .get(`/user/profile/${candidate.user.id}/shares`)
+        .get(`/users/${candidate.user.id}/profile/shares`)
         .set('authorization', `Bearer ${candidate.token}`);
 
       expect(response.status).toBe(200);
@@ -137,10 +137,10 @@ describe('UserProfileShares', () => {
       await share(referer, candidate.user.id, 'linkedin');
 
       const coachResponse = await request(server)
-        .get('/user/shares/sent')
+        .get('/current/shares/sent')
         .set('authorization', `Bearer ${coach.token}`);
       const candidateResponse = await request(server)
-        .get('/user/shares/sent')
+        .get('/current/shares/sent')
         .set('authorization', `Bearer ${candidate.token}`);
 
       expect(coachResponse.status).toBe(200);
@@ -156,7 +156,7 @@ describe('UserProfileShares', () => {
 
     it('returns 400 when listing the shares of a malformed profile id', async () => {
       const response = await request(server)
-        .get('/user/profile/not-a-uuid/shares')
+        .get('/users/not-a-uuid/profile/shares')
         .set('authorization', `Bearer ${coach.token}`);
 
       expect(response.status).toBe(400);

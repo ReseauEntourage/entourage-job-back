@@ -52,7 +52,7 @@ function generateFakePassword() {
 
 // TODO change to users
 @ApiTags('Users')
-@Controller('user')
+@Controller('users')
 export class UsersCreationController {
   constructor(
     private readonly usersCreationService: UsersCreationService,
@@ -323,7 +323,7 @@ export class UsersCreationController {
   @UserPermissions(Permissions.REFERER)
   @UseGuards(UserPermissionsGuard)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @Post('refering')
+  @Post('referrals')
   async createUserRefering(
     @Body(new CreateUserReferingPipe())
     createUserReferingDto: CreateUserReferingDto,

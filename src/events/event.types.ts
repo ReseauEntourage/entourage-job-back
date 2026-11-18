@@ -7,6 +7,7 @@ import { User } from 'src/users/models';
 export enum EventType {
   APERO_COACH = 'APERO_COACH',
   APERO_ENTOURAGE = 'APERO_ENTOURAGE',
+  AWARENESS_WORKSHOP = 'AWARENESS_WORKSHOP',
   COFFEE_SESSION = 'COFFEE_SESSION',
   FRIENDLINESS = 'FRIENDLINESS',
   NETWORKING = 'NETWORKING',
@@ -30,6 +31,7 @@ export enum EventPublicAudience {
 export enum SalesforceEventTypes {
   APERO_COACH = 'Apéro coach',
   APERO_ENTOURAGE = 'Apéro Entourage',
+  AWARENESS_WORKSHOP = 'Atelier de sensib Monde de la rue',
   COFFEE_SESSION = 'Info co candidat',
   FRIENDLINESS = 'Evenement de convivialité',
   NETWORKING = 'Atelier Réseau',
@@ -38,6 +40,14 @@ export enum SalesforceEventTypes {
   SPEED_MEETING = 'Rencontre Réseau Pro (ex Connecteurs)',
   WELCOME_SESSION = 'Rdv de bienvenue Entourage Pro',
   WORKSHOP = 'Atelier Entourage Pro',
+}
+
+/**
+ * Salesforce Campaign "Impact" values used to disambiguate a
+ * Type_evenement__c value shared with another kind of action.
+ */
+export enum SalesforceEventImpact {
+  AWARENESS_WORKSHOP = 'Sensibilisation',
 }
 
 /**

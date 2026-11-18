@@ -5,6 +5,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { getSequelizeOptions } from 'src/app.module';
+import { AssistantToolsModule } from 'src/assistant-tools/assistant-tools.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtAuthGuard } from 'src/auth/guards';
 import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
@@ -32,6 +33,7 @@ import { RevisionsModule } from 'src/revisions/revisions.module';
 import { SkillsModule } from 'src/skills/skills.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from 'src/user-social-situations/user-social-situations.module';
+import { UsersByIdModule } from 'src/users/users-by-id.module';
 import { UsersModule } from 'src/users/users.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
@@ -105,6 +107,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ElearningModule,
     RecruitementAlertsModule,
     VersionModule,
+    AssistantToolsModule,
 
     // Modules de test spécifiques
     AuthTestingModule,
@@ -127,6 +130,9 @@ import { UsersTestingModule } from './users/users-testing.module';
     CompaniesTestingModule,
     ElearningTestingModule,
     RecruitementAlertsTestingModule,
+    // Keep LAST: `GET /users/:id` must be registered after every static
+    // `/users/...` route (see UsersByIdController).
+    UsersByIdModule,
   ],
   providers: [
     // Configuration du garde d'authentification global

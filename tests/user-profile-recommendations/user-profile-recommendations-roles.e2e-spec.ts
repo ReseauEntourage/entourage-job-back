@@ -60,10 +60,10 @@ describe('User profile recommendations - roles', () => {
     jest.restoreAllMocks();
   });
 
-  describe('GET /user/profile/recommendations', () => {
+  describe('GET /current/profile/recommendations', () => {
     it('refuses an anonymous user', async () => {
       const response = await request(server).get(
-        '/user/profile/recommendations'
+        '/current/profile/recommendations'
       );
 
       expect(response.status).toBe(401);
@@ -83,7 +83,7 @@ describe('User profile recommendations - roles', () => {
       );
 
       const response = await request(server)
-        .get('/user/profile/recommendations')
+        .get('/current/profile/recommendations')
         .set('authorization', `Bearer ${user.token}`);
 
       expect(response.status).toBe(200);
@@ -95,14 +95,14 @@ describe('User profile recommendations - roles', () => {
     });
   });
 
-  describe('GET /user/profile/recommendations-ai/:userId', () => {
+  describe('GET /users/:userId/profile/recommendations-ai', () => {
     it('refuses an anonymous user', async () => {
       const candidate = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
       });
 
       const response = await request(server).get(
-        `/user/profile/recommendations-ai/${candidate.user.id}`
+        `/users/${candidate.user.id}/profile/recommendations-ai`
       );
 
       expect(response.status).toBe(401);
@@ -118,7 +118,7 @@ describe('User profile recommendations - roles', () => {
         );
 
         const response = await request(server)
-          .get(`/user/profile/recommendations-ai/${user.user.id}`)
+          .get(`/users/${user.user.id}/profile/recommendations-ai`)
           .set('authorization', `Bearer ${user.token}`);
 
         expect(response.status).toBe(403);
@@ -142,7 +142,7 @@ describe('User profile recommendations - roles', () => {
         .mockResolvedValue([]);
 
       const response = await request(server)
-        .get(`/user/profile/recommendations-ai/${candidate.user.id}`)
+        .get(`/users/${candidate.user.id}/profile/recommendations-ai`)
         .set('authorization', `Bearer ${admin.token}`);
 
       expect(response.status).toBe(200);

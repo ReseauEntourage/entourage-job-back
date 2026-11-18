@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { tracer } from 'src/tracer';
 import { AiFeature } from './ai-feature.enum';
+import { AiFlowCancelledError } from './ai-flow-cancelled.error';
 
 const logger = new Logger('LlmObservability');
 
@@ -83,6 +84,35 @@ const safeAnnotate = (
   }
 };
 
+type SpanOptions = Parameters<typeof tracer.llmobs.trace>[0];
+
+/**
+ * Runs `run` in an LLM Observability span. The tracer flags a span as failed as
+ * soon as its callback rejects, so a cancellation never reaches it: the span
+ * closes normally and the cancellation is rethrown once it is closed.
+ */
+const traceSpan = async <T>(
+  options: SpanOptions,
+  run: (span: unknown) => Promise<T>
+): Promise<T> => {
+  const cancellation: { error?: AiFlowCancelledError } = {};
+  const result = await tracer.llmobs.trace(options, async (span) => {
+    try {
+      return await run(span);
+    } catch (error) {
+      if (error instanceof AiFlowCancelledError) {
+        cancellation.error = error;
+        return undefined as T;
+      }
+      throw error;
+    }
+  });
+  if (cancellation.error) {
+    throw cancellation.error;
+  }
+  return result;
+};
+
 /**
  * Runs an AI flow in a root `workflow` span tagged with its `feature` and its
  * `outcome`. The outcome is tagged even when the flow throws; the error is
@@ -92,7 +122,7 @@ export const traceAiWorkflow = <T>(
   { feature, name, tags = {} }: AiWorkflowOptions,
   fn: (context: AiWorkflowContext) => Promise<T>
 ): Promise<T> =>
-  tracer.llmobs.trace({ kind: 'workflow', name }, async (span) => {
+  traceSpan({ kind: 'workflow', name }, async (span) => {
     let outcome: AiWorkflowOutcome | undefined;
     const extraTags: Record<string, string> = {};
     const extraMetadata: Record<string, unknown> = {};
@@ -110,7 +140,7 @@ export const traceAiWorkflow = <T>(
       outcome ??= 'success';
       return result;
     } catch (error) {
-      outcome ??= 'error';
+      outcome ??= error instanceof AiFlowCancelledError ? 'cancelled' : 'error';
       throw error;
     } finally {
       safeAnnotate(span, {
@@ -133,40 +163,37 @@ export const traceLlmCall = <T>(
   { name, modelName, modelProvider, kind = 'llm', tags = {} }: LlmCallOptions,
   fn: (annotate: (annotation: LlmCallAnnotation) => void) => Promise<T>
 ): Promise<T> =>
-  tracer.llmobs.trace(
-    { kind, name, modelName, modelProvider },
-    async (span) => {
-      let outcome: AiWorkflowOutcome | undefined;
-      try {
-        const result = await fn(
-          ({
-            outcome: annotatedOutcome,
-            inputMessages,
-            outputMessages,
-            metrics,
-            metadata,
-          }: LlmCallAnnotation) => {
-            if (annotatedOutcome) {
-              outcome = annotatedOutcome;
-            }
-            const options = {
-              ...(inputMessages ? { inputData: inputMessages } : {}),
-              ...(outputMessages ? { outputData: outputMessages } : {}),
-              ...(metrics ? { metrics } : {}),
-              ...(metadata ? { metadata } : {}),
-            };
-            if (Object.keys(options).length > 0) {
-              safeAnnotate(span, options);
-            }
+  traceSpan({ kind, name, modelName, modelProvider }, async (span) => {
+    let outcome: AiWorkflowOutcome | undefined;
+    try {
+      const result = await fn(
+        ({
+          outcome: annotatedOutcome,
+          inputMessages,
+          outputMessages,
+          metrics,
+          metadata,
+        }: LlmCallAnnotation) => {
+          if (annotatedOutcome) {
+            outcome = annotatedOutcome;
           }
-        );
-        outcome ??= 'success';
-        return result;
-      } catch (error) {
-        outcome ??= 'error';
-        throw error;
-      } finally {
-        safeAnnotate(span, { tags: { ...tags, outcome: outcome ?? 'error' } });
-      }
+          const options = {
+            ...(inputMessages ? { inputData: inputMessages } : {}),
+            ...(outputMessages ? { outputData: outputMessages } : {}),
+            ...(metrics ? { metrics } : {}),
+            ...(metadata ? { metadata } : {}),
+          };
+          if (Object.keys(options).length > 0) {
+            safeAnnotate(span, options);
+          }
+        }
+      );
+      outcome ??= 'success';
+      return result;
+    } catch (error) {
+      outcome ??= error instanceof AiFlowCancelledError ? 'cancelled' : 'error';
+      throw error;
+    } finally {
+      safeAnnotate(span, { tags: { ...tags, outcome: outcome ?? 'error' } });
     }
-  );
+  });

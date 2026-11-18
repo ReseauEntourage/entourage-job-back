@@ -8,7 +8,10 @@ import { BusinessSector } from 'src/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { Revision, RevisionChange } from 'src/revisions/models';
+import { UsersByIdController } from 'src/users/users-by-id.controller';
 import { UsersController } from 'src/users/users.controller';
+import { UsersService } from 'src/users/users.service';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { ZoneName } from 'src/utils/types/zones.types';
@@ -30,13 +33,14 @@ describe('Users', () => {
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
+  let usersService: UsersService;
   let organizationFactory: OrganizationFactory;
   let businessSectorsHelper: BusinessSectorHelper;
 
   let businessSector1: BusinessSector;
   let businessSector2: BusinessSector;
 
-  const route = '/user';
+  const route = '/users';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -54,6 +58,7 @@ describe('Users', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    usersService = moduleFixture.get<UsersService>(UsersService);
     businessSectorsHelper =
       moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
@@ -146,12 +151,12 @@ describe('Users', () => {
             {},
             true
           );
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server).get(`${route}/${candidate.email}`);
           expect(response.status).toBe(401);
         });
         it('Should return 200 when logged in candidate gets himself', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`);
@@ -159,7 +164,7 @@ describe('Users', () => {
           expect(response.body.email).toEqual(loggedInCandidate.user.email);
         });
         it('Should return 200 when logged in coach get himself', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCoach.user.email}`)
               .set('authorization', `Bearer ${loggedInCoach.token}`);
@@ -167,7 +172,7 @@ describe('Users', () => {
           expect(response.body.email).toEqual(loggedInCoach.user.email);
         });
         it('Should return 200 when logged in referer gets himself', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInReferer.user.email}`)
               .set('authorization', `Bearer ${loggedInReferer.token}`);
@@ -175,21 +180,21 @@ describe('Users', () => {
           expect(response.body.email).toEqual(loggedInReferer.user.email);
         });
         it('Should return 403 when logged in coach get a candidate', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 when logged in referer get a candidate', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and get a user by email when logged in as admin', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
@@ -198,7 +203,7 @@ describe('Users', () => {
           expect(receivedUser.email).toEqual(loggedInCandidate.user.email);
         });
         it('Should return 200 and get a user by id when logged in as admin', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
@@ -206,7 +211,7 @@ describe('Users', () => {
           expect(response.body.id).toEqual(loggedInCandidate.user.id);
         });
         it('Should return 404 if user not found', async () => {
-          const response: APIResponse<UsersController['findUser']> =
+          const response: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${uuid()}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
@@ -880,7 +885,7 @@ describe('Users', () => {
             onboardingCompletedAt: null,
           });
           // Default values right after registration
-          const initialResponse: APIResponse<UsersController['findUser']> =
+          const initialResponse: APIResponse<UsersByIdController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`);
@@ -948,6 +953,236 @@ describe('Users', () => {
           );
           expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
         });
+
+        it('Should enqueue the onboarding completion job only once when two calls overlap', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: null,
+          });
+          addToWorkQueueSpy.mockClear();
+
+          const responses: APIResponse<UsersController['updateUser']>[] =
+            await Promise.all(
+              [1, 2, 3].map(() =>
+                request(server)
+                  .put(`${route}/${loggedInCandidate.user.id}`)
+                  .set('authorization', `Bearer ${loggedInCandidate.token}`)
+                  .send({ onboardingStatus: OnboardingStatus.COMPLETED })
+              )
+            );
+
+          responses.forEach((response) => {
+            expect(response.status).toBe(200);
+            expect(response.body.onboardingStatus).toBe(
+              OnboardingStatus.COMPLETED
+            );
+          });
+          const completionJobs = addToWorkQueueSpy.mock.calls.filter(
+            ([job]) => job === Jobs.ON_ONBOARDING_COMPLETED
+          );
+          expect(completionJobs).toHaveLength(1);
+          expect(completionJobs[0][1]).toEqual({
+            userId: loggedInCandidate.user.id,
+          });
+        });
+
+        it('Should update the other fields sent with the completed onboardingStatus', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: null,
+          });
+          addToWorkQueueSpy.mockClear();
+
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: OnboardingStatus.COMPLETED,
+                firstName: 'Camille',
+              });
+
+          expect(response.status).toBe(200);
+          expect(response.body.onboardingStatus).toBe(
+            OnboardingStatus.COMPLETED
+          );
+          expect(response.body.firstName).toBe('Camille');
+          expect(response.body.onboardingCompletedAt).toEqual(
+            expect.any(String)
+          );
+          expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('Should keep the onboardingCompletedAt already set when completing again', async () => {
+          const alreadySetAt = new Date('2026-01-15T10:00:00.000Z');
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: alreadySetAt,
+          });
+
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({ onboardingStatus: OnboardingStatus.COMPLETED });
+
+          expect(response.status).toBe(200);
+          expect(response.body.onboardingStatus).toBe(
+            OnboardingStatus.COMPLETED
+          );
+          expect(
+            new Date(response.body.onboardingCompletedAt).toISOString()
+          ).toBe(alreadySetAt.toISOString());
+        });
+
+        it('Should neither complete the onboarding nor queue the job when another field of the request cannot be updated', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: null,
+          });
+          const otherUser = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          addToWorkQueueSpy.mockClear();
+
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: OnboardingStatus.COMPLETED,
+                email: otherUser.user.email,
+              });
+
+          expect(response.status).toBe(409);
+          const user = await usersHelper.findUserRaw(loggedInCandidate.user.id);
+          expect(user.onboardingStatus).toBe(OnboardingStatus.IN_PROGRESS);
+          expect(user.onboardingCompletedAt).toBeNull();
+          expect(addToWorkQueueSpy).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('completeOnboarding - Complete the onboarding of a user', () => {
+        let user: Awaited<
+          ReturnType<UsersHelper['createLoggedInUser']>
+        >['user'];
+
+        beforeEach(async () => {
+          ({ user } = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+            onboardingCompletedAt: null,
+          }));
+          addToWorkQueueSpy.mockClear();
+        });
+
+        it('Should complete the onboarding and enqueue the job for the first call only', async () => {
+          await expect(usersService.completeOnboarding(user.id)).resolves.toBe(
+            true
+          );
+          await expect(usersService.completeOnboarding(user.id)).resolves.toBe(
+            false
+          );
+
+          const updated = await usersService.findOne(user.id);
+          expect(updated.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
+          expect(updated.onboardingCompletedAt).toEqual(expect.any(Date));
+          expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+          expect(addToWorkQueueSpy).toHaveBeenCalledWith(
+            Jobs.ON_ONBOARDING_COMPLETED,
+            { userId: user.id }
+          );
+        });
+
+        it('Should ask the job to skip the staff welcome message when requested', async () => {
+          await expect(
+            usersService.completeOnboarding(user.id, {
+              skipWelcomeMessage: true,
+            })
+          ).resolves.toBe(true);
+
+          expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+          expect(addToWorkQueueSpy).toHaveBeenCalledWith(
+            Jobs.ON_ONBOARDING_COMPLETED,
+            { userId: user.id, skipWelcomeMessage: true }
+          );
+        });
+
+        it('Should record the completion in the user history', async () => {
+          const before = await usersHelper.findUserRaw(user.id);
+
+          await usersService.completeOnboarding(user.id);
+
+          const after = await usersHelper.findUserRaw(user.id);
+          expect(after.revision).toBeGreaterThan(before.revision);
+          const revisions = await Revision.findAll({
+            where: { documentId: user.id, revision: after.revision },
+            include: [RevisionChange],
+          });
+          expect(revisions).toHaveLength(1);
+          expect(
+            revisions[0].revisionsChanges.map((change) => change.path)
+          ).toEqual(expect.arrayContaining(['onboardingStatus']));
+        });
+
+        it('Should complete only once when every call has loaded the user before any of them writes', async () => {
+          // Forces the worst overlap: each call loads the user still in progress
+          // (the `findAll` of the update with hooks) before any call writes.
+          const userModel = (
+            usersService as unknown as {
+              userModel: { findAll: (...args: unknown[]) => Promise<unknown> };
+            }
+          ).userModel;
+          const originalFindAll = userModel.findAll.bind(userModel);
+          const CALLS = 4;
+          let loaded = 0;
+          let release: () => void = () => undefined;
+          const allLoaded = new Promise<void>((resolve) => {
+            release = resolve;
+          });
+          const findAllSpy = jest
+            .spyOn(userModel, 'findAll')
+            .mockImplementation(async (...args: unknown[]) => {
+              const rows = await originalFindAll(...args);
+              // The first CALLS loads are those of the calls: each one waits
+              // here, before its hooks and its write, for all the others
+              loaded += 1;
+              if (loaded === CALLS) {
+                release();
+              }
+              await allLoaded;
+              return rows;
+            });
+
+          try {
+            const results = await Promise.all(
+              Array.from({ length: CALLS }, () =>
+                usersService.completeOnboarding(user.id)
+              )
+            );
+
+            expect(loaded).toBe(CALLS);
+            expect(results.filter(Boolean)).toHaveLength(1);
+            expect(
+              addToWorkQueueSpy.mock.calls.filter(
+                ([job]) => job === Jobs.ON_ONBOARDING_COMPLETED
+              )
+            ).toHaveLength(1);
+          } finally {
+            findAllSpy.mockRestore();
+          }
+        });
+
+        it('Should do nothing for a user that does not exist', async () => {
+          await expect(usersService.completeOnboarding(uuid())).resolves.toBe(
+            false
+          );
+          expect(addToWorkQueueSpy).not.toHaveBeenCalled();
+        });
       });
       describe('/changePwd - Update password', () => {
         let loggedInCandidate: LoggedInUser;
@@ -961,7 +1196,7 @@ describe('Users', () => {
         });
         it('Should return 401 if not connected', async () => {
           const response: APIResponse<UsersController['updatePassword']> =
-            await request(server).put(`${route}/changePwd`).send({
+            await request(server).put(`${route}/me/password`).send({
               oldPassword: password,
               newPassword: 'Candidat123?',
             });
@@ -970,7 +1205,7 @@ describe('Users', () => {
         it('Should return 401 if old password is invalid', async () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
-              .put(`${route}/changePwd`)
+              .put(`${route}/me/password`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 oldPassword: 'falsePassword123!',
@@ -981,7 +1216,7 @@ describe('Users', () => {
         it("Should return 400 if new password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
-              .put(`${route}/changePwd`)
+              .put(`${route}/me/password`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 oldPassword: password,
@@ -992,7 +1227,7 @@ describe('Users', () => {
         it('Should return 200 and updated user', async () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
-              .put(`${route}/changePwd`)
+              .put(`${route}/me/password`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 email: loggedInCandidate.user.email,

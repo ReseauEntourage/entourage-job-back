@@ -36,7 +36,10 @@ import {
   CV_READING_USER_TEXT,
   isTwoPassExtractionEnabled,
 } from './cv-extraction.config';
-import { CvExtractionError } from './cv-extraction.error';
+import {
+  CvExtractionCancelledError,
+  CvExtractionError,
+} from './cv-extraction.error';
 import {
   cvSchema,
   CvExtractionResult,
@@ -109,7 +112,9 @@ export class CvExtractionService {
 
     const transcript = await this.readCVPages(base64ImageArray, signal);
     if (signal?.aborted) {
-      throw new Error('Extraction du CV interrompue (annulation du job)');
+      throw new CvExtractionCancelledError(
+        'Extraction du CV interrompue (annulation du job)'
+      );
     }
 
     return {
@@ -325,10 +330,16 @@ export class CvExtractionService {
             this.logger.debug(
               `Extraction du CV interrompue (annulation du job): ${message}`
             );
-          } else {
-            annotateCall({ outcome: this.outcomeOf(error) });
-            this.logger.error(`${pass.failure}: ${message}`);
+            // Not a failure: the tracing helpers close the spans without an error.
+            throw new CvExtractionCancelledError(
+              `${pass.failure}: ${message}`,
+              {
+                cause: error,
+              }
+            );
           }
+          annotateCall({ outcome: this.outcomeOf(error) });
+          this.logger.error(`${pass.failure}: ${message}`);
           throw new Error(`${pass.failure}: ${message}`);
         }
       }

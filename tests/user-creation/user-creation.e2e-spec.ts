@@ -15,6 +15,7 @@ import { Department } from 'src/locations/locations.types';
 import { Nudge } from 'src/nudge/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { UsersService } from 'src/users/users.service';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
@@ -49,7 +50,7 @@ describe('UserCreation', () => {
   let nudgeNetwork: Nudge;
   let nudgeInterview: Nudge;
 
-  const route = '/user';
+  const route = '/users';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -135,7 +136,7 @@ describe('UserCreation', () => {
     }
   });
 
-  describe('POST /user - From admin', () => {
+  describe('POST /users - From admin', () => {
     let loggedInAdmin: LoggedInUser;
     let loggedInCandidate: LoggedInUser;
     let organization: Organization;
@@ -561,6 +562,11 @@ describe('UserCreation', () => {
       expect(createdUser.elearningCompletedAt).toBeNull();
     });
     it('Should return 200 and a created referer if valid referer data', async () => {
+      const addToWorkQueueSpy = jest.spyOn(
+        QueuesServiceMock.prototype,
+        'addToWorkQueue'
+      );
+      addToWorkQueueSpy.mockClear();
       const user = await userFactory.create(
         { role: UserRoles.REFERER },
         {},
@@ -619,8 +625,21 @@ describe('UserCreation', () => {
       const createdUser = await usersHelper.findUserRaw(response.body.id);
       expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
       expect(createdUser.elearningCompletedAt).not.toBeNull();
+      expect(createdUser.onboardingCompletedAt).not.toBeNull();
+      // The referer onboarding is completed at creation: the completion job is
+      // still queued, once
+      expect(
+        addToWorkQueueSpy.mock.calls.filter(
+          ([job]) => job === Jobs.ON_ONBOARDING_COMPLETED
+        )
+      ).toEqual([[Jobs.ON_ONBOARDING_COMPLETED, { userId: response.body.id }]]);
     });
     it('Should set elearningCompletedAt when a coach registers as company admin', async () => {
+      const addToWorkQueueSpy = jest.spyOn(
+        QueuesServiceMock.prototype,
+        'addToWorkQueue'
+      );
+      addToWorkQueueSpy.mockClear();
       const user = await userFactory.create(
         { role: UserRoles.COACH },
         {},
@@ -651,6 +670,11 @@ describe('UserCreation', () => {
       const createdUser = await usersHelper.findUserRaw(response.body.id);
       expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
       expect(createdUser.elearningCompletedAt).not.toBeNull();
+      expect(
+        addToWorkQueueSpy.mock.calls.filter(
+          ([job]) => job === Jobs.ON_ONBOARDING_COMPLETED
+        )
+      ).toEqual([[Jobs.ON_ONBOARDING_COMPLETED, { userId: response.body.id }]]);
     });
     it('Should not complete onboarding when a coach registers to a company with a role that cannot be admin', async () => {
       const user = await userFactory.create(
@@ -980,7 +1004,7 @@ describe('UserCreation', () => {
       expect(response.status).toBe(409);
     });
   });
-  describe('POST /refering - Create user through refering', () => {
+  describe('POST /users/referrals - Create user through referral', () => {
     let loggedInReferer: LoggedInUser;
     let loggedInCandidate: LoggedInUser;
     let loggedInCoach: LoggedInUser;
@@ -1051,7 +1075,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(201);
@@ -1083,7 +1107,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send({
           firstName: user.firstName,
@@ -1148,7 +1172,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(201);
@@ -1201,7 +1225,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(400);
@@ -1253,7 +1277,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(400);
@@ -1305,7 +1329,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(400);
@@ -1357,7 +1381,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(400);
@@ -1409,7 +1433,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInCandidate.token}`)
         .send(userToSend);
       expect(response.status).toBe(403);
@@ -1461,7 +1485,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInCoach.token}`)
         .send(userToSend);
       expect(response.status).toBe(403);
@@ -1509,7 +1533,7 @@ describe('UserCreation', () => {
       const response: APIResponse<
         UsersCreationController['createUserRefering']
       > = await request(server)
-        .post(`${route}/refering`)
+        .post(`${route}/referrals`)
         .set('authorization', `Bearer ${loggedInReferer.token}`)
         .send(userToSend);
       expect(response.status).toBe(409);

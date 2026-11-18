@@ -8,6 +8,8 @@ import {
   ReportTargetFilters,
   ReportTargetStatuses,
 } from '../reports-admin.types';
+import type { ReportOrigin } from 'src/reports/reports.types';
+import { ReportOrigins } from 'src/reports/reports.types';
 import { ZoneName } from 'src/utils/types/zones.types';
 
 export class ReportTargetsQueryDto {
@@ -20,6 +22,11 @@ export class ReportTargetsQueryDto {
   @IsOptional()
   @IsIn(Object.values(ReportTargetStatuses))
   status?: ReportTargetStatus;
+
+  @ApiPropertyOptional({ enum: Object.values(ReportOrigins) })
+  @IsOptional()
+  @IsIn(Object.values(ReportOrigins))
+  origin?: ReportOrigin;
 
   @ApiPropertyOptional({ enum: ZoneName })
   @IsOptional()

@@ -10,7 +10,7 @@ import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 
 // Same delay as the remindUsersNotCompletedOnboarding cron task.
-const DAYS_SINCE_CREATION = 3;
+const DAYS_SINCE_CREATION = 1;
 
 // Created `daysAgo` days ago, truncated to midnight like the production
 // query, so the comparison lands exactly on a day boundary.
@@ -53,7 +53,7 @@ describe('UsersService.getUsersNotCompletedOnboarding', () => {
       await usersService.getUsersNotCompletedOnboarding(DAYS_SINCE_CREATION)
     ).map((u) => u.id);
 
-  it('includes a verified candidate created 3 days ago with onboarding in progress', async () => {
+  it('includes a verified candidate created 1 day ago with onboarding in progress', async () => {
     const user = await userFactory.create({
       role: UserRoles.CANDIDATE,
       onboardingStatus: OnboardingStatus.IN_PROGRESS,
@@ -63,7 +63,7 @@ describe('UsersService.getUsersNotCompletedOnboarding', () => {
     expect(await getResultIds()).toContain(user.id);
   });
 
-  it('includes a verified coach created 3 days ago with onboarding not started', async () => {
+  it('includes a verified coach created 1 day ago with onboarding not started', async () => {
     const user = await userFactory.create({
       role: UserRoles.COACH,
       onboardingStatus: OnboardingStatus.NOT_STARTED,
@@ -73,7 +73,7 @@ describe('UsersService.getUsersNotCompletedOnboarding', () => {
     expect(await getResultIds()).toContain(user.id);
   });
 
-  it('excludes a user created 3 days ago with onboarding not completed whose email is not verified', async () => {
+  it('excludes a user created 1 day ago with onboarding not completed whose email is not verified', async () => {
     const user = await userFactory.create({
       role: UserRoles.CANDIDATE,
       onboardingStatus: OnboardingStatus.IN_PROGRESS,
@@ -84,7 +84,7 @@ describe('UsersService.getUsersNotCompletedOnboarding', () => {
     expect(await getResultIds()).not.toContain(user.id);
   });
 
-  it('excludes a verified user created 3 days ago whose onboarding is completed', async () => {
+  it('excludes a verified user created 1 day ago whose onboarding is completed', async () => {
     const user = await userFactory.create({
       role: UserRoles.CANDIDATE,
       onboardingStatus: OnboardingStatus.COMPLETED,
@@ -95,24 +95,30 @@ describe('UsersService.getUsersNotCompletedOnboarding', () => {
   });
 
   it('excludes verified users with onboarding not completed created on a different day', async () => {
-    const twoDaysAgo = await userFactory.create({
+    const today = await userFactory.create({
       role: UserRoles.CANDIDATE,
       onboardingStatus: OnboardingStatus.IN_PROGRESS,
-      createdAt: createdDaysAgo(DAYS_SINCE_CREATION - 1),
+      createdAt: createdDaysAgo(0),
     });
-    const fourDaysAgo = await userFactory.create({
+    const twoDaysAgo = await userFactory.create({
       role: UserRoles.CANDIDATE,
       onboardingStatus: OnboardingStatus.IN_PROGRESS,
       createdAt: createdDaysAgo(DAYS_SINCE_CREATION + 1),
     });
+    const threeDaysAgo = await userFactory.create({
+      role: UserRoles.CANDIDATE,
+      onboardingStatus: OnboardingStatus.IN_PROGRESS,
+      createdAt: createdDaysAgo(DAYS_SINCE_CREATION + 2),
+    });
 
     const resultIds = await getResultIds();
 
+    expect(resultIds).not.toContain(today.id);
     expect(resultIds).not.toContain(twoDaysAgo.id);
-    expect(resultIds).not.toContain(fourDaysAgo.id);
+    expect(resultIds).not.toContain(threeDaysAgo.id);
   });
 
-  it('excludes an admin created 3 days ago with onboarding not completed', async () => {
+  it('excludes an admin created 1 day ago with onboarding not completed', async () => {
     const user = await userFactory.create({
       role: UserRoles.ADMIN,
       onboardingStatus: OnboardingStatus.IN_PROGRESS,

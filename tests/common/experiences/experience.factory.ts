@@ -17,10 +17,10 @@ export class ExperienceFactory implements Factory<Experience> {
       id: uuid.v4(),
       title: props.title || faker.lorem.words(3),
       description: props.description || faker.lorem.paragraph(),
-      location: props.location || faker.address.city(),
+      location: props.location || faker.location.city(),
       company: props.company || faker.company.name(),
-      startDate: props.startDate || faker.date.past(5),
-      endDate: props.endDate || faker.date.recent(365),
+      startDate: props.startDate || faker.date.past({ years: 5 }),
+      endDate: props.endDate || faker.date.recent({ days: 365 }),
       skills: props.skills || [],
       userProfileId: props.userProfileId || null,
     };

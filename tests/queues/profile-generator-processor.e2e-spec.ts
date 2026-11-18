@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { CvExtractionCancelledError } from 'src/external-services/cv-extraction/cv-extraction.error';
 import {
   PusherChannels,
   PusherEvents,
@@ -29,6 +30,8 @@ jest.mock('src/tracer', () => ({
 const span = { name: 'workflow-span' };
 const trace = tracer.llmobs.trace as jest.Mock;
 const annotate = tracer.llmobs.annotate as jest.Mock;
+// Like the real tracer, the double flags a span as failed when its callback rejects
+const erroredSpans: string[] = [];
 
 const JOB_DATA = {
   s3Key: 'folder/cv.pdf',
@@ -101,7 +104,15 @@ describe('ProfileGeneratorProcessor', () => {
   };
 
   beforeEach(() => {
-    trace.mockReset().mockImplementation((_options, fn) => fn(span));
+    erroredSpans.length = 0;
+    trace.mockReset().mockImplementation(async (options, fn) => {
+      try {
+        return await fn(span);
+      } catch (error) {
+        erroredSpans.push(options.name);
+        throw error;
+      }
+    });
     annotate.mockReset();
     process.env.AWSS3_BUCKET_NAME = 'test-bucket';
     mockAxiosGet.mockReset();
@@ -304,14 +315,18 @@ describe('ProfileGeneratorProcessor', () => {
           (_images: string[], signal: AbortSignal) =>
             new Promise((_resolve, reject) => {
               signal.addEventListener('abort', () =>
-                reject(new Error('Extraction du CV interrompue'))
+                reject(
+                  new CvExtractionCancelledError('Extraction du CV interrompue')
+                )
               );
             })
         );
 
         await expect(
           processor.handleProfileGeneration(buildJob() as never)
-        ).rejects.toThrow('interrompue');
+        ).resolves.toBeUndefined();
+
+        expect(erroredSpans).toEqual([]);
 
         expect(
           profileGenerationService.saveExtractedCVData
@@ -343,15 +358,16 @@ describe('ProfileGeneratorProcessor', () => {
           (_text: string, signal: AbortSignal) =>
             new Promise((_resolve, reject) => {
               signal.addEventListener('abort', () =>
-                reject(new Error('Request aborted'))
+                reject(new CvExtractionCancelledError('Request aborted'))
               );
             })
         );
 
         await expect(
           processor.handleProfileGeneration(buildJob() as never)
-        ).rejects.toThrow('Request aborted');
+        ).resolves.toBeUndefined();
 
+        expect(erroredSpans).toEqual([]);
         expect(
           profileGenerationService.saveExtractedCVData
         ).not.toHaveBeenCalled();
@@ -404,6 +420,8 @@ describe('ProfileGeneratorProcessor', () => {
           feature: 'cv_extraction',
           outcome: 'error',
         });
+        // A real failure still flags the workflow span as an error
+        expect(erroredSpans).toEqual(['cv-extraction']);
       });
 
       it('tags a cancelled outcome when the job is cancelled during the extraction', async () => {
@@ -413,7 +431,7 @@ describe('ProfileGeneratorProcessor', () => {
           (_images: string[], signal: AbortSignal) =>
             new Promise((_resolve, reject) => {
               signal.addEventListener('abort', () =>
-                reject(new Error('Request aborted'))
+                reject(new CvExtractionCancelledError('Request aborted'))
               );
             })
         );
@@ -423,11 +441,95 @@ describe('ProfileGeneratorProcessor', () => {
 
         await expect(
           processor.handleProfileGeneration(buildJob() as never)
-        ).rejects.toThrow('Request aborted');
+        ).resolves.toBeUndefined();
 
         expect(workflowAnnotation().tags).toMatchObject({
           outcome: 'cancelled',
         });
+        // No error on the workflow span, nor on the LLM span below it
+        expect(erroredSpans).toEqual([]);
+      });
+
+      it('records the time before the cancellation in the metadata of the workflow, without any error', async () => {
+        const { processor, cvExtractionService, profileGenerationQueue } =
+          build();
+        cvExtractionService.extractCVFromImages.mockImplementation(
+          (_images: string[], signal: AbortSignal) =>
+            new Promise((_resolve, reject) => {
+              signal.addEventListener('abort', () =>
+                reject(new CvExtractionCancelledError('Request aborted'))
+              );
+            })
+        );
+        profileGenerationQueue.getJob.mockResolvedValue({
+          data: { cancelled: true, cancelledAfterMs: 12500 },
+        });
+
+        await expect(
+          processor.handleProfileGeneration(buildJob() as never)
+        ).resolves.toBeUndefined();
+
+        expect(workflowAnnotation()).toMatchObject({
+          tags: { outcome: 'cancelled' },
+          metadata: expect.objectContaining({ cancelledAfterMs: 12500 }),
+        });
+        expect(erroredSpans).toEqual([]);
+      });
+
+      it('leaves the duration out of the metadata when the cancellation did not record it', async () => {
+        const { processor, cvExtractionService, profileGenerationQueue } =
+          build();
+        cvExtractionService.extractCVFromImages.mockImplementation(
+          (_images: string[], signal: AbortSignal) =>
+            new Promise((_resolve, reject) => {
+              signal.addEventListener('abort', () =>
+                reject(new CvExtractionCancelledError('Request aborted'))
+              );
+            })
+        );
+        profileGenerationQueue.getJob.mockResolvedValue({
+          data: { cancelled: true },
+        });
+
+        await processor.handleProfileGeneration(buildJob() as never);
+
+        expect(workflowAnnotation().metadata).not.toHaveProperty(
+          'cancelledAfterMs'
+        );
+      });
+
+      it('does not let a failing job lookup change the outcome of a cancellation', async () => {
+        const { processor, cvExtractionService, profileGenerationQueue } =
+          build();
+        cvExtractionService.extractCVFromImages.mockImplementation(
+          (_images: string[], signal: AbortSignal) =>
+            new Promise((_resolve, reject) => {
+              signal.addEventListener('abort', () =>
+                reject(new CvExtractionCancelledError('Request aborted'))
+              );
+            })
+        );
+        // The first lookup notices the cancellation, the second one (the duration) fails
+        profileGenerationQueue.getJob
+          .mockResolvedValueOnce({ data: { cancelled: true } })
+          .mockRejectedValueOnce(new Error('redis down'))
+          .mockResolvedValue({ data: { cancelled: true } });
+
+        await expect(
+          processor.handleProfileGeneration(buildJob() as never)
+        ).resolves.toBeUndefined();
+
+        // The failed lookup was really reached, and the metadata just lacks the duration
+        expect(profileGenerationQueue.getJob.mock.calls.length).toBeGreaterThan(
+          1
+        );
+        expect(workflowAnnotation().tags).toMatchObject({
+          outcome: 'cancelled',
+        });
+        expect(workflowAnnotation().metadata).not.toHaveProperty(
+          'cancelledAfterMs'
+        );
+        expect(erroredSpans).toEqual([]);
       });
 
       it('does not open a workflow when the CV cannot be downloaded', async () => {
@@ -593,8 +695,9 @@ describe('ProfileGeneratorProcessor', () => {
 
       await expect(
         processor.handleProfileGeneration(buildJob() as never)
-      ).rejects.toThrow();
+      ).resolves.toBeUndefined();
 
+      expect(erroredSpans).toEqual([]);
       expect(
         profileGenerationService.saveExtractedCVData
       ).not.toHaveBeenCalled();
@@ -628,7 +731,7 @@ describe('ProfileGeneratorProcessor', () => {
           new Promise((_resolve, reject) => {
             signal.addEventListener('abort', () => {
               wasAborted = true;
-              reject(new Error('Request aborted'));
+              reject(new CvExtractionCancelledError('Request aborted'));
             });
           })
       );
@@ -639,9 +742,10 @@ describe('ProfileGeneratorProcessor', () => {
 
       await expect(
         processor.handleProfileGeneration(buildJob() as never)
-      ).rejects.toThrow('Request aborted');
+      ).resolves.toBeUndefined();
 
       expect(wasAborted).toBe(true);
+      expect(erroredSpans).toEqual([]);
       expect(
         profileGenerationService.saveExtractedCVData
       ).not.toHaveBeenCalled();

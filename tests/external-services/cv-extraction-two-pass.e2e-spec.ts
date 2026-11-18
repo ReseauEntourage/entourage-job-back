@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { CvExtractionCancelledError } from 'src/external-services/cv-extraction/cv-extraction.error';
 import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
 import { tracer } from 'src/tracer';
 
@@ -167,11 +168,33 @@ describe('CvExtractionService - two-pass CV extraction', () => {
         return readingResponse(CV_TEXT);
       });
 
-      await expect(
-        service.extractCVFromImages(['p1'], controller.signal)
-      ).rejects.toThrow('interrompue');
+      const error = await service
+        .extractCVFromImages(['p1'], controller.signal)
+        .catch((caught: unknown) => caught);
 
+      expect(error).toBeInstanceOf(CvExtractionCancelledError);
+      expect((error as Error).message).toContain('interrompue');
       expect(create).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws a cancellation when the job is cancelled during the building', async () => {
+      const { service, create } = build();
+      const controller = new AbortController();
+      create.mockResolvedValueOnce(readingResponse(CV_TEXT));
+      create.mockImplementationOnce(async () => {
+        controller.abort();
+        throw new Error('Request was aborted.');
+      });
+
+      const error = await service
+        .extractCVFromImages(['p1'], controller.signal)
+        .catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(CvExtractionCancelledError);
+      expect((error as Error).message).toBe(
+        'Impossible de construire le profil à partir du texte du CV: Request was aborted.'
+      );
+      expect(spanAnnotations('cv-building').tags.outcome).toBe('cancelled');
     });
 
     it('builds the profile from a text already read, without any reading call', async () => {
@@ -300,7 +323,7 @@ describe('CvExtractionService - two-pass CV extraction', () => {
 
       await expect(
         service.extractCVFromImages(['p1'], controller.signal)
-      ).rejects.toThrow('Request aborted');
+      ).rejects.toBeInstanceOf(CvExtractionCancelledError);
 
       expect(spanAnnotations('cv-reading').tags.outcome).toBe('cancelled');
     });

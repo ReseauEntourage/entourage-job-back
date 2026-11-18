@@ -330,7 +330,7 @@ describe('ExternalCvs', () => {
 
       const response: APIResponse<UsersDeletionController['removeUser']> =
         await request(server)
-          .delete(`/user/${loggedInCandidateWithCv.user.id}`)
+          .delete(`/users/${loggedInCandidateWithCv.user.id}`)
           .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
       expect(response.status).toBe(200);
@@ -362,7 +362,7 @@ describe('ExternalCvs', () => {
 
       const response: APIResponse<UsersDeletionController['removeUser']> =
         await request(server)
-          .delete(`/user/${loggedInCandidate.user.id}`)
+          .delete(`/users/${loggedInCandidate.user.id}`)
           .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
       expect(response.status).toBe(200);

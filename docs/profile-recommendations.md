@@ -82,7 +82,7 @@ Profil mis à jour
                     └── VoyageAiService.generateEmbedding()
                           └── UserProfileEmbedding (pgvector, 1024D)
 
-GET /user/profile/recommendations
+GET /current/profile/recommendations
   │
   └── UserProfileRecommendationsService
         ├── ensureFreshPool()
@@ -340,11 +340,11 @@ Index composite `(UserId, rank)` → optimise la lecture paginée.
 
 ### Endpoints
 
-| Méthode | Route                                                                   | Accès                   | Description                                                                 |
-| ------- | ----------------------------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------- |
-| `GET`   | `/user/profile/recommendations?limit=20&cursor=0`                       | Utilisateur authentifié | Retourne la page courante de recommandations avec `nextCursor`              |
-| `GET`   | `/user/profile/recommendations-ai/:userId?forceRefresh=true&poolSize=3` | Admin uniquement        | Recommandations pour un utilisateur arbitraire, recalcul forcé possible     |
-| `GET`   | `/user/profile?sort=relevance`                                          | Utilisateur authentifié | Annuaire trié par similarité (hybrid search : ANN + filtres multi-critères) |
+| Méthode | Route                                                                    | Accès                   | Description                                                                 |
+| ------- | ------------------------------------------------------------------------ | ----------------------- | --------------------------------------------------------------------------- |
+| `GET`   | `/current/profile/recommendations?limit=20&cursor=0`                     | Utilisateur authentifié | Retourne la page courante de recommandations avec `nextCursor`              |
+| `GET`   | `/users/:userId/profile/recommendations-ai?forceRefresh=true&poolSize=3` | Admin uniquement        | Recommandations pour un utilisateur arbitraire, recalcul forcé possible     |
+| `GET`   | `/users/profiles?sort=relevance`                                         | Utilisateur authentifié | Annuaire trié par similarité (hybrid search : ANN + filtres multi-critères) |
 
 ### Régénération des embeddings — `embeddings-regeneration.service.ts`
 

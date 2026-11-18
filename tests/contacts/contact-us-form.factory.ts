@@ -10,11 +10,11 @@ export class ContactUsFormFactory implements Factory<ContactUsFormDto> {
   generateContactUsFormAnswers(
     props: Partial<ContactUsFormDto>
   ): ContactUsFormDto {
-    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.helpers.replaceSymbols('+336 ## ## ## ##');
 
     const fakeData: ContactUsFormDto = {
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
       structure: faker.company.name(),

@@ -18,6 +18,8 @@ import {
   EventMode,
   EventPublicAudience,
   EventType,
+  SalesforceEventImpact,
+  SalesforceEventTypes,
 } from 'src/events/event.types';
 import {
   eventTypeToSalesforceEventType,
@@ -801,7 +803,11 @@ export class SalesforceService {
                   .map((eventType) => {
                     const sfEventType =
                       eventTypeToSalesforceEventType[eventType];
-                    return `Type_evenement__c = '${sfEventType}'`;
+                    // Awareness workshops are identified by the pair
+                    // (Type_evenement__c, Impact__c), not Type_evenement__c alone.
+                    return eventType === EventType.AWARENESS_WORKSHOP
+                      ? `(Type_evenement__c = '${sfEventType}' AND Impact__c = '${SalesforceEventImpact.AWARENESS_WORKSHOP}')`
+                      : `Type_evenement__c = '${sfEventType}'`;
                   })
                   .join(' OR ')}
               )
@@ -857,12 +863,27 @@ export class SalesforceService {
           contactId
         )}' AND Status = '${SalesforceCampaignStatus.REGISTERED}' LIMIT 1)`
       : '';
+    // An awareness workshop campaign missing its connection link or start
+    // date is dropped by convertSalesforceCampaignToEvent: exclude it here,
+    // before LIMIT/OFFSET, so it never consumes a page slot and pushes a
+    // valid workshop to a later offset — regardless of the eventTypes filter.
+    // SOQL rejects `NOT (...) OR ...` (MALFORMED_QUERY), so the negation is
+    // written out with De Morgan; `!=` also matches null values in SOQL.
+    const awarenessWorkshopCompletenessCondition = `
+              AND (
+                Type_evenement__c != '${SalesforceEventTypes.AWARENESS_WORKSHOP}'
+                OR Impact__c != '${SalesforceEventImpact.AWARENESS_WORKSHOP}'
+                OR (MeetingLink__c != null AND StartDate != null)
+              )
+            `;
+
     const query = `SELECT ${salesforceEventAttributes.join(
       ', '
     )}${selectUserParticipation}
            FROM ${ObjectNames.CAMPAIGN}
            WHERE
             Type = 'Event' AND R_seaux__c INCLUDES ('LinkedOut')
+            ${awarenessWorkshopCompletenessCondition}
             ${searchCondition}
             ${modeFilters}
             ${eventTypesFilters}

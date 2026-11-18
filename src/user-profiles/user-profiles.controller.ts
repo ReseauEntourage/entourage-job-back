@@ -56,7 +56,7 @@ import { isProfileVisibilityEligible } from './user-profiles.utils';
 
 @ApiTags('UserProfiles')
 @ApiBearerAuth()
-@Controller('user/profile')
+@Controller()
 export class UserProfilesController {
   private readonly logger = new Logger(UserProfilesController.name);
 
@@ -72,7 +72,7 @@ export class UserProfilesController {
   ) {}
 
   @ApiBearerAuth()
-  @Get('/completion')
+  @Get('current/profile/completion')
   async getProfileCompletion(
     @UserPayload('id', new ParseUUIDPipe()) id: string
   ) {
@@ -83,7 +83,7 @@ export class UserProfilesController {
 
   @Self('params.userId')
   @UseGuards(SelfGuard)
-  @Put('/:userId')
+  @Put('users/:userId/profile')
   async updateByUserId(
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body(UpdateUserProfilePipe)
@@ -109,7 +109,7 @@ export class UserProfilesController {
     return generateUserProfileDto(updatedUserProfile, true);
   }
 
-  @Post('/:userId/report')
+  @Post('users/:userId/profile/report')
   async reportAbuse(
     @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
     @Param('userId', new ParseUUIDPipe()) userId: string,
@@ -123,7 +123,7 @@ export class UserProfilesController {
     );
   }
 
-  @Get()
+  @Get('users/profiles')
   async findAll(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @UserPayload('role') viewerRole: UserRole,
@@ -219,7 +219,7 @@ export class UserProfilesController {
 
   @UserPermissions(Permissions.REFERER)
   @UseGuards(UserPermissionsGuard)
-  @Get('refered')
+  @Get('current/profile/referred-profiles')
   async findReferedCandidates(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Query('limit', new ParseIntPipe())
@@ -234,7 +234,7 @@ export class UserProfilesController {
   }
 
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
-  @Post('/upload-image')
+  @Post('users/me/profile/image')
   async uploadProfileImage(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @UploadedFile() file: Express.Multer.File
@@ -262,7 +262,7 @@ export class UserProfilesController {
     return profileImage.key;
   }
 
-  @Get('/recommendations')
+  @Get('current/profile/recommendations')
   async findRecommendationsByUserId(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
@@ -339,7 +339,7 @@ export class UserProfilesController {
   // Only for admin users to get recommendations for any user, not only themselves
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
-  @Get('/recommendations-ai/:userId')
+  @Get('users/:userId/profile/recommendations-ai')
   async findRecommendationsWithAIByUserId(
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Query('forceRefresh') forceRefresh: string,
@@ -366,7 +366,7 @@ export class UserProfilesController {
     );
   }
 
-  @Get('/:userId/share-text')
+  @Get('users/:userId/profile/share-text')
   async getShareText(
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Query('channel') channel?: 'linkedin' | 'default'
@@ -375,7 +375,7 @@ export class UserProfilesController {
     return { text };
   }
 
-  @Get('/:userId')
+  @Get('users/:userId/profile')
   async findByUserId(
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string,
     @UserPayload('role') viewerRole: UserRole

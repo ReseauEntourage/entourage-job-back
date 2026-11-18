@@ -163,9 +163,22 @@ export class ProfileGenerationService {
       return;
     }
 
-    await job.updateData({ ...job.data, cancelled: true });
+    // How long the user waited before giving up, when the processing started.
+    const cancelledAfterMs = job.processedOn
+      ? Date.now() - job.processedOn
+      : undefined;
+
+    await job.updateData({
+      ...job.data,
+      cancelled: true,
+      ...(cancelledAfterMs !== undefined ? { cancelledAfterMs } : {}),
+    });
     this.logger.warn(
-      `[ProfileGeneration] Génération de profil annulée par l'utilisateur (jobId=${jobId}, userId=${userId}, userProfileId=${userProfileId}, état=active)`
+      `[ProfileGeneration] Génération de profil annulée par l'utilisateur (jobId=${jobId}, userId=${userId}, userProfileId=${userProfileId}, état=active${
+        cancelledAfterMs !== undefined
+          ? `, annulée après ${cancelledAfterMs} ms`
+          : ''
+      })`
     );
   }
 

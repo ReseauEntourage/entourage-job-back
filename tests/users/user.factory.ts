@@ -29,19 +29,19 @@ export class UserFactory implements Factory<User> {
       props.password || faker.internet.password()
     );
 
-    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.helpers.replaceSymbols('+336 ## ## ## ##');
 
     const fakeData: Partial<User> = {
       email: faker.internet.email().toLowerCase(),
-      firstName: capitalizeNameAndTrim(faker.name.firstName()),
-      lastName: capitalizeNameAndTrim(faker.name.lastName()),
+      firstName: capitalizeNameAndTrim(faker.person.firstName()),
+      lastName: capitalizeNameAndTrim(faker.person.lastName()),
       role: UserRoles.CANDIDATE,
       gender: faker.helpers.arrayElement([0, 1]) as Gender,
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       lastConnection: new Date(),
       zone: ZoneName.IDF,
-      hashReset: faker.datatype.uuid(),
-      saltReset: faker.datatype.uuid(),
+      hashReset: faker.string.uuid(),
+      saltReset: faker.string.uuid(),
       createdAt: moment().toDate(),
       updatedAt: moment().toDate(),
       onboardingStatus: props.onboardingStatus || OnboardingStatus.COMPLETED,
@@ -75,7 +75,7 @@ export class UserFactory implements Factory<User> {
   ): Promise<User> {
     props.isEmailVerified = true;
     const userData = this.generateUser(props);
-    const userId = faker.datatype.uuid();
+    const userId = faker.string.uuid();
     if (insertInDB) {
       await this.userModel.create({ ...userData, id: userId }, { hooks: true });
       if (userAssociationsProps?.userProfile) {

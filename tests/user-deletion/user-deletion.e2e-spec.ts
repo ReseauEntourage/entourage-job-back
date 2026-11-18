@@ -26,7 +26,7 @@ describe('UserDeletion', () => {
   let usersHelper: UsersHelper;
   let userProfilesHelper: UserProfilesHelper;
 
-  const route = '/user';
+  const route = '/users';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
