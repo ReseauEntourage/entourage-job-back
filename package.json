@@ -77,7 +77,7 @@
     "dotenv": "^16.0.1",
     "express-basic-auth": "^1.2.1",
     "ioredis": "^5.6.1",
-    "jsforce": "^1.11.0",
+    "jsforce": "^3.0.0",
     "lodash": "^4.17.21",
     "moment": "^2.31.0",
     "moment-timezone": "^0.5.43",
