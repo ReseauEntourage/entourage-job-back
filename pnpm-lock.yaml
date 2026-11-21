@@ -25,16 +25,16 @@ importers:
         version: 3.1098.0
       '@bull-board/api':
         specifier: ^9.10.5
-        version: 9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
+        version: 9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
       '@bull-board/express':
         specifier: ^9.10.5
-        version: 9.10.5(bullmq@5.81.3(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
+        version: 9.13.2(bullmq@5.81.3(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
       '@bull-board/metrics':
-        specifier: 9.10.5
-        version: 9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(typescript@6.0.3)
+        specifier: 9.13.2
+        version: 9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(typescript@6.0.3)
       '@bull-board/nestjs':
         specifier: ^9.10.5
-        version: 9.10.5(@bull-board/api@9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(@nestjs/bull-shared@11.0.4(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28))(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+        version: 9.13.2(@bull-board/api@9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(@nestjs/bull-shared@11.0.4(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28))(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/bullmq':
         specifier: ^11.0.4
         version: 11.0.4(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28)(bullmq@5.81.3(supports-color@8.1.1))
@@ -595,10 +595,10 @@ packages:
   '@borewit/text-codec@0.2.2':
     resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
 
-  '@bull-board/api@9.10.5':
-    resolution: {integrity: sha512-CMA5WCN5rkpQWG8+IQBFuwf54JVrWE+1mjHEiwyb9+rdHAqXTbZOpjJLZZB0QA+2DGQCK8z0WqqdprCFnhy8aA==}
+  '@bull-board/api@9.13.2':
+    resolution: {integrity: sha512-sirRus3gpnq3rpf3Be/7UHpI6FD/1X0928zWSLeaf0d8nB4cODzCcTz3lwbhEFwvXOvd1hO3wnicsVVnE5udKA==}
     peerDependencies:
-      '@bull-board/ui': 9.10.5
+      '@bull-board/ui': 9.13.2
       bull: ^4.16.5
       bullmq: ^5.56.0 || ^6.0.0
     peerDependenciesMeta:
@@ -607,27 +607,27 @@ packages:
       bullmq:
         optional: true
 
-  '@bull-board/express@9.10.5':
-    resolution: {integrity: sha512-SLaT82KDiEXDHeSfJBsfwN/Q7Zp5fizx7PaaJm//o4rzonlbWielyTRPtzSLsUlX1ZjW5JdQJjAks25uKqZmyw==}
+  '@bull-board/express@9.13.2':
+    resolution: {integrity: sha512-wvW/9x2z3PoIxXMgpp1GLRchfp9b7jBMLvyvG6Yanjes1V6DFs5EisjHJz6rxoxLkMIXizdRtr8hR9KJ2YW/UQ==}
 
-  '@bull-board/metrics@9.10.5':
-    resolution: {integrity: sha512-bt1a/rpt+pg5u1L3fnpr2QnilNZxxMqcJgg1XZCURcrtwcCjakzv+ZkqygU6rVLsIMZLaslFyu/mS0bFYJ7G7Q==}
+  '@bull-board/metrics@9.13.2':
+    resolution: {integrity: sha512-gyYXWW93fGfLe6a9bYGQPUFXcvl19bcwmnz0+0dKT1VPlMjUXfEC5bCqAt+BIzXk2OgYCIKH5es5jky4L8trBw==}
     engines: {node: '>=20'}
     peerDependencies:
       ioredis: ^5.0.0 || ^6.0.0
 
-  '@bull-board/nestjs@9.10.5':
-    resolution: {integrity: sha512-76eWvgqE16kqYXQ/ETbX5rOAzZl2OtmA21fz+nsZuQJIn0dvx396LmLGRhyDG+MkvMRxLAyfqyiUqC6dSVNmTw==}
+  '@bull-board/nestjs@9.13.2':
+    resolution: {integrity: sha512-TnK5MvTiVIc98kQ+t625zbRNYW7GSKv+9zL+sCbiKKdxg7AjARgVqPlhLZ+fdHP0SN50dbyXeeNx/UWyGUyIvg==}
     peerDependencies:
-      '@bull-board/api': ^9.10.5
+      '@bull-board/api': ^9.13.2
       '@nestjs/bull-shared': ^10.0.0 || ^11.0.0 || ^12.0.0
       '@nestjs/common': ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0
       '@nestjs/core': ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0
       reflect-metadata: ^0.1.13 || ^0.2.0
       rxjs: ^7.8.1
 
-  '@bull-board/ui@9.10.5':
-    resolution: {integrity: sha512-CW97tdUiD0e7VMvezb0+cjDUdwfBU2Vo1ChLRvqNgn4qoUuqX/q9PnX+y9sF7bkXnc4Kor2u+rj/wRge9pqeVg==}
+  '@bull-board/ui@9.13.2':
+    resolution: {integrity: sha512-p6hFBN4K6Ja2IChe12hAqBscJq4/ax1F4/tA7fcQS3GaX5M2BzLWN3VoOs7Ucy7hleazYxxx+sGnVyf5ppthYw==}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -2334,6 +2334,10 @@ packages:
     resolution: {integrity: sha512-2cGmJupaNgg+QUwVLAucDuWuoMZ6EX9iHDRswZ5lsNYEmwPaRknMPCLZz07yTzVq/83p4o/wzbDZbBrTvGGTIw==}
     engines: {node: '>=18'}
 
+  body-parser@2.4.0:
+    resolution: {integrity: sha512-Ifk1KcLrxaGt1occQagQNFNNOqRt1LFuehEnHHzB8Z6cRgIxRU1TBaiIsUiCdA+gy5PL7Y1IX31DNKkRmxtXjQ==}
+    engines: {node: '>=18'}
+
   bowser@2.14.1:
     resolution: {integrity: sha512-tzPjzCxygAKWFOJP011oxFHs57HzIhOEracIgAePE4pqB3LikALKnSzUyU4MGs9/iCEUuHlAJTjTc5M+u7YEGg==}
 
@@ -2583,12 +2587,20 @@ packages:
     resolution: {integrity: sha512-5jRCH9Z/+DRP7rkvY83B+yGIGX96OYdJmzngqnw2SBSxqCFPd0w2km3s5iawpGX8krnwSGmF0FW5Nhr0Hfai3g==}
     engines: {node: '>=18'}
 
+  content-disposition@2.0.1:
+    resolution: {integrity: sha512-e+H0ZXHSWYrENhQzw1LPuP4oF5MzVKmDU6d3hxlvaPEYLLg62MxtQNPRx4SYSuYJSBUgnQIG4HIN2tEtNv7Dog==}
+    engines: {node: '>=18'}
+
   content-type@1.0.5:
     resolution: {integrity: sha512-nTjqfcBFEipKdXCv4YDQWCfmcLZKm81ldF0pAopTvyrFGVbcR6P/VAAd5G7N+0tTr8QqiU0tFadD6FK4NtJwOA==}
     engines: {node: '>= 0.6'}
 
   content-type@2.0.0:
     resolution: {integrity: sha512-j/O/d7GcZCyNl7/hwZAb606rzqkyvaDctLmckbxLzHvFBzTJHuGEdodATcP3yIRoDrLHkIATJuvzbFlp/ki2cQ==}
+    engines: {node: '>=18'}
+
+  content-type@2.1.0:
+    resolution: {integrity: sha512-mj7UPXE0jaqaOsukNZRUEfEi2AcL7C/vwmwcHV0O97eO1E1pxBZuyjlZrx5seTaNBg1U6+o35wpa35Qfcc+7ag==}
     engines: {node: '>=18'}
 
   convert-source-map@2.0.0:
@@ -2823,6 +2835,10 @@ packages:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
     engines: {node: '>= 0.8'}
 
+  encodeurl@2.0.3:
+    resolution: {integrity: sha512-mIteYONiEfc4xWf2F1WXovh1c8npzS00vNeiUPdwFF+QlVJni+gNvpQltLMQhob8rew/bWWc/bGTuUr0EUGt0w==}
+    engines: {node: '>= 0.8'}
+
   enhanced-resolve@5.24.4:
     resolution: {integrity: sha512-GVoi+ICHocoOIU7qVVM48wOJziRsqrsyqlI0Ce0LdowRn6v3bcH2zUa9kp85ncx0nwIb9/HOCOLS3fdThDG/XQ==}
     engines: {node: '>=10.13.0'}
@@ -3055,6 +3071,10 @@ packages:
 
   express@5.2.1:
     resolution: {integrity: sha512-hIS4idWWai69NezIdRt2xFVofaF4j+6INOpJlVOLDO8zXGpUVEVzIYk12UUi2JzjEzWL3IOAxcTubgz9Po0yXw==}
+    engines: {node: '>= 18'}
+
+  express@5.3.0:
+    resolution: {integrity: sha512-qCqy1xSoaugxOD4IVHb1ZWdkvCF2W3aE2okKouWj8VwJ+ztskSiXoBnCSJqfKT+cVPJhuJqe9YLbY425+Zh00g==}
     engines: {node: '>= 18'}
 
   extend@3.0.2:
@@ -4147,9 +4167,9 @@ packages:
     resolution: {integrity: sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==}
     engines: {node: '>= 0.6'}
 
-  negotiator@1.0.0:
-    resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
-    engines: {node: '>= 0.6'}
+  negotiator@1.1.0:
+    resolution: {integrity: sha512-NMPBRMJgiQHjbd8phG3Vebdx4kZ1H121rbl5IkMqeOsahptB9BKo/d7oJ3zTXqTgagn2bWlNSXkh0QUGM31RYg==}
+    engines: {node: '>=18'}
 
   neo-async@2.6.2:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
@@ -4235,6 +4255,10 @@ packages:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
     engines: {node: '>= 0.4'}
 
+  object-inspect@1.14.0:
+    resolution: {integrity: sha512-IVgHNlp/jwQX271+Xzoq9LZNTWXxZK+cEOrGBOBxXNbn7fapnZ+Ts6TVMgNOuAezwG2wdtnMX97tTPK6VEnuOQ==}
+    engines: {node: '>= 0.4'}
+
   object-keys@1.1.1:
     resolution: {integrity: sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==}
     engines: {node: '>= 0.4'}
@@ -4245,6 +4269,10 @@ packages:
 
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
+    engines: {node: '>= 0.8'}
+
+  on-finished@2.4.2:
+    resolution: {integrity: sha512-ATWUv387i+nLD49EiDoOft5scf32Vsdz3ktrQJG9bi7jRFmaXTssvyvj1EmeKVVgvesbqUtvQQvaS2TpTukAZQ==}
     engines: {node: '>= 0.8'}
 
   once@1.4.0:
@@ -4543,6 +4571,10 @@ packages:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
     engines: {node: '>= 0.10'}
 
+  proxy-addr@2.0.8:
+    resolution: {integrity: sha512-5nnx0yGyVUcY6t9RnWcARWtwT9F1D8O9rt08htPvnd49W1IgZtmLkhu9WfMzQj1cFxjHIO6connUNVW5k7AVyQ==}
+    engines: {node: '>= 0.10'}
+
   proxy-from-env@2.1.0:
     resolution: {integrity: sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==}
     engines: {node: '>=10'}
@@ -4563,6 +4595,10 @@ packages:
 
   qs@6.15.3:
     resolution: {integrity: sha512-O9gl3zCl5h5blw1KGUzQKhA5oUXSl8rwUIM5o0S3nCXMliSvy5Dzx7/DJcI+SwgICv+IneSZwhBh1oSyEHA71A==}
+    engines: {node: '>=0.6'}
+
+  qs@6.17.1:
+    resolution: {integrity: sha512-jd3COkaKVgGUW+ZHyEHCG9bH7RoaaiWuMgzsIBjUMVjLAaWGWpoUAVwljVvBHxRu/2qEHnadLGZrkutYUBPQJA==}
     engines: {node: '>=0.6'}
 
   qs@6.5.5:
@@ -4686,6 +4722,10 @@ packages:
 
   router@2.2.0:
     resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
+    engines: {node: '>= 18'}
+
+  router@2.3.0:
+    resolution: {integrity: sha512-bpowRfGjEPe8t9R6fJIzhwmyCGAXwKvxBUsgJm+bJukwdcWmUXbMo7p22w7aYmQBPQTUMNqMV39YX0kMou3z8w==}
     engines: {node: '>= 18'}
 
   rxjs@7.8.1:
@@ -6008,9 +6048,9 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@bull-board/api@9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)':
+  '@bull-board/api@9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)':
     dependencies:
-      '@bull-board/ui': 9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
+      '@bull-board/ui': 9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
       redis-info: 3.1.0
       valibot: 1.5.0(typescript@6.0.3)
     optionalDependencies:
@@ -6018,21 +6058,21 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@bull-board/express@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)':
+  '@bull-board/express@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)':
     dependencies:
-      '@bull-board/api': 9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
-      '@bull-board/ui': 9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
+      '@bull-board/api': 9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
+      '@bull-board/ui': 9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
       ejs: 6.0.1
-      express: 5.2.1(supports-color@8.1.1)
+      express: 5.3.0(supports-color@8.1.1)
     transitivePeerDependencies:
       - bull
       - bullmq
       - supports-color
       - typescript
 
-  '@bull-board/metrics@9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(typescript@6.0.3)':
+  '@bull-board/metrics@9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(typescript@6.0.3)':
     dependencies:
-      '@bull-board/api': 9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
+      '@bull-board/api': 9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
       ioredis: 5.11.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - '@bull-board/ui'
@@ -6040,18 +6080,18 @@ snapshots:
       - bullmq
       - typescript
 
-  '@bull-board/nestjs@9.10.5(@bull-board/api@9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(@nestjs/bull-shared@11.0.4(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28))(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+  '@bull-board/nestjs@9.13.2(@bull-board/api@9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(@nestjs/bull-shared@11.0.4(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28))(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
     dependencies:
-      '@bull-board/api': 9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
+      '@bull-board/api': 9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
       '@nestjs/bull-shared': 11.0.4(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28)
       '@nestjs/common': 11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
       '@nestjs/core': 11.1.28(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
 
-  '@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)':
+  '@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)':
     dependencies:
-      '@bull-board/api': 9.10.5(@bull-board/ui@9.10.5(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
+      '@bull-board/api': 9.13.2(@bull-board/ui@9.13.2(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3))(bullmq@5.81.3(supports-color@8.1.1))(typescript@6.0.3)
     transitivePeerDependencies:
       - bull
       - bullmq
@@ -7733,7 +7773,7 @@ snapshots:
   accepts@2.0.0:
     dependencies:
       mime-types: 3.0.2
-      negotiator: 1.0.0
+      negotiator: 1.1.0
 
   acorn-import-phases@1.0.4(acorn@8.18.0):
     dependencies:
@@ -8002,6 +8042,20 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  body-parser@2.4.0(supports-color@8.1.1):
+    dependencies:
+      bytes: 3.1.2
+      content-type: 2.1.0
+      debug: 4.4.3(supports-color@8.1.1)
+      http-errors: 2.0.1
+      iconv-lite: 0.7.3
+      on-finished: 2.4.2
+      qs: 6.17.1
+      raw-body: 3.0.2
+      type-is: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
+
   bowser@2.14.1: {}
 
   brace-expansion@1.1.17:
@@ -8238,9 +8292,13 @@ snapshots:
 
   content-disposition@1.1.0: {}
 
+  content-disposition@2.0.1: {}
+
   content-type@1.0.5: {}
 
   content-type@2.0.0: {}
+
+  content-type@2.1.0: {}
 
   convert-source-map@2.0.0: {}
 
@@ -8452,6 +8510,8 @@ snapshots:
   emoji-regex@9.2.2: {}
 
   encodeurl@2.0.0: {}
+
+  encodeurl@2.0.3: {}
 
   enhanced-resolve@5.24.4:
     dependencies:
@@ -8835,6 +8895,39 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  express@5.3.0(supports-color@8.1.1):
+    dependencies:
+      accepts: 2.0.0
+      body-parser: 2.4.0(supports-color@8.1.1)
+      content-disposition: 2.0.1
+      content-type: 2.1.0
+      cookie: 0.7.2
+      cookie-signature: 1.2.2
+      debug: 4.4.3(supports-color@8.1.1)
+      depd: 2.0.0
+      encodeurl: 2.0.3
+      escape-html: 1.0.3
+      etag: 1.8.1
+      finalhandler: 2.1.1(supports-color@8.1.1)
+      fresh: 2.0.0
+      http-errors: 2.0.1
+      merge-descriptors: 2.0.0
+      mime-types: 3.0.2
+      on-finished: 2.4.2
+      once: 1.4.0
+      parseurl: 1.3.3
+      proxy-addr: 2.0.8
+      qs: 6.17.1
+      range-parser: 1.3.0
+      router: 2.3.0(supports-color@8.1.1)
+      send: 1.2.1(supports-color@8.1.1)
+      serve-static: 2.2.1(supports-color@8.1.1)
+      statuses: 2.0.2
+      type-is: 2.1.0
+      vary: 1.1.2
+    transitivePeerDependencies:
+      - supports-color
+
   extend@3.0.2: {}
 
   extsprintf@1.3.0: {}
@@ -8904,9 +8997,9 @@ snapshots:
   finalhandler@2.1.1(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      encodeurl: 2.0.0
+      encodeurl: 2.0.3
       escape-html: 1.0.3
-      on-finished: 2.4.1
+      on-finished: 2.4.2
       parseurl: 1.3.3
       statuses: 2.0.2
     transitivePeerDependencies:
@@ -10138,7 +10231,9 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  negotiator@1.0.0: {}
+  negotiator@1.1.0:
+    dependencies:
+      content-type: 2.1.0
 
   neo-async@2.6.2: {}
 
@@ -10220,6 +10315,8 @@ snapshots:
 
   object-inspect@1.13.4: {}
 
+  object-inspect@1.14.0: {}
+
   object-keys@1.1.1: {}
 
   object.assign@4.1.7:
@@ -10232,6 +10329,10 @@ snapshots:
       object-keys: 1.1.1
 
   on-finished@2.4.1:
+    dependencies:
+      ee-first: 1.1.1
+
+  on-finished@2.4.2:
     dependencies:
       ee-first: 1.1.1
 
@@ -10529,6 +10630,11 @@ snapshots:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
 
+  proxy-addr@2.0.8:
+    dependencies:
+      forwarded: 0.2.0
+      ipaddr.js: 1.9.1
+
   proxy-from-env@2.1.0: {}
 
   psl@1.15.0:
@@ -10551,6 +10657,11 @@ snapshots:
       - encoding
 
   qs@6.15.3:
+    dependencies:
+      es-define-property: 1.0.1
+      side-channel: 1.1.1
+
+  qs@6.17.1:
     dependencies:
       es-define-property: 1.0.1
       side-channel: 1.1.1
@@ -10709,6 +10820,16 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  router@2.3.0(supports-color@8.1.1):
+    dependencies:
+      debug: 4.4.3(supports-color@8.1.1)
+      depd: 2.0.0
+      is-promise: 4.0.0
+      parseurl: 1.3.3
+      path-to-regexp: 8.4.2
+    transitivePeerDependencies:
+      - supports-color
+
   rxjs@7.8.1:
     dependencies:
       tslib: 2.8.1
@@ -10784,14 +10905,14 @@ snapshots:
   send@1.2.1(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      encodeurl: 2.0.0
+      encodeurl: 2.0.3
       escape-html: 1.0.3
       etag: 1.8.1
       fresh: 2.0.0
       http-errors: 2.0.1
       mime-types: 3.0.2
       ms: 2.1.3
-      on-finished: 2.4.1
+      on-finished: 2.4.2
       range-parser: 1.3.0
       statuses: 2.0.2
     transitivePeerDependencies:
@@ -10854,7 +10975,7 @@ snapshots:
 
   serve-static@2.2.1(supports-color@8.1.1):
     dependencies:
-      encodeurl: 2.0.0
+      encodeurl: 2.0.3
       escape-html: 1.0.3
       parseurl: 1.3.3
       send: 1.2.1(supports-color@8.1.1)
@@ -10935,27 +11056,27 @@ snapshots:
   side-channel-list@1.0.1:
     dependencies:
       es-errors: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
 
   side-channel-map@1.0.1:
     dependencies:
       call-bound: 1.0.4
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
 
   side-channel-weakmap@1.0.2:
     dependencies:
       call-bound: 1.0.4
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
       side-channel-map: 1.0.1
 
   side-channel@1.1.1:
     dependencies:
       es-errors: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
       side-channel-list: 1.0.1
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
@@ -11308,7 +11429,7 @@ snapshots:
 
   type-is@2.1.0:
     dependencies:
-      content-type: 2.0.0
+      content-type: 2.1.0
       media-typer: 1.1.1
       mime-types: 3.0.2
 
