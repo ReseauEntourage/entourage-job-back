@@ -208,8 +208,8 @@ importers:
         specifier: ^1.0.32
         version: 1.0.36
       '@types/ioredis':
-        specifier: ^4.28.10
-        version: 4.28.10
+        specifier: ^5.0.0
+        version: 5.0.0(supports-color@8.1.1)
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
@@ -1660,8 +1660,9 @@ packages:
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
 
-  '@types/ioredis@4.28.10':
-    resolution: {integrity: sha512-69LyhUgrXdgcNDv7ogs1qXZomnfOEnSmrmMFqKgt1XMJxmoOSG/u3wYy13yACIfKuMJ8IhKgHafDO3sx19zVQQ==}
+  '@types/ioredis@5.0.0':
+    resolution: {integrity: sha512-zJbJ3FVE17CNl5KXzdeSPtdltc4tMT3TzC6fxQS0sQngkbFZ6h+0uTafsRqu+eSLIugf6Yb0Ea0SUuRr42Nk9g==}
+    deprecated: This is a stub types definition. ioredis provides its own type definitions, so you do not need this installed.
 
   '@types/is-stream@1.1.0':
     resolution: {integrity: sha512-jkZatu4QVbR60mpIzjINmtS1ZF4a/FqdTUTBeQDVOQ2PYyidtwFKr0B5G6ERukKwliq+7mIXvxyppwzG5EgRYg==}
@@ -7176,9 +7177,11 @@ snapshots:
 
   '@types/http-errors@2.0.5': {}
 
-  '@types/ioredis@4.28.10':
+  '@types/ioredis@5.0.0(supports-color@8.1.1)':
     dependencies:
-      '@types/node': 24.13.3
+      ioredis: 5.11.1(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
 
   '@types/is-stream@1.1.0':
     dependencies:
