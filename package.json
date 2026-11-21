@@ -80,7 +80,7 @@
     "jsforce": "^1.11.0",
     "lodash": "^4.17.21",
     "moment": "^2.31.0",
-    "moment-timezone": "^0.5.43",
+    "moment-timezone": "^0.6.0",
     "multer": "2.5.0",
     "node-mailjet": "^6.0.4",
     "passport": "^0.6.0",
