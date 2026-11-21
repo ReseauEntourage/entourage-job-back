@@ -99,7 +99,7 @@
     "sharp": "^0.35.5",
     "uuid": "^11.0.0",
     "validator": "^13.7.0",
-    "voyageai": "^0.2.1"
+    "voyageai": "^0.6.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
