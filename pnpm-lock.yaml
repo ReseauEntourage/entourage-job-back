@@ -85,7 +85,7 @@ importers:
         version: 1.26.0(supports-color@8.1.1)
       '@vonage/server-sdk':
         specifier: ^3.27.0
-        version: 3.29.0(supports-color@8.1.1)
+        version: 3.31.1(supports-color@8.1.1)
       axios:
         specifier: ^1.20.0
         version: 1.20.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
@@ -1959,84 +1959,104 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@vonage/accounts@1.22.0':
-    resolution: {integrity: sha512-QMn/cI1j/WLYIGOjV1huu35a0DKhgoGByy7OJAewTLqML3gqkacMu5lXmCsdvt+8pcHWe8XL6+TbbzhbpjFJ6Q==}
+  '@vonage/accounts@1.24.1':
+    resolution: {integrity: sha512-sHizUX7p8pCyLogy2SH1k2965miXbl/QvKFA79A8GrmhsmCUjFEYWJOSMeQMc3XW7nHlY+XqjP8NveoH8z5ucQ==}
     engines: {node: '>=22'}
 
-  '@vonage/applications@1.22.0':
-    resolution: {integrity: sha512-nYoA4PSOQJvHVxSF5GBKYF8l3brsLJXouGoJ8GkqCgYdBa2+YWOtmA1HCc+DEbw4L69dlreSANA8/V6vr6TgEg==}
+  '@vonage/applications@1.24.1':
+    resolution: {integrity: sha512-COLzoHrbo0h7kIlG9PzuIi2+u49Ili3T+XnPJ4TWDo1z+oGagN0e9L+Q0M7pBjbkN/LNai2VvUsKFWuucAqKqw==}
     engines: {node: '>=22'}
 
   '@vonage/auth@1.17.0':
     resolution: {integrity: sha512-XVe3lC3HRVR+rMknoo3QXdcutJ37hLIw7syIBUvHA5u3OMYYn9WcNusLFA3UGO/m6p6sxcyJK5sezjbf5hZGkg==}
     engines: {node: '>=22'}
 
-  '@vonage/conversations@1.16.0':
-    resolution: {integrity: sha512-a121inIZ97HfdbRmhWW/LJcyU426ms92O1lMdbLjxdDiOvN5g0RbkurbKkgKs4Grbo2quzep8JwVJKNDaprmIQ==}
+  '@vonage/auth@1.19.1':
+    resolution: {integrity: sha512-r8LzYnhbr4wDgwVik8w9s/KCzlQr0YTyMK5zqhZ7esAcQeZLc9PeJIQ3jn1HEjSViuONUZXR1iF4FhLZkvYNxg==}
+    engines: {node: '>=22'}
+
+  '@vonage/conversations@1.18.1':
+    resolution: {integrity: sha512-7p0CJULZerHAbolXvogxu2WjRfloGhwg4qTQNTdVZYY2wwsG8Ts9LaflvzgqzpQgU1t+rbLjQNWUZdJbdZm48Q==}
     engines: {node: '>=22'}
 
   '@vonage/jwt@1.16.0':
     resolution: {integrity: sha512-il9/vbGdPL8GclNVXFstWZqKhxx45vQVQb73K5tf3ZZLaRJxFsrfQM/bjGopTO3cuw6rzmOn/ndxlGF0QqRZ8A==}
     engines: {node: '>=22'}
 
+  '@vonage/jwt@1.18.1':
+    resolution: {integrity: sha512-fIlSCz4mBqMsCK+p9LFvIarDX8wPgWqd78YjlHpafq9FrtnCVkKpko9++w1Lwcl9r4SxhoW6EOuzs/SfkIUVzQ==}
+    engines: {node: '>=22'}
+
   '@vonage/messages@1.26.0':
     resolution: {integrity: sha512-2y3sP5badJnbPIeY3Nk9lW47L4Tcgj4fZoB/dG0BLQWzkRMQm7H4aEptVI2nNiG6uYU9Vch2GtZsLyoqtBOQjA==}
     engines: {node: '>=22'}
 
-  '@vonage/number-insights@1.22.0':
-    resolution: {integrity: sha512-fXMe6yGNphXwbwkCO8HjtR2d+8bWGt2wpva4/mNTm2JKEsQbeUym9Km7qa5JYK5ivH57M5mq6Rp7VWy5aGHWew==}
+  '@vonage/messages@1.28.1':
+    resolution: {integrity: sha512-LXZuTC2UvNLDG/CBuVai405h1JX5mToshZo9ffqAe/SnEChVoYYkpKZ8LGBWDp8Rqkzw2yXOBHJdUZzxbqvCcg==}
     engines: {node: '>=22'}
 
-  '@vonage/numbers@1.24.0':
-    resolution: {integrity: sha512-F4OmkmT7STKdWqFh6PLEsTswXLOCKtk5WyLazTpNsJi6ZtPV88eU0TZZR6O1NxBlOhlkcFWhoHRo8f92kMz94A==}
+  '@vonage/number-insights@1.24.1':
+    resolution: {integrity: sha512-9feFcHwhxKw0JmOJdWc6os+6IEEHfvosbxLd07Zpx//poICUiBU/7kGUsw1qDqEN2qD8tc7TJcrM3rf5+B+LsQ==}
     engines: {node: '>=22'}
 
-  '@vonage/pricing@1.22.0':
-    resolution: {integrity: sha512-5+H89zom8sGhZIqYyA0C4LaSIdgopxoN1Z2ZJbZMtf6333Te3sgOY1qGeARPCNC7G+VtCJAoY9lcY3pdE2Jzeg==}
+  '@vonage/numbers@1.26.1':
+    resolution: {integrity: sha512-gQwVADbyfrsB6djUoV0ZrYzHmXxAODyrJdm/9ZuE6Tz60T1jMqwVU6/9QdXDuAUprZEQXipcuzYHs9cxeVaI3w==}
     engines: {node: '>=22'}
 
-  '@vonage/redact@1.21.0':
-    resolution: {integrity: sha512-eAnQZKo9cwHwxf3q79AxIMgb7qdEOA1/nJM9kau42L5Qr3t/X3DoltD5nLjFOKHoVX8Xb6w+Ucntw+36dkoTQg==}
+  '@vonage/pricing@1.24.1':
+    resolution: {integrity: sha512-9mhC+5OOOp/W6eUkMaJx9oDGyFBKJTU2bXcoa7lHUlYDVk06WWkvnoKirwLDSB12INUh57imP0J/IbbB6FjO/g==}
     engines: {node: '>=22'}
 
-  '@vonage/reports@1.1.0':
-    resolution: {integrity: sha512-qYEZ6IwARHLhBSd6Z+z+uJw91dP079KXvqxOUmz034EGfNT/kXaZHBLjDhh3qEJ4RAh1l8mUTDQNCWiyrgvbrQ==}
+  '@vonage/redact@1.23.1':
+    resolution: {integrity: sha512-7zyKVAlzS58otx/qDpnKH+mhApUWJ7x0jiI+M9wWYzN5dEv0DdLk8qG1Vnd6gRbvR6gI/nUglMFYJfVOhTVtSA==}
+    engines: {node: '>=22'}
+
+  '@vonage/reports@1.3.1':
+    resolution: {integrity: sha512-QzVQzA+hqvWwdo3haXRVPKcgSqh1QR773DlVHQj2zfMN8CYIGseTnuZW4qEZ1hNRIysuJ5yFicQYTwFPmksCLA==}
     engines: {node: '>=20'}
 
   '@vonage/server-client@1.22.0':
     resolution: {integrity: sha512-aRcVFFSmuiqP0BltBDHJac+Vp5lnNLU1Mu5jaDjI5M7LupTZnDYhOl87N8WiatHJc0ryN8/+oAdjotrqyFU5TQ==}
     engines: {node: '>=22'}
 
-  '@vonage/server-sdk@3.29.0':
-    resolution: {integrity: sha512-BOiWjuQTAsJvEh6j/weqa06YbUm0T0U8JxjVRbpvpZQggw6PFiaOqALasSpN1LVa6HlhSaNdsMyjz6hvjcouJw==}
+  '@vonage/server-client@1.24.1':
+    resolution: {integrity: sha512-0FzXGORYjTTpPrWlDiQZi8VunC5nFoE1apZMBV4ixBSkptd5AyqKEBCladrkY098MT+fL0HVZtCqfSSZpmUbaA==}
     engines: {node: '>=22'}
 
-  '@vonage/sms@1.23.0':
-    resolution: {integrity: sha512-m/UizskWPret1GduMNr4UU+b0vc08AuMFBbnjHZ9j1KO2VNRnJlAGD13vo46WpTIdbjegIRw91YkySPzqsbjxg==}
+  '@vonage/server-sdk@3.31.1':
+    resolution: {integrity: sha512-wXX3jCeJVyjtS7neBCB7qoNaYlMEbCSqySSqb2fDTqMhjOvHfQpbQ7e2cL1vOE12pR2OnFik3ZmnR3NGjJa5Sw==}
     engines: {node: '>=22'}
 
-  '@vonage/users@1.16.0':
-    resolution: {integrity: sha512-iaI7FqzH++Mv4IzB+3uoNM2jw6rgVeyqEtF+DfgEUz5N9N1JDbyQIGa/OVCQzua/lCYkU24GIIAuablN8tupeA==}
+  '@vonage/sms@1.25.1':
+    resolution: {integrity: sha512-Pm3guav8nVwrVHoYWI8vEaO6W18RJbm8a8SEqhzXI5R7+2Xal2rmo6tk2xOSE/ubCKe4yfBSJXis1rlKgm0zQA==}
     engines: {node: '>=22'}
 
-  '@vonage/verify2@1.21.0':
-    resolution: {integrity: sha512-lJWFzs6d5Gr2LUoFlakU4N/Uiyka7clAbVclwEXl6xtfr/KkZX7nMi+WwQapnWwBT1MVmyA/e6IT5FQSuhIrYA==}
+  '@vonage/users@1.18.1':
+    resolution: {integrity: sha512-temjbooIIBRWaBmCGBylDK2/lenL4XDK/vaTzQaWr2ZyhWJDzsMqxjAOy/XSrMEhKcxbEuVvkjgeMVQieDfhGg==}
     engines: {node: '>=22'}
 
-  '@vonage/verify@1.22.0':
-    resolution: {integrity: sha512-sYhnST97iLub3qbcnSGV5xhrJA12iwhMmPwBeQcyxhj96c+0RRWPWT6BYtG2Cp4ZAUaB+eRR77DyFgyQGv6nxw==}
+  '@vonage/verify2@1.23.1':
+    resolution: {integrity: sha512-1B8o4V2Zgeyl4jUrJCfUQt6W75+5fNKnOvfszJUXd0GSBXdZS/byAILd4rIUT//NJVg9M3aS2POqEOuyhZOgsg==}
+    engines: {node: '>=22'}
+
+  '@vonage/verify@1.24.1':
+    resolution: {integrity: sha512-hoGKQ9hT86do6jEQE2LEIFvnHCvparMeuaV+FDc+KVDh9oUYeGsFN162XcXW+RozjNvnqUpndliwWgrsVRxchA==}
     engines: {node: '>=22'}
 
   '@vonage/vetch@1.13.0':
     resolution: {integrity: sha512-3v27oIKIYCMlT6yY9x4XrovuHocjoCSTVPNzRzXO2nJbiDrIaVi1YqGrpMQKB/DhMiW2Odv/VEZ8Ml2nEOS8+Q==}
     engines: {node: '>=22'}
 
-  '@vonage/video@1.30.0':
-    resolution: {integrity: sha512-CYLjQ4+mq9X8C/XLQzkFICZ8L5SF5WhO6pDRFPAMnD6CbEgfE//iutQE9s/YLs8TtCk4DWkym3yqHIyANoiKFg==}
+  '@vonage/vetch@1.15.1':
+    resolution: {integrity: sha512-lvcyLO15Q5LeiPzFQDuno+BmaONXQV9crPGCZIh8VdsR6TJ2IV3UbTVBkZNwdTRczzhSaae/4wrs/UQhQUicKQ==}
     engines: {node: '>=22'}
 
-  '@vonage/voice@1.23.0':
-    resolution: {integrity: sha512-Di7BOkNuGMcNfGmjH6V+//3PPANIPhZNwIQ+23dTQhjyLdMPsPyvFyV1IjBmtddHv52p4odWKOnhdSPK/MZ0dA==}
+  '@vonage/video@1.32.1':
+    resolution: {integrity: sha512-LAdR+QORKXmlRowwK1DXK5Bd4GrMYf/YqjvaQRhb0QVxDhRCoZpgTEAQwJexmkUCmGAYHXWebw4tFtD0F/57sA==}
+    engines: {node: '>=22'}
+
+  '@vonage/voice@1.25.1':
+    resolution: {integrity: sha512-+kyKbKGMygxZfIeLhAo7s7HxrbTe4qikyEJ/Ek+QOv5BHXjIzNtwPeeSEP+m8KlAHcnFqOBgxsSmJySYvJJIaA==}
     engines: {node: '>=22'}
 
   '@webassemblyjs/ast@1.14.1':
@@ -7480,15 +7500,15 @@ snapshots:
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
 
-  '@vonage/accounts@1.22.0(supports-color@8.1.1)':
+  '@vonage/accounts@1.24.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/applications@1.22.0(supports-color@8.1.1)':
+  '@vonage/applications@1.24.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -7499,16 +7519,31 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/conversations@1.16.0(supports-color@8.1.1)':
+  '@vonage/auth@1.19.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/messages': 1.26.0(supports-color@8.1.1)
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/users': 1.16.0(supports-color@8.1.1)
-      '@vonage/voice': 1.23.0(supports-color@8.1.1)
+      '@vonage/jwt': 1.18.1(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/conversations@1.18.1(supports-color@8.1.1)':
+    dependencies:
+      '@vonage/messages': 1.28.1(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/users': 1.18.1(supports-color@8.1.1)
+      '@vonage/voice': 1.25.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
   '@vonage/jwt@1.16.0(supports-color@8.1.1)':
+    dependencies:
+      debug: 4.4.3(supports-color@8.1.1)
+      jsonwebtoken: 9.0.3
+      uuid: 14.0.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/jwt@1.18.1(supports-color@8.1.1)':
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       jsonwebtoken: 9.0.3
@@ -7524,40 +7559,48 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/number-insights@1.22.0(supports-color@8.1.1)':
+  '@vonage/messages@1.28.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/auth': 1.17.0(supports-color@8.1.1)
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/vetch': 1.13.0
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
+      debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/numbers@1.24.0(supports-color@8.1.1)':
+  '@vonage/number-insights@1.24.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/auth': 1.17.0(supports-color@8.1.1)
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/vetch': 1.13.0
+      '@vonage/auth': 1.19.1(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/pricing@1.22.0(supports-color@8.1.1)':
+  '@vonage/numbers@1.26.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/auth': 1.17.0(supports-color@8.1.1)
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/vetch': 1.13.0
+      '@vonage/auth': 1.19.1(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/redact@1.21.0(supports-color@8.1.1)':
+  '@vonage/pricing@1.24.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
+      '@vonage/auth': 1.19.1(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/reports@1.1.0(supports-color@8.1.1)':
+  '@vonage/redact@1.23.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/vetch': 1.13.0
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/reports@1.3.1(supports-color@8.1.1)':
+    dependencies:
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
     transitivePeerDependencies:
       - supports-color
 
@@ -7569,71 +7612,81 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/server-sdk@3.29.0(supports-color@8.1.1)':
+  '@vonage/server-client@1.24.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/accounts': 1.22.0(supports-color@8.1.1)
-      '@vonage/applications': 1.22.0(supports-color@8.1.1)
-      '@vonage/auth': 1.17.0(supports-color@8.1.1)
-      '@vonage/conversations': 1.16.0(supports-color@8.1.1)
-      '@vonage/messages': 1.26.0(supports-color@8.1.1)
-      '@vonage/number-insights': 1.22.0(supports-color@8.1.1)
-      '@vonage/numbers': 1.24.0(supports-color@8.1.1)
-      '@vonage/pricing': 1.22.0(supports-color@8.1.1)
-      '@vonage/redact': 1.21.0(supports-color@8.1.1)
-      '@vonage/reports': 1.1.0(supports-color@8.1.1)
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/sms': 1.23.0(supports-color@8.1.1)
-      '@vonage/users': 1.16.0(supports-color@8.1.1)
-      '@vonage/verify': 1.22.0(supports-color@8.1.1)
-      '@vonage/verify2': 1.21.0(supports-color@8.1.1)
-      '@vonage/video': 1.30.0(supports-color@8.1.1)
-      '@vonage/voice': 1.23.0(supports-color@8.1.1)
+      '@vonage/auth': 1.19.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
+      debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/sms@1.23.0(supports-color@8.1.1)':
+  '@vonage/server-sdk@3.31.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/auth': 1.17.0(supports-color@8.1.1)
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
+      '@vonage/accounts': 1.24.1(supports-color@8.1.1)
+      '@vonage/applications': 1.24.1(supports-color@8.1.1)
+      '@vonage/auth': 1.19.1(supports-color@8.1.1)
+      '@vonage/conversations': 1.18.1(supports-color@8.1.1)
+      '@vonage/messages': 1.28.1(supports-color@8.1.1)
+      '@vonage/number-insights': 1.24.1(supports-color@8.1.1)
+      '@vonage/numbers': 1.26.1(supports-color@8.1.1)
+      '@vonage/pricing': 1.24.1(supports-color@8.1.1)
+      '@vonage/redact': 1.23.1(supports-color@8.1.1)
+      '@vonage/reports': 1.3.1(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/sms': 1.25.1(supports-color@8.1.1)
+      '@vonage/users': 1.18.1(supports-color@8.1.1)
+      '@vonage/verify': 1.24.1(supports-color@8.1.1)
+      '@vonage/verify2': 1.23.1(supports-color@8.1.1)
+      '@vonage/video': 1.32.1(supports-color@8.1.1)
+      '@vonage/voice': 1.25.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/users@1.16.0(supports-color@8.1.1)':
+  '@vonage/sms@1.25.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
+      '@vonage/auth': 1.19.1(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/verify2@1.21.0(supports-color@8.1.1)':
+  '@vonage/users@1.18.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/verify@1.22.0(supports-color@8.1.1)':
+  '@vonage/verify2@1.23.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/auth': 1.17.0(supports-color@8.1.1)
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/vetch': 1.13.0
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/verify@1.24.1(supports-color@8.1.1)':
+    dependencies:
+      '@vonage/auth': 1.19.1(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
     transitivePeerDependencies:
       - supports-color
 
   '@vonage/vetch@1.13.0': {}
 
-  '@vonage/video@1.30.0(supports-color@8.1.1)':
+  '@vonage/vetch@1.15.1': {}
+
+  '@vonage/video@1.32.1(supports-color@8.1.1)':
     dependencies:
-      '@vonage/auth': 1.17.0(supports-color@8.1.1)
-      '@vonage/jwt': 1.16.0(supports-color@8.1.1)
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/vetch': 1.13.0
+      '@vonage/auth': 1.19.1(supports-color@8.1.1)
+      '@vonage/jwt': 1.18.1(supports-color@8.1.1)
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
     transitivePeerDependencies:
       - supports-color
 
-  '@vonage/voice@1.23.0(supports-color@8.1.1)':
+  '@vonage/voice@1.25.1(supports-color@8.1.1)':
     dependencies:
       '@types/debug': 4.1.13
-      '@vonage/server-client': 1.22.0(supports-color@8.1.1)
-      '@vonage/vetch': 1.13.0
+      '@vonage/server-client': 1.24.1(supports-color@8.1.1)
+      '@vonage/vetch': 1.15.1
       debug: 4.4.3(supports-color@8.1.1)
       ts-xor: 1.3.0
     transitivePeerDependencies:
