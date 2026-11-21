@@ -186,8 +186,8 @@ importers:
         specifier: ^13.7.0
         version: 13.15.35
       voyageai:
-        specifier: ^0.2.1
-        version: 0.2.1
+        specifier: ^0.6.0
+        version: 0.6.0
     devDependencies:
       '@faker-js/faker':
         specifier: ^10.0.0
@@ -5388,14 +5388,17 @@ packages:
     resolution: {integrity: sha512-ZZKSmDAEFOijERBLkmYfJ+vmk3w+7hOLYDNkRCuRuMJGEmqYNCNLyBBFwWKVMhfwaEF3WOd0Zlw86U/WC/+nYw==}
     engines: {'0': node >=0.6.0}
 
-  voyageai@0.2.1:
-    resolution: {integrity: sha512-ym7Dk6p8Si6lR9wDh58EzxwT0ziD/pqXjzzzceOSySO3Ic3uosHZLOTAsb3Gq+1OaKdEMnni/p8TohKUNvLTkg==}
+  voyageai@0.6.0:
+    resolution: {integrity: sha512-a0xS5j8FpkQFjab6i1STB5VoNKE9fO0n6uRWvnvk/xNz3bEJyfmiYWcfqE0yUi4gKfJQnBiYr/iG/cmo191Fcw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@huggingface/transformers': ^3.8.0
+      node-llama-cpp: ^3.22.3
       onnxruntime-node: '>=1.17.0'
     peerDependenciesMeta:
       '@huggingface/transformers':
+        optional: true
+      node-llama-cpp:
         optional: true
       onnxruntime-node:
         optional: true
@@ -11455,7 +11458,7 @@ snapshots:
       core-util-is: 1.0.2
       extsprintf: 1.3.0
 
-  voyageai@0.2.1:
+  voyageai@0.6.0:
     dependencies:
       node-fetch: 2.7.0
     transitivePeerDependencies:
