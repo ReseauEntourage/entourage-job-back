@@ -83,7 +83,7 @@
     "moment-timezone": "^0.5.43",
     "multer": "2.5.0",
     "node-mailjet": "^6.0.4",
-    "passport": "^0.6.0",
+    "passport": "^0.7.0",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "pg": "^8.8.0",
