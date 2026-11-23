@@ -154,7 +154,7 @@ importers:
         version: 2.3.4
       phone:
         specifier: ^3.1.23
-        version: 3.1.71
+        version: 3.1.74
       pusher:
         specifier: ^5.1.1-beta
         version: 5.3.4
@@ -4491,8 +4491,8 @@ packages:
   pgpass@1.0.5:
     resolution: {integrity: sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==}
 
-  phone@3.1.71:
-    resolution: {integrity: sha512-hY+mk9CyQovdaG8QpcsbtNP3hI7oPW7gv2yghQkkWBMsPRxeJYwnggqLYdZAAz7nGxli5SJ7Zvkf/HoxPaHjpQ==}
+  phone@3.1.74:
+    resolution: {integrity: sha512-4ci2fAh+G4k0akxd4t9EDCzUtzBhsMFZ84c2xXRc+sE3MlZyFop5FQ8hIxNAvnKzRdTLl07QMmO/JoQyCcbcEw==}
     engines: {node: '>=12'}
 
   picocolors@1.1.1:
@@ -10580,7 +10580,7 @@ snapshots:
     dependencies:
       split2: 4.2.0
 
-  phone@3.1.71: {}
+  phone@3.1.74: {}
 
   picocolors@1.1.1: {}
 
