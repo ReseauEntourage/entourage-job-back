@@ -30,7 +30,7 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "📦 entourage-job-back : PR de release ouverte/à jour — ${{ fromJson(steps.release.outputs.pr).title }}\n${{ fromJson(steps.release.outputs.pr).html_url }}"
+              "text": ${{ toJSON(format('📦 entourage-job-back : PR de release ouverte/à jour — {0}\n{1}', fromJson(steps.release.outputs.pr).title, fromJson(steps.release.outputs.pr).html_url)) }}
             }
 
   deploy:
@@ -57,5 +57,5 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "🚀 entourage-job-back ${{ needs.release-please.outputs.tag_name }} déployé en production"
+              "text": ${{ toJSON(format('🚀 entourage-job-back {0} déployé en production', needs.release-please.outputs.tag_name)) }}
             }

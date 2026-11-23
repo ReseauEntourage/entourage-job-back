@@ -305,14 +305,12 @@ pnpm format   # prettier sur src/ et tests/
 
 [.github/workflows/ci.yml](.github/workflows/ci.yml) — sur chaque PR et sur `master` / `develop` : `setup` → `ts-check`, `lint`, `build` en parallèle → `e2e` contre un service Postgres `pgvector/pgvector:pg17`. Les variables nécessaires aux tests sont déclarées dans le workflow et alimentées par les **secrets du repository GitHub** (environnement `entourage-job-back-test`).
 
-[.github/workflows/release.yml](.github/workflows/release.yml) — une PR vers `master` déclenche un bump de version et un tag. Le type est piloté par les labels de la PR : `release:major`, `release:minor`, sinon `patch`.
+[.github/workflows/release-please.yml](.github/workflows/release-please.yml) — sur chaque push vers `master` : [release-please](https://github.com/googleapis/release-please) calcule la prochaine version à partir des [Conventional Commits](https://www.conventionalcommits.org/) et maintient une PR de release unique (bump de version + changelog). Une notification Slack est postée sur `#releases-pro` à l'ouverture/mise à jour de cette PR. Le merge de cette PR de release déclenche le job `deploy`, qui pousse la version taguée sur Heroku et poste une seconde notification Slack — c'est la **seule** façon dont `master` est déployé en production.
 
-Le déploiement est automatique via **GitHub Actions** et **Heroku**, une fois les tests passés :
-
-| Branche | Environnement | URL |
-|---|---|---|
-| `develop` | Pré-production | https://entourage-job-preprod.herokuapp.com |
-| `master` | Production | https://api.entourage-pro.fr |
+| Branche | Environnement | URL | Déploiement |
+|---|---|---|---|
+| `develop` | Pré-production | https://entourage-job-preprod.herokuapp.com | Auto Deploy Heroku natif, sur chaque push |
+| `master` | Production | https://api.entourage-pro.fr | Job `deploy` de `release-please.yml`, seulement au merge de la PR de release |
 
 Sur chaque déploiement, la phase `release` du [Procfile](Procfile) applique les migrations avant le démarrage des dynos `web` et `mainWorker`.
 
