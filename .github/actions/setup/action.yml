@@ -4,11 +4,11 @@ description: Install pnpm, Node.js and project dependencies
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v4
+    - uses: pnpm/action-setup@v6
 
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v7
       with:
-        node-version: '24.x'
+        node-version: '26.x'
         cache: 'pnpm'
 
     - name: Install dependencies
