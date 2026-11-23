@@ -4,7 +4,8 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "package-name": "entourage-job-back"
+      "package-name": "entourage-job-back",
+      "include-component-in-tag": false
     }
   }
 }
