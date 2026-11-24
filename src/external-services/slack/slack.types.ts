@@ -1,4 +1,9 @@
-import { Block, KnownBlock } from '@slack/bolt';
+import type { types, webApi } from '@slack/bolt';
+
+// bolt v5 no longer re-exports these types at its root: they live in the
+// `types` namespace (@slack/types).
+export type Block = types.Block;
+export type KnownBlock = types.KnownBlock;
 
 // Each channel is configured per environment through its own env var: preprod
 // and prod both run with NODE_ENV=production, so NODE_ENV can't tell them
@@ -74,8 +79,9 @@ export interface SlackBlockConfig {
   title: string;
 }
 
-export type SlackMessageResponse = {
-  [key: string]: unknown;
-  ok: boolean;
-  ts?: string;
-};
+// Subset of the chat.postMessage response used by the app (the web API
+// response type has no index signature since @slack/web-api v8).
+export type SlackMessageResponse = Pick<
+  webApi.ChatPostMessageResponse,
+  'ok' | 'ts' | 'channel'
+>;

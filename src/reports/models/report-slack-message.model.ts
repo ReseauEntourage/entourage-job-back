@@ -1,4 +1,3 @@
-import { Block, KnownBlock } from '@slack/bolt';
 import {
   AllowNull,
   Column,
@@ -12,6 +11,10 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import type { ReportTargetType } from '../reports.types';
+import type {
+  Block,
+  KnownBlock,
+} from 'src/external-services/slack/slack.types';
 
 /**
  * A Slack moderation alert about a reported target, kept so that its action

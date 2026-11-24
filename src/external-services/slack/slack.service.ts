@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { App, Block, KnownBlock } from '@slack/bolt';
+import { App } from '@slack/bolt';
 import {
   CHECKIN_EMPLOYMENT_TYPE_LABELS,
   CHECKIN_EXCHANGE_FREQUENCY_LABELS,
@@ -29,6 +29,8 @@ import {
   SlackBlockConfig,
   slackChannelEnvVars,
   slackChannels,
+  Block,
+  KnownBlock,
   SlackMessageResponse,
   SlackMsgAction,
   SlackMsgContext,
@@ -469,7 +471,7 @@ export class SlackService implements OnModuleInit {
     reasonLabel: string,
     comment: string | null,
     slackStaffContactUserId: string | null
-  ) => {
+  ): Promise<(Block | KnownBlock)[]> => {
     return this.generateSlackBlockMsg({
       title: '🚨 Un profil a été signalé',
       context: [
@@ -508,7 +510,7 @@ export class SlackService implements OnModuleInit {
   async generateRegisteredRefererBlocks(
     referer: User,
     slackStaffContactUserId: string | null
-  ) {
+  ): Promise<(Block | KnownBlock)[]> {
     return this.generateSlackBlockMsg({
       title: "👋 Nouveau prescripteur d'association inscrit",
       context: [
@@ -536,7 +538,7 @@ export class SlackService implements OnModuleInit {
     referredUser: User,
     referer: User,
     slackStaffContactUserId: string | null
-  ) {
+  ): Promise<(Block | KnownBlock)[]> {
     return this.generateSlackBlockMsg({
       title: '👋 Nouveau candidat orienté',
       context: [
@@ -563,7 +565,7 @@ export class SlackService implements OnModuleInit {
     title: string,
     context: SlackMsgContext[],
     message?: string
-  ) {
+  ): Promise<(Block | KnownBlock)[]> {
     return this.generateSlackBlockMsg({
       title: `${
         success ? ':steam_locomotive::railway_car::railway_car:' : ':warning:'
