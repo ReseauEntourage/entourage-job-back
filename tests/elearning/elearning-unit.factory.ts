@@ -1,7 +1,7 @@
+import { randomUUID } from 'crypto';
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import * as uuid from 'uuid';
 import { ElearningAnswer } from 'src/elearning/models/elearning-answer.model';
 import { ElearningQuestion } from 'src/elearning/models/elearning-question.model';
 import { ElearningUnitRole } from 'src/elearning/models/elearning-unit-role.model';
@@ -24,7 +24,7 @@ export class ElearningUnitFactory implements Factory<ElearningUnit> {
 
   generateUnit(props: Partial<ElearningUnit>): Partial<ElearningUnit> {
     return {
-      id: props.id ?? uuid.v4(),
+      id: props.id ?? randomUUID(),
       title: props.title ?? faker.lorem.sentence(4),
       description: props.description ?? faker.lorem.sentence(8),
       videoUrl: props.videoUrl ?? faker.internet.url(),
@@ -57,7 +57,7 @@ export class ElearningUnitFactory implements Factory<ElearningUnit> {
       await Promise.all(
         roles.map((role) =>
           this.elearningUnitRoleModel.create({
-            id: uuid.v4(),
+            id: randomUUID(),
             unitId: unit.id,
             role,
           })
@@ -68,7 +68,7 @@ export class ElearningUnitFactory implements Factory<ElearningUnit> {
     if (options.questions && options.questions.length > 0) {
       for (const [index, question] of options.questions.entries()) {
         const createdQuestion = await this.elearningQuestionModel.create({
-          id: uuid.v4(),
+          id: randomUUID(),
           unitId: unit.id,
           label: question.label ?? faker.lorem.sentence(6),
           order: question.order ?? index + 1,
@@ -78,7 +78,7 @@ export class ElearningUnitFactory implements Factory<ElearningUnit> {
           await Promise.all(
             question.answers.map((answer, answerIndex) =>
               this.elearningAnswerModel.create({
-                id: uuid.v4(),
+                id: randomUUID(),
                 questionId: createdQuestion.id,
                 label: answer.label ?? faker.lorem.sentence(8),
                 order: answerIndex + 1,

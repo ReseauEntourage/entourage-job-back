@@ -1,7 +1,7 @@
+import { randomUUID } from 'crypto';
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import * as uuid from 'uuid';
 import { Department } from 'src/departments/models/department.model';
 import { Factory } from 'src/utils/types';
 import { DepartmentCode } from 'src/utils/types/departments.types';
@@ -17,7 +17,7 @@ export class DepartmentFactory implements Factory<Department> {
     const name =
       props.name || faker.lorem.word({ length: { min: 5, max: 10 } });
     return {
-      id: uuid.v4(),
+      id: randomUUID(),
       name: name,
       value: (props.value || name.slice(0, 3)) as DepartmentCode,
     };

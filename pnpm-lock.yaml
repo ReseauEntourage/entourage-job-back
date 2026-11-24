@@ -179,9 +179,6 @@ importers:
       sharp:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@24.13.3)
-      uuid:
-        specifier: ^14.0.0
-        version: 14.0.1
       validator:
         specifier: ^13.7.0
         version: 13.15.35
@@ -234,9 +231,6 @@ importers:
       '@types/supertest':
         specifier: ^2.0.11
         version: 2.0.16
-      '@types/uuid':
-        specifier: ^8.3.4
-        version: 8.3.4
       '@types/validator':
         specifier: ^13.15.10
         version: 13.15.10
@@ -1761,9 +1755,6 @@ packages:
 
   '@types/tsscmp@1.0.2':
     resolution: {integrity: sha512-cy7BRSU8GYYgxjcx0Py+8lo5MthuDhlyu076KUcYzVNXL23luYgRHkMG2fIFEc6neckeh/ntP82mw+U4QjZq+g==}
-
-  '@types/uuid@8.3.4':
-    resolution: {integrity: sha512-c/I8ZRb51j+pYGAu5CrFMRxqZ2ke4y2grEBO5AUjgSkSk+qT2Ea+OdWElz/OiMf5MNpn2b17kuVBwZLQJXzihw==}
 
   '@types/validator@13.15.10':
     resolution: {integrity: sha512-T8L6i7wCuyoK8A/ZeLYt1+q0ty3Zb9+qbSSvrIVitzT3YjZqkTZ40IbRsPanlB4h1QB3JVL1SYCdR6ngtFYcuA==}
@@ -7298,8 +7289,6 @@ snapshots:
       '@types/superagent': 8.1.11
 
   '@types/tsscmp@1.0.2': {}
-
-  '@types/uuid@8.3.4': {}
 
   '@types/validator@13.15.10': {}
 

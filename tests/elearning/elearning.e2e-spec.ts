@@ -1,8 +1,8 @@
+import { randomUUID } from 'crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import request from 'supertest';
-import * as uuid from 'uuid';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
@@ -163,7 +163,7 @@ describe('Elearning', () => {
   describe('POST /units/:unitId/completions', () => {
     it('Should return 401 when not logged in', async () => {
       const response = await request(server).post(
-        `${route}/units/${uuid.v4()}/completions`
+        `${route}/units/${randomUUID()}/completions`
       );
       expect(response.status).toBe(401);
     });
@@ -174,7 +174,7 @@ describe('Elearning', () => {
       });
 
       const response = await request(server)
-        .post(`${route}/units/${uuid.v4()}/completions`)
+        .post(`${route}/units/${randomUUID()}/completions`)
         .set('authorization', `Bearer ${loggedIn.token}`);
 
       expect(response.status).toBe(404);

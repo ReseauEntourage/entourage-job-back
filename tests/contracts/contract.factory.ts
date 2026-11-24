@@ -1,7 +1,7 @@
+import { randomUUID } from 'crypto';
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import * as uuid from 'uuid';
 import { Contract } from 'src/contracts/models';
 import { Factory } from 'src/utils/types';
 
@@ -14,7 +14,7 @@ export class ContractFactory implements Factory<Contract> {
 
   generateContract(props: Partial<Contract>): Partial<Contract> {
     return {
-      id: uuid.v4(),
+      id: randomUUID(),
       name: props.name || faker.lorem.word({ length: { min: 5, max: 10 } }),
     };
   }

@@ -1,7 +1,7 @@
+import { randomUUID as uuid } from 'crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { v4 as uuid } from 'uuid';
 import { Organization } from 'src/organizations/models';
 import { OrganizationsController } from 'src/organizations/organizations.controller';
 import { QueuesService } from 'src/queues/producers/queues.service';
