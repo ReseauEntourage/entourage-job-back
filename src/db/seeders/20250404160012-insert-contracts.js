@@ -1,16 +1,16 @@
 'use strict';
 
-const uuid = require('uuid');
+const { randomUUID } = require('crypto');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     return queryInterface.bulkInsert('Contracts', [
-      { id: uuid.v4(), name: 'Alternance' },
-      { id: uuid.v4(), name: 'Contrat à durée indéterminée (CDI)' },
-      { id: uuid.v4(), name: 'Contrat à durée déterminée (CDD)' },
-      { id: uuid.v4(), name: "Contrat d'insertion" },
-      { id: uuid.v4(), name: 'Intérim' },
+      { id: randomUUID(), name: 'Alternance' },
+      { id: randomUUID(), name: 'Contrat à durée indéterminée (CDI)' },
+      { id: randomUUID(), name: 'Contrat à durée déterminée (CDD)' },
+      { id: randomUUID(), name: "Contrat d'insertion" },
+      { id: randomUUID(), name: 'Intérim' },
     ]);
   },
 

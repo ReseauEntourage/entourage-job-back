@@ -1,4 +1,4 @@
-const uuid = require('uuid');
+const { randomUUID } = require('crypto');
 
 module.exports = {
   up: (queryInterface, Sequelize) => {
@@ -10,7 +10,7 @@ module.exports = {
           {
             allowNull: false,
             type: Sequelize.UUID,
-            defaultValue: uuid.v4(),
+            defaultValue: randomUUID(),
           },
           {
             transaction: t,

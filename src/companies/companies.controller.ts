@@ -20,13 +20,13 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { validate as uuidValidate } from 'uuid';
 import { isEmail } from 'validator';
 import { Public, UserPayload } from 'src/auth/guards';
 import { Department } from 'src/locations/locations.types';
 import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
 import { UsersService } from 'src/users/users.service';
 import { toArray } from 'src/utils/misc';
+import { isUuid } from 'src/utils/misc/isUuid';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
 import { InviteCollaboratorsDto } from './dto/invite-collaborators.dto';
@@ -61,7 +61,7 @@ export class CompaniesController {
 
     if (departments) {
       for (const dept of departments) {
-        if (!uuidValidate(dept)) {
+        if (!isUuid(dept)) {
           throw new BadRequestException('departmentId must be a UUID or null');
         }
       }

@@ -7,9 +7,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
 import { withHasExternalCv } from 'src/user-profiles/user-profiles.utils';
+import { isUuid } from 'src/utils/misc/isUuid';
 import { Self, SelfGuard } from './guards';
 import { AdminOverride } from './guards/admin-override.decorator';
 import { User } from './models';
@@ -36,7 +36,7 @@ export class UsersByIdController {
     let user: User;
     if (validator.isEmail(userId)) {
       user = await this.usersService.findOneByMailWithRelations(userId);
-    } else if (uuidValidate(userId)) {
+    } else if (isUuid(userId)) {
       user = await this.usersService.findOneWithRelations(userId);
     } else {
       throw new BadRequestException();

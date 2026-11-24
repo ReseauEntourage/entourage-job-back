@@ -1,11 +1,16 @@
 'use strict';
 
-const uuid = require('uuid');
+const { randomUUID } = require('crypto');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const elearningUnitsIds = [uuid.v4(), uuid.v4(), uuid.v4(), uuid.v4()];
+    const elearningUnitsIds = [
+      randomUUID(),
+      randomUUID(),
+      randomUUID(),
+      randomUUID(),
+    ];
     await queryInterface.bulkInsert('ElearningUnits', [
       {
         id: elearningUnitsIds[0],
@@ -45,7 +50,7 @@ module.exports = {
     await queryInterface.bulkInsert('ElearningUnitRoles', [
       // Unit 0 for Coach role
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         unitId: elearningUnitsIds[0],
         role: 'Coach',
         createdAt: new Date(),
@@ -54,7 +59,7 @@ module.exports = {
 
       // Unit 1 for Candidat role
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         unitId: elearningUnitsIds[1],
         role: 'Candidat',
         createdAt: new Date(),
@@ -63,14 +68,14 @@ module.exports = {
 
       // Unit 2 for both roles
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         unitId: elearningUnitsIds[2],
         role: 'Coach',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         unitId: elearningUnitsIds[2],
         role: 'Candidat',
         createdAt: new Date(),
@@ -79,11 +84,11 @@ module.exports = {
     ]);
 
     const elearningQuestionsIds = [
-      uuid.v4(),
-      uuid.v4(),
-      uuid.v4(),
-      uuid.v4(),
-      uuid.v4(),
+      randomUUID(),
+      randomUUID(),
+      randomUUID(),
+      randomUUID(),
+      randomUUID(),
     ];
     await queryInterface.bulkInsert('ElearningQuestions', [
       {
@@ -133,7 +138,7 @@ module.exports = {
     await queryInterface.bulkInsert('ElearningAnswers', [
       // Answers for Unit 0 Questions
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[0],
         label: 'Accompagner les candidats dans leur recherche d’emploi',
         isCorrect: true,
@@ -144,7 +149,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[0],
         label: 'Publier des offres d’emploi',
         isCorrect: false,
@@ -155,7 +160,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[1],
         label: 'En les guidant et en leur fournissant des ressources',
         explanation: 'Un coach aide un candidat en le guidant.',
@@ -165,7 +170,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[1],
         label: 'En leur trouvant directement un emploi',
         explanation:
@@ -177,7 +182,7 @@ module.exports = {
       },
       // Answers for Unit 1 Questions
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[2],
         label: 'Rechercher activement des opportunités d’emploi',
         isCorrect: true,
@@ -188,7 +193,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[2],
         label: 'Coacher d’autres candidats',
         isCorrect: false,
@@ -199,7 +204,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[3],
         label:
           'En utilisant les ressources et le soutien disponibles sur la plateforme',
@@ -211,7 +216,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[3],
         label: 'En attendant que les offres d’emploi arrivent',
         explanation:
@@ -223,7 +228,7 @@ module.exports = {
       },
       // Answers for Unit 2 Question
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[4],
         label: 'Tableau de bord, messagerie, et ressources de formation',
         isCorrect: true,
@@ -234,7 +239,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         questionId: elearningQuestionsIds[4],
         label: 'Jeux en ligne',
         isCorrect: false,

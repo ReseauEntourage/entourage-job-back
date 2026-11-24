@@ -13,3 +13,5 @@ allowBuilds:
   unrs-resolver: true
   '@parcel/watcher': false
   '@scarf/scarf': false
+  core-js: false
+  core-js-pure: false

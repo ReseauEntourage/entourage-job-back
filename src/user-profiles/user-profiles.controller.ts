@@ -19,7 +19,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
 import { UserProfileAnalyticsService } from 'src/user-profile-analytics/user-profile-analytics.service';
 import { UserProfileMediaService } from 'src/user-profile-media/user-profile-media.service';
@@ -43,6 +42,7 @@ import {
 } from 'src/users/users.types';
 import { isEntourageAdmin, isRoleIncluded } from 'src/users/users.utils';
 import { toArray } from 'src/utils/misc';
+import { isUuid } from 'src/utils/misc/isUuid';
 import { UpdateCoachUserProfileDto } from './dto';
 import { generatePublicProfileDto } from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
@@ -162,7 +162,7 @@ export class UserProfilesController {
 
     if (departments) {
       for (const dept of departments) {
-        if (!uuidValidate(dept)) {
+        if (!isUuid(dept)) {
           throw new BadRequestException('departmentId must be a UUID or null');
         }
       }
