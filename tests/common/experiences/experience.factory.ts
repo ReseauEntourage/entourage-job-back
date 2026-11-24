@@ -1,7 +1,7 @@
+import { randomUUID } from 'crypto';
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import * as uuid from 'uuid';
 import { Experience } from 'src/experiences/models';
 import { Factory } from 'src/utils/types';
 
@@ -14,7 +14,7 @@ export class ExperienceFactory implements Factory<Experience> {
 
   generateExperience(props: Partial<Experience>): Partial<Experience> {
     return {
-      id: uuid.v4(),
+      id: randomUUID(),
       title: props.title || faker.lorem.words(3),
       description: props.description || faker.lorem.paragraph(),
       location: props.location || faker.location.city(),

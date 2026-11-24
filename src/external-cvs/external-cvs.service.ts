@@ -1,7 +1,7 @@
+import { randomUUID as uuid } from 'crypto';
 import fs from 'fs';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { v4 as uuid } from 'uuid';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { CvExtractionService } from 'src/external-services/cv-extraction/cv-extraction.service';
 import { Media } from 'src/medias/models';

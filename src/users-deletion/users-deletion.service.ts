@@ -1,5 +1,5 @@
+import { randomUUID as uuid } from 'crypto';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
 import { ExternalCvsService } from 'src/external-cvs/external-cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { UserProfileDeletionService } from 'src/user-profile-deletion/user-profile-deletion.service';
