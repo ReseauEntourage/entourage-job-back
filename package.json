@@ -47,7 +47,7 @@
     "@aws-sdk/s3-request-presigner": "^3.142.0",
     "@bull-board/api": "^9.10.5",
     "@bull-board/express": "^9.10.5",
-    "@bull-board/metrics": "9.10.5",
+    "@bull-board/metrics": "9.14.0",
     "@bull-board/nestjs": "^9.10.5",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.28",

@@ -11,4 +11,5 @@ allowBuilds:
   dd-trace: true
   msgpackr-extract: true
   unrs-resolver: true
+  '@parcel/watcher': false
   '@scarf/scarf': false
