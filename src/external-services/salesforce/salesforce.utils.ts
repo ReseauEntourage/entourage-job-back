@@ -1,4 +1,4 @@
-import { Job, RecordResult } from 'jsforce';
+import { Connection } from 'jsforce';
 import * as _ from 'lodash';
 import {
   BusinessSectorFilters,
@@ -539,25 +539,35 @@ export const mapSalesforceContactFields = (
   };
 };
 
+// jsforce v3 ships its own types and no longer exports Job / RecordResult
+// from its entry point: derive them from the Connection API instead.
+type BulkJob = ReturnType<Connection['bulk']['createJob']>;
+
+export type BulkRecordResult = {
+  id?: string | null;
+  success: boolean;
+  errors?: unknown;
+};
+
 export function executeBulkAction<T extends ObjectName>(
   params: SalesforceObject<T>[],
-  job: Job
-): Promise<RecordResult[]> {
+  job: BulkJob
+): Promise<BulkRecordResult[]> {
   return new Promise((res, rej) => {
     const batch = job.createBatch();
 
     batch.execute(params);
 
-    batch.on('error', (error) => {
+    batch.on('error', (error: unknown) => {
       console.error('Error, batchInfo:', error);
       rej(error);
     });
-    batch.on('queue', (batchInfo) => {
+    batch.on('queue', (batchInfo: unknown) => {
       // eslint-disable-next-line no-console
       console.log('Queue, batchInfo:', batchInfo);
       batch.poll(1000, 20000);
     });
-    batch.on('response', async (results: RecordResult[]) => {
+    batch.on('response', async (results: BulkRecordResult[]) => {
       res(results);
     });
   });
