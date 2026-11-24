@@ -12,3 +12,5 @@ allowBuilds:
   msgpackr-extract: true
   unrs-resolver: true
   '@scarf/scarf': false
+  core-js: false
+  core-js-pure: false

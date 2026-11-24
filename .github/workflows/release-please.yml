@@ -1,0 +1,94 @@
+name: Release Please
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      pr: ${{ steps.release.outputs.pr }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          target-branch: master
+
+      - name: Notify Slack — release pull request opened or updated
+        if: steps.release.outputs.pr != ''
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_RELEASES_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ${{ toJSON(format('📦 entourage-job-back : PR de release ouverte/à jour — {0}\n{1}', fromJson(steps.release.outputs.pr).title, fromJson(steps.release.outputs.pr).html_url)) }}
+            }
+
+  deploy:
+    name: Deploy to production
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    environment: entourage-job-back-production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # release-please uses the default GITHUB_TOKEN, so its push to `master` does not
+      # trigger ci.yml's `pull_request` checks on the release PR beforehand (GitHub
+      # suppresses workflow runs triggered via GITHUB_TOKEN to avoid recursive runs).
+      # ci.yml does still run on this same push to `master`, in parallel with this
+      # workflow — wait for it and require success before deploying.
+      - name: Wait for CI to pass on this commit
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const sha = context.sha;
+            const { owner, repo } = context.repo;
+            let conclusion;
+            for (let i = 0; i < 60; i++) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: 'ci.yml',
+                head_sha: sha,
+              });
+              const run = data.workflow_runs[0];
+              if (run && run.status === 'completed') {
+                conclusion = run.conclusion;
+                break;
+              }
+              await new Promise((resolve) => setTimeout(resolve, 30000));
+            }
+            if (conclusion !== 'success') {
+              core.setFailed(`ci.yml did not complete successfully for ${sha} (conclusion: ${conclusion ?? 'timed out waiting'})`);
+            }
+
+      - name: Deploy to Heroku
+        run: |
+          git push "https://heroku:${HEROKU_API_KEY}@git.heroku.com/entourage-job.git" "HEAD:refs/heads/main"
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Notify Slack — release deployed
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_RELEASES_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ${{ toJSON(format('🚀 entourage-job-back {0} déployé en production', needs.release-please.outputs.tag_name)) }}
+            }

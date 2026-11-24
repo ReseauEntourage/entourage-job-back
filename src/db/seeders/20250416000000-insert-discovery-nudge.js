@@ -1,13 +1,13 @@
 'use strict';
 
-const uuid = require('uuid');
+const { randomUUID } = require('crypto');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     return queryInterface.bulkInsert('Nudges', [
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         value: 'discovery',
         nameRequest: "Découvrir un métier qui m'attire",
         nameOffer: 'Faire découvrir mon métier',

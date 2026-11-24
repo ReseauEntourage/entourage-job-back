@@ -1,5 +1,4 @@
-const { pbkdf2Sync, randomBytes } = require('crypto');
-const uuid = require('uuid');
+const { pbkdf2Sync, randomBytes, randomUUID } = require('crypto');
 
 // TODO remove duplicate
 function encryptPassword(password) {
@@ -20,7 +19,7 @@ module.exports = {
   up: (queryInterface) => {
     return queryInterface.bulkInsert('Users', [
       {
-        id: uuid.v4(),
+        id: randomUUID(),
         email: 'admin@entourage.social',
         firstName: 'John',
         lastName: 'Doe',

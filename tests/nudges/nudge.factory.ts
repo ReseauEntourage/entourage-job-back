@@ -1,7 +1,7 @@
+import { randomUUID } from 'crypto';
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import * as uuid from 'uuid';
 import { Nudge } from 'src/nudge/models';
 import { Factory } from 'src/utils/types';
 
@@ -16,7 +16,7 @@ export class NudgeFactory implements Factory<Nudge> {
     const value =
       props.value || faker.lorem.word({ length: { min: 5, max: 10 } });
     return {
-      id: uuid.v4(),
+      id: randomUUID(),
       value: value,
       nameRequest: props.nameRequest || `${value.slice(0, 3)} Request`,
       nameOffer: props.nameOffer || `${value.slice(0, 3)} Offer`,

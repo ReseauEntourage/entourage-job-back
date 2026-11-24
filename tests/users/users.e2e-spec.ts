@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
+import { randomUUID as uuid } from 'crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { v4 as uuid } from 'uuid';
 import { QueueMocks, S3Mocks } from '../mocks.types';
 import { BusinessSector } from 'src/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
