@@ -1,7 +1,7 @@
+import { randomUUID as uuid } from 'crypto';
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { v4 as uuid } from 'uuid';
 import { HelpGroup } from 'src/help-groups/models';
 import { Factory } from 'src/utils/types';
 

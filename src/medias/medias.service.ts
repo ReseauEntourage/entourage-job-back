@@ -1,7 +1,7 @@
+import { randomUUID as uuid } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Transaction } from 'sequelize';
-import { v4 as uuid } from 'uuid';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { mediaAttributes } from 'src/messaging/messaging.attributes';
 import { Conversation, Message } from 'src/messaging/models';

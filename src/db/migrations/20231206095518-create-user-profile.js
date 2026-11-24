@@ -1,5 +1,5 @@
 const { QueryTypes } = require('sequelize');
-const uuid = require('uuid');
+const { randomUUID } = require('crypto');
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('User_Profiles', {
@@ -192,7 +192,7 @@ module.exports = {
 
     const userProfiles = usersIds.map(({ id }) => {
       return {
-        id: uuid.v4(),
+        id: randomUUID(),
         UserId: id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
