@@ -1112,7 +1112,9 @@ export class MessagingService {
           JOIN "ConversationParticipants" other
             ON other."conversationId" = c.id AND other."userId" <> me."userId"
           JOIN "Users" candidate
-            ON candidate.id = other."userId" AND candidate.role = :candidateRole
+            ON candidate.id = other."userId"
+            AND candidate.role = :candidateRole
+            AND candidate."deletedAt" IS NULL
           WHERE me."userId" = :userId
             AND NOT EXISTS (
               SELECT 1
@@ -1161,7 +1163,9 @@ export class MessagingService {
           JOIN "ConversationParticipants" other
             ON other."conversationId" = c.id AND other."userId" <> me."userId"
           JOIN "Users" coach
-            ON coach.id = other."userId" AND coach.role = :coachRole
+            ON coach.id = other."userId"
+            AND coach.role = :coachRole
+            AND coach."deletedAt" IS NULL
           WHERE me."userId" = :userId
             AND NOT EXISTS (
               SELECT 1

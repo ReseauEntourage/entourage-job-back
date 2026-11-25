@@ -147,6 +147,19 @@ describe('CurrentUser - donation block', () => {
       expect(await getVisible(coach)).toBe(false);
     });
 
+    it('does not count a candidate whose account was deleted', async () => {
+      const coach = await createUser(UserRoles.COACH);
+      const candidate = await createUser(UserRoles.CANDIDATE);
+      const conversation = await createConversation([coach, candidate]);
+      await messagingHelper.createMessage(conversation.id, candidate.user.id);
+      await messagingHelper.createMessage(conversation.id, coach.user.id);
+      expect(await getVisible(coach)).toBe(true);
+
+      await userModel.destroy({ where: { id: candidate.user.id } });
+
+      expect(await getVisible(coach)).toBe(false);
+    });
+
     it('does not see the block while the onboarding is not completed', async () => {
       const coach = await usersHelper.createLoggedInUser({
         role: UserRoles.COACH,
@@ -215,6 +228,18 @@ describe('CurrentUser - donation block', () => {
       const admin = await createUser(UserRoles.ADMIN);
       const conversation = await createConversation([candidate, coach, admin]);
       await messagingHelper.createMessage(conversation.id, coach.user.id);
+
+      expect(await getVisible(candidate)).toBe(false);
+    });
+
+    it('does not count a coach whose account was deleted', async () => {
+      const candidate = await createUser(UserRoles.CANDIDATE);
+      const coach = await createUser(UserRoles.COACH);
+      const conversation = await createConversation([candidate, coach]);
+      await messagingHelper.createMessage(conversation.id, coach.user.id);
+      expect(await getVisible(candidate)).toBe(true);
+
+      await userModel.destroy({ where: { id: coach.user.id } });
 
       expect(await getVisible(candidate)).toBe(false);
     });
