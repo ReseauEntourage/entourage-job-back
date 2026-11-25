@@ -198,6 +198,11 @@ export class User extends HistorizedModel {
   @Column
   elearningCompletedAt: Date;
 
+  // Set once when the user closes the dashboard donation block for good
+  @AllowNull(true)
+  @Column
+  donationBlockDismissedAt: Date | null;
+
   // Help groups charter, common to every group and accepted only once
   @AllowNull(true)
   @Column
