@@ -1095,6 +1095,100 @@ export class MessagingService {
   }
 
   /**
+   * Whether a coach has at least one direct conversation, without any admin,
+   * where both they and a candidate have each sent a message. Cheap `EXISTS`
+   * lookup (it never loads the messages), meant for the dashboard donation block.
+   */
+  async hasMutualDirectExchangeAsCoach(userId: string): Promise<boolean> {
+    const [row] = await this.conversationModel.sequelize.query<{
+      exists: boolean;
+    }>(
+      `
+        SELECT EXISTS (
+          SELECT 1
+          FROM "ConversationParticipants" me
+          JOIN "Conversations" c
+            ON c.id = me."conversationId" AND c.type = :directType
+          JOIN "ConversationParticipants" other
+            ON other."conversationId" = c.id AND other."userId" <> me."userId"
+          JOIN "Users" candidate
+            ON candidate.id = other."userId" AND candidate.role = :candidateRole
+          WHERE me."userId" = :userId
+            AND NOT EXISTS (
+              SELECT 1
+              FROM "ConversationParticipants" p
+              JOIN "Users" u ON u.id = p."userId"
+              WHERE p."conversationId" = c.id AND u.role = :adminRole
+            )
+            AND EXISTS (
+              SELECT 1 FROM "Messages" m
+              WHERE m."conversationId" = c.id AND m."authorId" = me."userId"
+            )
+            AND EXISTS (
+              SELECT 1 FROM "Messages" m
+              WHERE m."conversationId" = c.id AND m."authorId" = other."userId"
+            )
+        ) AS "exists"
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          userId,
+          directType: ConversationType.DIRECT,
+          candidateRole: UserRoles.CANDIDATE,
+          adminRole: UserRoles.ADMIN,
+        },
+      }
+    );
+    return row?.exists === true;
+  }
+
+  /**
+   * Whether a candidate has received at least one message from a coach in a
+   * direct conversation without any admin, whoever wrote first. Cheap `EXISTS`
+   * lookup (it never loads the messages), meant for the dashboard donation block.
+   */
+  async hasCoachMessageAsCandidate(userId: string): Promise<boolean> {
+    const [row] = await this.conversationModel.sequelize.query<{
+      exists: boolean;
+    }>(
+      `
+        SELECT EXISTS (
+          SELECT 1
+          FROM "ConversationParticipants" me
+          JOIN "Conversations" c
+            ON c.id = me."conversationId" AND c.type = :directType
+          JOIN "ConversationParticipants" other
+            ON other."conversationId" = c.id AND other."userId" <> me."userId"
+          JOIN "Users" coach
+            ON coach.id = other."userId" AND coach.role = :coachRole
+          WHERE me."userId" = :userId
+            AND NOT EXISTS (
+              SELECT 1
+              FROM "ConversationParticipants" p
+              JOIN "Users" u ON u.id = p."userId"
+              WHERE p."conversationId" = c.id AND u.role = :adminRole
+            )
+            AND EXISTS (
+              SELECT 1 FROM "Messages" m
+              WHERE m."conversationId" = c.id AND m."authorId" = other."userId"
+            )
+        ) AS "exists"
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          userId,
+          directType: ConversationType.DIRECT,
+          coachRole: UserRoles.COACH,
+          adminRole: UserRoles.ADMIN,
+        },
+      }
+    );
+    return row?.exists === true;
+  }
+
+  /**
    * === PRIVATE METHODS ===
    */
 

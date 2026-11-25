@@ -200,6 +200,42 @@ export class UsersService {
     });
   }
 
+  /**
+   * Minimal view of a user needed to decide whether the dashboard donation
+   * block is shown (role, onboarding, dismissal, company admin status).
+   */
+  async findOneForDonationBlock(id: string) {
+    return this.userModel.findByPk(id, {
+      attributes: [
+        'id',
+        'role',
+        'onboardingStatus',
+        'donationBlockDismissedAt',
+      ],
+      include: [
+        {
+          model: CompanyUser,
+          as: 'companyUsers',
+          attributes: ['isAdmin'],
+          required: false,
+        },
+      ],
+    });
+  }
+
+  /**
+   * Records, once, that the user closed the donation block for good.
+   * Idempotent: an already recorded dismissal keeps its original date.
+   * @returns true when this call recorded the dismissal, false when it was already recorded
+   */
+  async dismissDonationBlock(id: string): Promise<boolean> {
+    const [affectedCount] = await this.userModel.update(
+      { donationBlockDismissedAt: new Date() },
+      { where: { id, donationBlockDismissedAt: null } }
+    );
+    return affectedCount > 0;
+  }
+
   async findOneWithCompanyUsers(id: string) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
