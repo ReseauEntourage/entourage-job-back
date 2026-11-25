@@ -2,6 +2,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -9,11 +10,12 @@ import {
   StaffContactDto,
 } from 'src/auth/dto/staff-contact.dto';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { MessagingService } from 'src/messaging/messaging.service';
 import { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
-import { UserRole } from 'src/users/users.types';
+import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import {
   generateCurrentUserAchievementsDto,
@@ -23,6 +25,7 @@ import {
   generateCurrentUserCompanyDto,
   CurrentUserCompanyDto,
 } from './dto/current-user-company.dto';
+import { CurrentUserDonationBlockDto } from './dto/current-user-donation-block.dto';
 import {
   generateCurrentUserIdentityDto,
   CurrentUserIdentityDto,
@@ -63,8 +66,12 @@ export class CurrentUserService {
     @Inject(forwardRef(() => UsersStatsService))
     private readonly usersStatsService: UsersStatsService,
     private readonly sessionsService: SessionsService,
-    private readonly salesforceService: SalesforceService
+    private readonly salesforceService: SalesforceService,
+    @Inject(forwardRef(() => MessagingService))
+    private readonly messagingService: MessagingService
   ) {}
+
+  private readonly logger = new Logger(CurrentUserService.name);
 
   async getIdentity(userId: string): Promise<CurrentUserIdentityDto> {
     const user =
@@ -238,5 +245,56 @@ export class CurrentUserService {
       throw new NotFoundException();
     }
     return generateCurrentUserReadDocumentsDto(user);
+  }
+
+  /**
+   * Whether the dashboard donation block is shown to the user. Rules are
+   * evaluated in order, the first one that answers wins (see the
+   * `home-donation-block` capability).
+   */
+  async getDonationBlock(userId: string): Promise<CurrentUserDonationBlockDto> {
+    const user = await this.usersService.findOneForDonationBlock(userId);
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    if (user.role === UserRoles.ADMIN || user.donationBlockDismissedAt) {
+      return { visible: false };
+    }
+
+    const isCompanyAdmin = (user.companyUsers ?? []).some((cu) => cu.isAdmin);
+    if (user.role === UserRoles.REFERER || isCompanyAdmin) {
+      return { visible: true };
+    }
+
+    if (user.onboardingStatus !== OnboardingStatus.COMPLETED) {
+      return { visible: false };
+    }
+
+    if (user.role === UserRoles.COACH) {
+      return {
+        visible:
+          await this.messagingService.hasMutualDirectExchangeAsCoach(userId),
+      };
+    }
+
+    if (user.role === UserRoles.CANDIDATE) {
+      return {
+        visible: await this.messagingService.hasCoachMessageAsCandidate(userId),
+      };
+    }
+
+    return { visible: false };
+  }
+
+  /**
+   * Closes the donation block for good. Idempotent. The dismissal is logged
+   * with the role only (no identifier) so it can be counted per role.
+   */
+  async dismissDonationBlock(userId: string, role: UserRole): Promise<void> {
+    const isNewDismissal = await this.usersService.dismissDonationBlock(userId);
+    if (isNewDismissal) {
+      this.logger.log(`donation_block_dismissed role=${role}`);
+    }
   }
 }
