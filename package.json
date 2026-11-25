@@ -132,7 +132,7 @@
     "prettier": "^3.9.6",
     "supertest": "^7.0.0",
     "ts-jest": "^29.4.11",
-    "typescript": "^6.0.0"
+    "typescript": "^7.0.0"
   },
   "packageManager": "pnpm@12.23.0"
 }
