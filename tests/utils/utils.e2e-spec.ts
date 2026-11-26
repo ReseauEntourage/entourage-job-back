@@ -314,16 +314,33 @@ describe('search helpers', () => {
   });
 
   describe('userProfileSearchQuery', () => {
-    it('builds one OR group per word, without the email', () => {
+    // A `where(fn(..., col(name)), ...)` condition: walk down the nested
+    // function arguments to read the searched column name.
+    const columnOf = (condition: unknown): string => {
+      let node = (condition as { attribute: unknown }).attribute as {
+        args?: unknown[];
+        col?: string;
+      };
+      while (node.args) {
+        node = node.args[0] as typeof node;
+      }
+      return node.col as string;
+    };
+
+    it('builds one OR group per word on the expected columns, never the email', () => {
       const query = userProfileSearchQuery('Jean Dupont') as unknown as {
         [Op.and]: { [Op.or]: unknown[] }[];
       };
 
       expect(query[Op.and]).toHaveLength(2);
       query[Op.and].forEach((group) => {
-        expect(group[Op.or]).toHaveLength(4);
+        expect(group[Op.or].map(columnOf)).toEqual([
+          'user.firstName',
+          'user.lastName',
+          'sectorOccupations->occupation.name',
+          'currentJob',
+        ]);
       });
-      expect(JSON.stringify(query)).not.toContain('email');
     });
 
     it('builds a single group for a single word', () => {
