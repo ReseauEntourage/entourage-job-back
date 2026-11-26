@@ -257,9 +257,7 @@ export class UserProfilesService {
           }
         : undefined;
 
-    const searchOptions = search
-      ? { [Op.or]: [...userProfileSearchQuery(search)] }
-      : {};
+    const searchOptions = search ? userProfileSearchQuery(search) : {};
 
     // First, we filter the profiles to get only the IDs of the profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
@@ -446,9 +444,7 @@ export class UserProfilesService {
           }
         : undefined;
 
-    const searchOptions = search
-      ? { [Op.or]: [...userProfileSearchQuery(search)] }
-      : {};
+    const searchOptions = search ? userProfileSearchQuery(search) : {};
 
     const filteredProfiles = await this.userProfileModel.findAll({
       subQuery: false,

@@ -12,6 +12,17 @@ export function escapeQuery(query: string) {
     : '';
 }
 
+/**
+ * Splits a raw search input into words on whitespace, before any
+ * normalization (a hyphenated word such as "Jean-Pierre" stays a single word).
+ * Always returns at least one word: an empty input gives [''], which keeps the
+ * single-word behavior ("like '%%'").
+ */
+export function splitSearchTerms(query: string): string[] {
+  const terms = (query || '').trim().split(/\s+/).filter(Boolean);
+  return terms.length > 0 ? terms : [''];
+}
+
 export function escapeColumnRaw(column: string) {
   return `replace(lower(unaccent(${column})), '-', ' ')`;
 }
