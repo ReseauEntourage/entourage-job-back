@@ -1,7 +1,7 @@
 services:
   ## ENTOURAGE PRO BACKEND API
   api:
-    container_name: api
+    container_name: ${CONTAINER_PREFIX:-}api
     build:
       context: ./
       target: base
@@ -10,7 +10,7 @@ services:
       - api_node_modules:/home/node/node_modules
       - api_dist:/home/node/dist
     ports:
-      - '3002:3002'
+      - '${PORT:-3002}:${PORT:-3002}'
     env_file:
       - .env
     environment:
@@ -32,7 +32,7 @@ services:
       - redis
 
   db:
-    container_name: db
+    container_name: ${CONTAINER_PREFIX:-}db
     build:
       context: ./docker/postgres
       dockerfile: Dockerfile
@@ -41,7 +41,7 @@ services:
       - POSTGRES_USER=entourage_pro
       - POSTGRES_PASSWORD=entourage_pro
     ports:
-      - '5432:5432'
+      - '${DB_HOST_PORT:-5432}:5432'
     volumes:
       - db:/var/lib/postgresql/data
     command:
@@ -52,7 +52,7 @@ services:
       - 'shared_buffers=3GB'
   ## DATADOG AGENT
   datadog:
-    container_name: datadog
+    container_name: ${CONTAINER_PREFIX:-}datadog
     image: datadog/agent:latest
     restart: always
     environment:
@@ -65,8 +65,8 @@ services:
       DD_CONTAINER_EXCLUDE: 'name:datadog'
       DD_DOGSTATSD_NON_LOCAL_TRAFFIC: true
     ports:
-      - '8125:8125/udp'
-      - '8126:8126'
+      - '${DD_STATSD_HOST_PORT:-8125}:8125/udp'
+      - '${DD_APM_HOST_PORT:-8126}:8126'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
@@ -75,11 +75,11 @@ services:
 
   ## ENTOURAGE PRO BACKEND CACHE
   redis:
-    container_name: redis
+    container_name: ${CONTAINER_PREFIX:-}redis
     image: valkey/valkey:9.2.0-alpine
     restart: always
     ports:
-      - '6379:6379'
+      - '${REDIS_HOST_PORT:-6379}:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
       - redis:/data

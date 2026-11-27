@@ -325,3 +325,13 @@ Sur chaque déploiement, la phase `release` du [Procfile](Procfile) applique les
 ## Licence
 
 ISC — voir [LICENSE](LICENSE).
+
+## Worktrees Orca : ports et bases isolés
+
+À la création d'un worktree, `orca.yaml` lance [scripts/orca-worktree-env.sh](scripts/orca-worktree-env.sh), qui attribue un **slot** (1–99) à la branche, enregistré dans `~/.entourage-orca-port-slots` (partagé avec `entourage-job-front` : même branche = même slot, donc le front pointe vers le bon back). Le script écrit dans `.env` :
+
+- `PORT` (API) = 5000+slot, `WORKER_PORT` = 5100+slot, `FRONT_URL` / `LINKEDIN_REDIRECT_URI` → front en 4000+slot ;
+- `COMPOSE_PROJECT_NAME` + `CONTAINER_PREFIX` : chaque worktree a sa propre stack Docker (conteneurs, réseau, volumes → **base de données dédiée**, y compris `db-test`) ;
+- ports hôte Postgres 6000+slot, Redis 6100+slot, db-test 6200+slot, Datadog 6300/6400+slot.
+
+Le checkout principal garde les ports par défaut. Dans un worktree, les conteneurs sont préfixés : `docker exec wt<slot>-api pnpm db:migrate` (ou `docker compose exec api …`). Les scripts `*:dev:local` (hors Docker) ciblent toujours `localhost:5432` : y adapter `DB_HOST_PORT` à la main si besoin.
