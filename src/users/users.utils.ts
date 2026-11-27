@@ -1,9 +1,11 @@
 import _ from 'lodash';
+import { Op, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/business-sectors/models';
 import {
   getFiltersObjectsFromQueryParams,
   searchInColumnWhereOption,
   searchInColumnWhereOptionRaw,
+  splitSearchTerms,
 } from 'src/utils/misc';
 import { FilterObject, FilterParams } from 'src/utils/types';
 import {
@@ -125,31 +127,50 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
   return whereOptions;
 }
 
-export function userSearchQuery(query = '', withOrganizationName = false) {
-  const organizationSearchOption = withOrganizationName
-    ? [searchInColumnWhereOption('organization.name', query)]
-    : [];
-
-  return [
-    searchInColumnWhereOption('User.email', query),
-    searchInColumnWhereOption('User.firstName', query),
-    searchInColumnWhereOption('User.lastName', query),
-    ...organizationSearchOption,
-  ];
+/**
+ * Multi-word search: each word of the query must match at least one of the
+ * searched columns (email, first name, last name and, optionally, the
+ * organization name). A single word behaves as a plain substring search.
+ */
+export function userSearchQuery(
+  query = '',
+  withOrganizationName = false
+): WhereOptions {
+  return {
+    [Op.and]: splitSearchTerms(query).map((term) => ({
+      [Op.or]: [
+        searchInColumnWhereOption('User.email', term),
+        searchInColumnWhereOption('User.firstName', term),
+        searchInColumnWhereOption('User.lastName', term),
+        ...(withOrganizationName
+          ? [searchInColumnWhereOption('organization.name', term)]
+          : []),
+      ],
+    })),
+  };
 }
 
+/**
+ * Raw SQL equivalent of `userSearchQuery`: one `OR` group per word, joined by
+ * `AND`. Every word goes through `escapeQuery` (via
+ * `searchInColumnWhereOptionRaw`) before being interpolated.
+ */
 export function userSearchQueryRaw(query = '', withOrganizationName = false) {
-  const organizationSearchOption = withOrganizationName
-    ? [searchInColumnWhereOptionRaw('"organization"."name"', query)]
-    : [];
-
   return `(
-    ${[
-      searchInColumnWhereOptionRaw('"User"."email"', query),
-      searchInColumnWhereOptionRaw('"User"."firstName"', query),
-      searchInColumnWhereOptionRaw('"User"."lastName"', query),
-      ...organizationSearchOption,
-    ].join(' OR ')}
+    ${splitSearchTerms(query)
+      .map(
+        (term) => `(
+      ${[
+        searchInColumnWhereOptionRaw('"User"."email"', term),
+        searchInColumnWhereOptionRaw('"User"."firstName"', term),
+        searchInColumnWhereOptionRaw('"User"."lastName"', term),
+        ...(withOrganizationName
+          ? [searchInColumnWhereOptionRaw('"organization"."name"', term)]
+          : []),
+      ].join(' OR ')}
+    )`
+      )
+      .join(' AND ')}
   )`;
 }
 

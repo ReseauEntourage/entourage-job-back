@@ -1,7 +1,7 @@
+import { randomUUID as uuid } from 'crypto';
 import { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test, TestingModule } from '@nestjs/testing';
-import { v4 as uuid } from 'uuid';
 import { QueueMocks, S3Mocks } from '../mocks.types';
 import { CommunicationLogsModule } from 'src/communication-logs/communication-logs.module';
 import { CommunicationLogsService } from 'src/communication-logs/communication-logs.service';

@@ -1,7 +1,7 @@
+import { randomUUID } from 'crypto';
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import * as uuid from 'uuid';
 import { Skill } from 'src/skills/models';
 import { Factory } from 'src/utils/types';
 
@@ -14,7 +14,7 @@ export class SkillFactory implements Factory<Skill> {
 
   generateSkill(props: Partial<Skill>): Partial<Skill> {
     return {
-      id: uuid.v4(),
+      id: randomUUID(),
       name: props.name || faker.lorem.word(),
     };
   }

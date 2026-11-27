@@ -1,6 +1,6 @@
+import { randomUUID as uuid } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { v4 as uuid } from 'uuid';
 import { ExternalCv } from 'src/external-cvs/models/external-cv.model';
 import { Media } from 'src/medias/models';
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as jsforce from 'jsforce';
-import { Connection, ErrorResult, SuccessResult } from 'jsforce';
+import { Connection } from 'jsforce';
 import moment from 'moment-timezone';
 
 import {
@@ -192,22 +192,23 @@ export class SalesforceService {
         let resultsIds: string[] = [];
 
         for (let i = 0; i < results.length; i += 1) {
-          const { id, success, errors } = results[i] as ErrorResult &
-            SuccessResult;
+          const { id, success, errors } = results[i];
           if (!success) {
             console.error(`Error creating Salesforce records : `, errors);
           } else {
-            resultsIds = [...resultsIds, id];
+            resultsIds = [...resultsIds, id as string];
           }
         }
 
         return resultsIds;
       } else {
-        const result = await this.salesforce.sobject(name).insert(params);
+        const result = await this.salesforce
+          .sobject(name as string)
+          .insert(params);
         if (!result.success) {
-          throw (result as ErrorResult).errors;
+          throw result.errors;
         }
-        return (result as SuccessResult).id;
+        return result.id;
       }
     } catch (err) {
       if (
@@ -236,22 +237,23 @@ export class SalesforceService {
         let resultsIds: string[] = [];
 
         for (let i = 0; i < results.length; i += 1) {
-          const { id, success, errors } = results[i] as ErrorResult &
-            SuccessResult;
+          const { id, success, errors } = results[i];
           if (!success) {
             console.error(`Error updating Salesforce records : `, errors);
           } else {
-            resultsIds = [...resultsIds, id];
+            resultsIds = [...resultsIds, id as string];
           }
         }
 
         return resultsIds;
       } else {
-        const result = await this.salesforce.sobject(name).update(params);
+        const result = await this.salesforce
+          .sobject(name as string)
+          .update(params as Record<string, unknown> & { Id: string });
         if (!result.success) {
-          throw (result as ErrorResult).errors;
+          throw result.errors;
         }
-        return (result as SuccessResult).id;
+        return result.id;
       }
     } catch (err) {
       if (
@@ -293,8 +295,7 @@ export class SalesforceService {
         let resultsIds: string[] = [];
 
         for (let i = 0; i < results.length; i += 1) {
-          const { id, success, errors } = results[i] as ErrorResult &
-            SuccessResult;
+          const { id, success, errors } = results[i];
           if (!success) {
             console.error(`Error upserting Salesforce records : `, errors);
           } else {
@@ -311,13 +312,13 @@ export class SalesforceService {
         return resultsIds;
       } else {
         const result = await this.salesforce
-          .sobject(name)
-          .upsert(params, extIdField as string);
+          .sobject(name as string)
+          .upsert(params as Record<string, unknown>, extIdField as string);
         if (!result.success) {
-          throw (result as ErrorResult).errors;
+          throw result.errors;
         }
         return (
-          (result as SuccessResult).id ||
+          result.id ||
           (await this[findIdFunction](
             (params as SalesforceObject<T>)[extIdField]
           ))

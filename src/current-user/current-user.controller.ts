@@ -1,4 +1,11 @@
-import { Controller, Get, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AllowWithoutPassword, UserPayload } from 'src/auth/guards';
@@ -46,6 +53,20 @@ export class CurrentUserController {
     @UserPayload('role') role: User['role']
   ) {
     return this.currentUserService.getStats(id, role);
+  }
+
+  @Get('donation-block')
+  async getDonationBlock(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+    return this.currentUserService.getDonationBlock(id);
+  }
+
+  @Post('donation-block/dismiss')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async dismissDonationBlock(
+    @UserPayload('id', new ParseUUIDPipe()) id: string,
+    @UserPayload('role') role: User['role']
+  ) {
+    await this.currentUserService.dismissDonationBlock(id, role);
   }
 
   @Get('whatsapp-zone')

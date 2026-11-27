@@ -1,8 +1,8 @@
+import { randomUUID as uuid } from 'crypto';
 import { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { v4 as uuid } from 'uuid';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
 import { HelpGroup, HelpGroupMembership } from 'src/help-groups/models';
 import { Post, PostReply } from 'src/posts/models';
