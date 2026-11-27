@@ -47,31 +47,42 @@ jobs:
         with:
           fetch-depth: 0
 
-      # release-please uses the default GITHUB_TOKEN, so its push to `master` does not
-      # trigger ci.yml's `pull_request` checks on the release PR beforehand (GitHub
-      # suppresses workflow runs triggered via GITHUB_TOKEN to avoid recursive runs).
-      # ci.yml does still run on this same push to `master`, in parallel with this
-      # workflow — wait for it and require success before deploying.
-      - name: Wait for CI to pass on this commit
+      # The release commit only bumps the version and the changelog, so its own push
+      # to `master` does not need a CI run (ci.yml skips it, see the `setup` job).
+      # What gets deployed was already tested by the CI run on the previous commit
+      # of `master` (the merge of `develop`, a Pull Request-validated change set):
+      # wait for that run and require success. If a commit in the chain has no CI run
+      # (e.g. a former release commit), walk back along the first parents.
+      - name: Wait for CI to pass on the previously merged commit
         uses: actions/github-script@v8
         with:
           script: |
-            const sha = context.sha;
             const { owner, repo } = context.repo;
-            let conclusion;
-            for (let i = 0; i < 60; i++) {
+            let sha = context.sha;
+            let run;
+            for (let depth = 0; depth < 5 && !run; depth++) {
+              const { data: commit } = await github.rest.repos.getCommit({ owner, repo, ref: sha });
+              sha = commit.parents[0]?.sha;
+              if (!sha) break;
               const { data } = await github.rest.actions.listWorkflowRuns({
                 owner,
                 repo,
                 workflow_id: 'ci.yml',
                 head_sha: sha,
+                event: 'push',
               });
-              const run = data.workflow_runs[0];
-              if (run && run.status === 'completed') {
-                conclusion = run.conclusion;
-                break;
-              }
+              run = data.workflow_runs[0];
+            }
+            if (!run) {
+              core.setFailed('No ci.yml run found on the commits preceding the release commit');
+              return;
+            }
+            core.info(`Checking CI run ${run.html_url} for ${sha}`);
+            let conclusion = run.status === 'completed' ? run.conclusion : undefined;
+            for (let i = 0; i < 60 && !conclusion; i++) {
               await new Promise((resolve) => setTimeout(resolve, 30000));
+              const { data } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id });
+              if (data.status === 'completed') conclusion = data.conclusion;
             }
             if (conclusion !== 'success') {
               core.setFailed(`ci.yml did not complete successfully for ${sha} (conclusion: ${conclusion ?? 'timed out waiting'})`);
