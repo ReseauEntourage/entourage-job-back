@@ -12,7 +12,7 @@ import { Revision, RevisionChange } from 'src/revisions/models';
 import { UsersByIdController } from 'src/users/users-by-id.controller';
 import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
-import { OnboardingStatus, UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
@@ -424,6 +424,119 @@ describe('Users', () => {
             expect(expectedCoaches.map(({ id }) => id)).toEqual(
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
+          });
+
+          describe('multi-word query', () => {
+            const membersRoute = (role: UserRole, query: string) =>
+              `${route}/members?limit=50&offset=0&role=${role}&query=${encodeURIComponent(
+                query
+              )}`;
+
+            const search = async (role: UserRole, query: string) => {
+              const response: APIResponse<UsersController['findMembers']> =
+                await request(server)
+                  .get(membersRoute(role, query))
+                  .set('authorization', `Bearer ${loggedInAdmin.token}`);
+              expect(response.status).toBe(200);
+              return response.body.map(({ id }) => id);
+            };
+
+            it.each([UserRoles.CANDIDATE, UserRoles.COACH])(
+              'Should return the %s matching first name and last name together, in any order',
+              async (role) => {
+                const jeanDupont = await userFactory.create({
+                  role,
+                  firstName: 'Jean',
+                  lastName: 'Dupont',
+                });
+                await userFactory.create({
+                  role,
+                  firstName: 'Jean',
+                  lastName: 'Martin',
+                });
+                await userFactory.create({
+                  role,
+                  firstName: 'Paul',
+                  lastName: 'Dupont',
+                });
+
+                expect(await search(role, 'Jean Dupont')).toEqual([
+                  jeanDupont.id,
+                ]);
+                expect(await search(role, 'Dupont Jean')).toEqual([
+                  jeanDupont.id,
+                ]);
+                expect(await search(role, '  Jean   Dupont  ')).toEqual([
+                  jeanDupont.id,
+                ]);
+              }
+            );
+
+            it('Should return no member when one word matches no searched field', async () => {
+              await userFactory.create({
+                role: UserRoles.CANDIDATE,
+                firstName: 'Jean',
+                lastName: 'Dupont',
+              });
+
+              expect(await search(UserRoles.CANDIDATE, 'Jean Inconnu')).toEqual(
+                []
+              );
+            });
+
+            it('Should match a first name and the organization name', async () => {
+              const organization = await organizationFactory.create(
+                { name: 'Emmaus Solidarite' },
+                {},
+                true
+              );
+              const candidate = await userFactory.create({
+                role: UserRoles.CANDIDATE,
+                firstName: 'Jean',
+                lastName: 'Dupont',
+                OrganizationId: organization.id,
+              });
+              await userFactory.create({
+                role: UserRoles.CANDIDATE,
+                firstName: 'Jean',
+                lastName: 'Martin',
+              });
+
+              expect(await search(UserRoles.CANDIDATE, 'Jean Emmaus')).toEqual([
+                candidate.id,
+              ]);
+            });
+
+            it('Should still match a single word on the email', async () => {
+              const candidate = await userFactory.create({
+                role: UserRoles.CANDIDATE,
+                firstName: 'Zed',
+                lastName: 'Quux',
+                email: 'zed.quux@example.org',
+              });
+
+              expect(
+                await search(UserRoles.CANDIDATE, 'zed.quux@example.org')
+              ).toEqual([candidate.id]);
+            });
+
+            it('Should return the referer matching first name and last name together', async () => {
+              const organization = await organizationFactory.create(
+                {},
+                {},
+                true
+              );
+              const referer = await userFactory.create({
+                role: UserRoles.REFERER,
+                firstName: 'Jean',
+                lastName: 'Dupont',
+                OrganizationId: organization.id,
+              });
+
+              expect(await search(UserRoles.REFERER, 'Dupont Jean')).toEqual([
+                referer.id,
+              ]);
+            });
           });
         });
         describe('/members?zone=&hidden=&businessSectors= - Read all members as admin with filters', () => {

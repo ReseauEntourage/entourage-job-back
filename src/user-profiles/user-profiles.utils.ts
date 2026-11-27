@@ -1,20 +1,30 @@
 import { Op, WhereOptions } from 'sequelize';
 import { User } from 'src/users/models';
 import { OnboardingStatus } from 'src/users/users.types';
-import { searchInColumnWhereOption } from 'src/utils/misc';
+import { searchInColumnWhereOption, splitSearchTerms } from 'src/utils/misc';
 import { UserProfile } from './models';
 
-export function userProfileSearchQuery(query = '') {
-  return [
-    searchInColumnWhereOption('user.firstName', query, true),
-    searchInColumnWhereOption('user.lastName', query, true),
-    searchInColumnWhereOption(
-      'sectorOccupations->occupation.name',
-      query,
-      true
-    ),
-    searchInColumnWhereOption('currentJob', query, true),
-  ];
+/**
+ * Multi-word search: each word of the query must match at least one of the
+ * searched columns (first name, last name, occupation name, current job).
+ * The email is deliberately not searched. A single word behaves as a plain
+ * substring search.
+ */
+export function userProfileSearchQuery(query = ''): WhereOptions {
+  return {
+    [Op.and]: splitSearchTerms(query).map((term) => ({
+      [Op.or]: [
+        searchInColumnWhereOption('user.firstName', term, true),
+        searchInColumnWhereOption('user.lastName', term, true),
+        searchInColumnWhereOption(
+          'sectorOccupations->occupation.name',
+          term,
+          true
+        ),
+        searchInColumnWhereOption('currentJob', term, true),
+      ],
+    })),
+  };
 }
 
 /**

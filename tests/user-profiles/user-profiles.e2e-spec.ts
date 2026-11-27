@@ -27,7 +27,7 @@ import {
 import { UserProfileNudge } from 'src/user-profiles/models/user-profile-nudge.model';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
-import { OnboardingStatus, UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
@@ -783,6 +783,100 @@ describe('UserProfiles', () => {
             expect(expectedCoaches.map(({ id }) => id)).toEqual(
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
+          });
+
+          describe('multi-word search', () => {
+            const search = async (role: UserRole, value: string) => {
+              const response: APIResponse<UserProfilesController['findAll']> =
+                await request(server)
+                  .get(
+                    `${route}/profiles?limit=50&offset=0&role=${role}&search=${encodeURIComponent(
+                      value
+                    )}`
+                  )
+                  .set('authorization', `Bearer ${loggedInAdmin.token}`);
+              expect(response.status).toBe(200);
+              return response.body.map(({ id }) => id);
+            };
+
+            it.each([UserRoles.CANDIDATE, UserRoles.COACH])(
+              'Should return the %s matching first name and last name together, in any order',
+              async (role) => {
+                const jeanDupont = await userFactory.create({
+                  role,
+                  firstName: 'Jean',
+                  lastName: 'Dupont',
+                });
+                await userFactory.create({
+                  role,
+                  firstName: 'Jean',
+                  lastName: 'Martin',
+                });
+                await userFactory.create({
+                  role,
+                  firstName: 'Paul',
+                  lastName: 'Dupont',
+                });
+
+                expect(await search(role, 'Jean Dupont')).toEqual([
+                  jeanDupont.id,
+                ]);
+                expect(await search(role, 'Dupont Jean')).toEqual([
+                  jeanDupont.id,
+                ]);
+              }
+            );
+
+            it('Should match a first name and the current job of a coach', async () => {
+              const coach = await userFactory.create(
+                {
+                  role: UserRoles.COACH,
+                  firstName: 'Jean',
+                  lastName: 'Dupont',
+                },
+                {
+                  userProfile: {
+                    currentJob: 'peintre',
+                    description: 'hello',
+                    department: 'Paris (75)',
+                  },
+                }
+              );
+              await userFactory.create({
+                role: UserRoles.COACH,
+                firstName: 'Jean',
+                lastName: 'Martin',
+              });
+
+              expect(await search(UserRoles.COACH, 'Jean peintre')).toEqual([
+                coach.id,
+              ]);
+            });
+
+            it('Should return no profile when one word matches no searched field', async () => {
+              await userFactory.create({
+                role: UserRoles.CANDIDATE,
+                firstName: 'Jean',
+                lastName: 'Dupont',
+              });
+
+              expect(await search(UserRoles.CANDIDATE, 'Jean Inconnu')).toEqual(
+                []
+              );
+            });
+
+            it('Should not search on the email', async () => {
+              await userFactory.create({
+                role: UserRoles.CANDIDATE,
+                firstName: 'Zed',
+                lastName: 'Quux',
+                email: 'zed.quux@example.org',
+              });
+
+              expect(
+                await search(UserRoles.CANDIDATE, 'zed.quux@example.org')
+              ).toEqual([]);
+            });
           });
         });
         describe('/profile?departments=&businessSectors=&nudges= - Read all profiles with filters', () => {

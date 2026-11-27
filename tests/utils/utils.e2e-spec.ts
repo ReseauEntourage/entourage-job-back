@@ -1,4 +1,6 @@
 import { Op } from 'sequelize';
+import { userProfileSearchQuery } from 'src/user-profiles/user-profiles.utils';
+import { userSearchQueryRaw } from 'src/users/users.utils';
 import { getZoneDisplayLabel } from 'src/utils/constants/zones';
 import {
   assertCondition,
@@ -21,6 +23,7 @@ import {
   escapeQuery,
   searchInColumnWhereOption,
   searchInColumnWhereOptionRaw,
+  splitSearchTerms,
 } from 'src/utils/misc/searchInColumnWhereOption';
 import { toArray } from 'src/utils/misc/toArray';
 import { ZoneName } from 'src/utils/types/zones.types';
@@ -248,6 +251,105 @@ describe('search helpers', () => {
 
     expect(sensitive.logic[Op.like]).toBe('%eric%');
     expect(insensitive.logic[Op.iLike]).toBe('%eric%');
+  });
+
+  describe('splitSearchTerms', () => {
+    it('returns a single word as is', () => {
+      expect(splitSearchTerms('Dupont')).toEqual(['Dupont']);
+    });
+
+    it('splits several words on whitespace', () => {
+      expect(splitSearchTerms('Jean Dupont')).toEqual(['Jean', 'Dupont']);
+    });
+
+    it('ignores leading, trailing and repeated spaces', () => {
+      expect(splitSearchTerms('  Jean   Dupont  ')).toEqual(['Jean', 'Dupont']);
+    });
+
+    it('keeps a hyphenated word as a single word', () => {
+      expect(splitSearchTerms('Jean-Pierre')).toEqual(['Jean-Pierre']);
+    });
+
+    it('returns a single empty word for an empty or blank query', () => {
+      expect(splitSearchTerms('')).toEqual(['']);
+      expect(splitSearchTerms('   ')).toEqual(['']);
+      expect(splitSearchTerms(undefined)).toEqual(['']);
+    });
+  });
+
+  describe('userSearchQueryRaw', () => {
+    const normalize = (sql: string) => sql.replace(/\s+/g, ' ').trim();
+
+    it('keeps the previous OR condition for a single word', () => {
+      expect(normalize(userSearchQueryRaw('Dupont', true))).toBe(
+        normalize(`(
+          (
+            ${searchInColumnWhereOptionRaw('"User"."email"', 'Dupont')} OR
+            ${searchInColumnWhereOptionRaw('"User"."firstName"', 'Dupont')} OR
+            ${searchInColumnWhereOptionRaw('"User"."lastName"', 'Dupont')} OR
+            ${searchInColumnWhereOptionRaw('"organization"."name"', 'Dupont')}
+          )
+        )`)
+      );
+    });
+
+    it('requires each word to match at least one column, in any order', () => {
+      const sql = normalize(userSearchQueryRaw('Jean Dupont', true));
+      const groups = sql.split(') AND (');
+
+      expect(groups).toHaveLength(2);
+      expect(groups[0]).toContain("like '%jean%'");
+      expect(groups[0]).not.toContain('dupont');
+      expect(groups[1]).toContain("like '%dupont%'");
+      expect(groups[1]).toContain('"organization"."name"');
+    });
+
+    it('does not search the organization name when not requested', () => {
+      expect(userSearchQueryRaw('Jean Dupont')).not.toContain('organization');
+    });
+
+    it('escapes quotes in each word', () => {
+      expect(userSearchQueryRaw("O'Brien Jean")).toContain("like '%o''brien%'");
+    });
+  });
+
+  describe('userProfileSearchQuery', () => {
+    // A `where(fn(..., col(name)), ...)` condition: walk down the nested
+    // function arguments to read the searched column name.
+    const columnOf = (condition: unknown): string => {
+      let node = (condition as { attribute: unknown }).attribute as {
+        args?: unknown[];
+        col?: string;
+      };
+      while (node.args) {
+        node = node.args[0] as typeof node;
+      }
+      return node.col as string;
+    };
+
+    it('builds one OR group per word on the expected columns, never the email', () => {
+      const query = userProfileSearchQuery('Jean Dupont') as unknown as {
+        [Op.and]: { [Op.or]: unknown[] }[];
+      };
+
+      expect(query[Op.and]).toHaveLength(2);
+      query[Op.and].forEach((group) => {
+        expect(group[Op.or].map(columnOf)).toEqual([
+          'user.firstName',
+          'user.lastName',
+          'sectorOccupations->occupation.name',
+          'currentJob',
+        ]);
+      });
+    });
+
+    it('builds a single group for a single word', () => {
+      const query = userProfileSearchQuery('Dupont') as unknown as {
+        [Op.and]: unknown[];
+      };
+
+      expect(query[Op.and]).toHaveLength(1);
+    });
   });
 });
 
