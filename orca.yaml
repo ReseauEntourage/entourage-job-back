@@ -1,0 +1,11 @@
+scripts:
+  setup: |
+    # Copy the git-ignored env files from the main checkout
+    for f in .env .env.test; do
+      if [ -f "$ORCA_ROOT_PATH/$f" ] && [ ! -f "$f" ]; then
+        cp "$ORCA_ROOT_PATH/$f" "$f"
+      fi
+    done
+    # Per-worktree ports, docker compose project and databases
+    sh scripts/orca-worktree-env.sh
+    pnpm install

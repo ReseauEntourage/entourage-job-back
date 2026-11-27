@@ -1,7 +1,7 @@
 services:
   ## ENTOURAGE PRO BACKEND WORKER
   worker:
-    container_name: worker
+    container_name: ${CONTAINER_PREFIX:-}worker
     build:
       context: ./
       target: base
